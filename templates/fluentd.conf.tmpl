@@ -1,0 +1,20 @@
+
+## File input
+## read docker logs with tag=docker.container
+
+{{range $key, $value := .}}
+<source>
+  type tail
+  format json
+  time_key time
+  path /var/lib/docker/containers/{{ $value.ID }}/{{ $value.ID }}-json.log
+  pos_file /var/lib/docker/containers/{{ $value.ID }}/{{ $value.ID }}-json.log.pos
+  tag docker.container.{{printf "%.*s" 12 $value.ID}}
+  rotate_wait 5
+</source>
+{{end}}
+
+<match docker.**>
+  type stdout
+</match>
+

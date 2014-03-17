@@ -8,6 +8,8 @@ This is mostly a proof of concept to generate config files for:
  * fluentd, logstash or other centralized logging tools that tail the containers JSON log file.
  * logrotate files to rotate container JSON log files
 
+[Docker Log Management With Fluentd](http://jasonwilder.com/blog/2014/03/17/docker-log-management-using-fluentd/)
+
 ===
 
 To Run:

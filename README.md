@@ -8,11 +8,15 @@ This is mostly a proof of concept to generate config files for:
  * fluentd, logstash or other centralized logging tools that tail the containers JSON log file.
  * logrotate files to rotate container JSON log files
 
+===
+
+To Run:
+
  `go get github.com/jwilder/docker-gen`
 
  `docker-gen template.file`
 
 TODO:
 
- * Restart command hooks for when files are regenerated
+ * Add restart command hooks for when files are regenerated.
  * Tail docker event stream to detect when containers are started and stopped automatically

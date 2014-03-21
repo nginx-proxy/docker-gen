@@ -1,0 +1,21 @@
+upstream docker {
+{{range $key, $value := .}}
+	{}
+	{{with $address := index $value.Addresses 0 }}
+	server {{ $address.IP}}:{{ $address.Port}};
+	{{end}}
+{{end}}
+}
+
+server {
+	root /usr/share/nginx/www;
+	index index.html index.htm;
+
+	server_name localhost;
+
+	location / {
+	    proxy_pass http://docker;
+	    include /etc/nginx/proxy_params;
+	}
+}
+

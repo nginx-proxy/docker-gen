@@ -10,13 +10,18 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"text/template"
 )
 
-var watch bool
+var (
+	watch     bool
+	notifyCmd string
+)
 
 type Event struct {
 	ContainerId string `json:"id"`
@@ -24,11 +29,22 @@ type Event struct {
 	Image       string `json:"from"`
 }
 
-func usage() {
-	println("Usage: docker-gen [-watch] <template> [<dest>]")
+type Address struct {
+	IP   string
+	Port string
+}
+type RuntimeContainer struct {
+	ID        string
+	Addresses []Address
+	Image     string
 }
 
-func generateFile(templatePath string, containers []docker.APIContainers) {
+func usage() {
+	println("Usage: docker-gen [-watch=false] [-notify=\"restart xyz\"] <template> [<dest>]")
+}
+
+func generateFile(templatePath string, containers []*RuntimeContainer) {
+
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
 		panic(err)
@@ -44,6 +60,9 @@ func generateFile(templatePath string, containers []docker.APIContainers) {
 	}
 
 	err = tmpl.ExecuteTemplate(dest, filepath.Base(templatePath), containers)
+	if err != nil {
+		fmt.Printf("template error: %s\n", err)
+	}
 }
 
 func newConn() (*httputil.ClientConn, error) {
@@ -110,7 +129,7 @@ func getEvents() chan *Event {
 }
 
 func generateFromContainers(client *docker.Client) {
-	containers, err := client.ListContainers(docker.ListContainersOptions{
+	apiContainers, err := client.ListContainers(docker.ListContainersOptions{
 		All: false,
 	})
 	if err != nil {
@@ -118,12 +137,51 @@ func generateFromContainers(client *docker.Client) {
 		return
 	}
 
+	containers := []*RuntimeContainer{}
+	for _, apiContainer := range apiContainers {
+		container, err := client.InspectContainer(apiContainer.ID)
+		if err != nil {
+			fmt.Printf("error inspecting container: %s: %s", apiContainer.ID, err)
+			continue
+		}
+
+		runtimeContainer := &RuntimeContainer{
+			ID:        container.ID,
+			Image:     container.Config.Image,
+			Addresses: []Address{},
+		}
+		for k, _ := range container.NetworkSettings.Ports {
+			runtimeContainer.Addresses = append(runtimeContainer.Addresses,
+				Address{
+					IP:   container.NetworkSettings.IPAddress,
+					Port: k.Port(),
+				})
+		}
+		containers = append(containers, runtimeContainer)
+	}
+
 	generateFile(flag.Arg(0), containers)
+}
+
+func runNotifyCmd() {
+	if notifyCmd == "" {
+		return
+	}
+
+	args := strings.Split(notifyCmd, " ")
+	cmd := exec.Command(args[0], args[1:]...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("error running notify command: %s\n", err)
+	}
+	print(string(output))
+
 }
 
 func main() {
 
 	flag.BoolVar(&watch, "watch", false, "watch for container changes")
+	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated")
 	flag.Parse()
 
 	if flag.NArg() < 1 {
@@ -139,6 +197,7 @@ func main() {
 	}
 
 	generateFromContainers(client)
+	runNotifyCmd()
 	if !watch {
 		return
 	}
@@ -148,6 +207,7 @@ func main() {
 		event := <-eventChan
 		if event.Status == "start" || event.Status == "stop" {
 			generateFromContainers(client)
+			runNotifyCmd()
 		}
 	}
 

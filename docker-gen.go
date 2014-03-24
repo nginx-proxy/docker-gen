@@ -13,14 +13,16 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"syscall"
 	"text/template"
 )
 
 var (
-	watch     bool
-	notifyCmd string
+	watch       bool
+	notifyCmd   string
+	onlyExposed bool
 )
 
 type Event struct {
@@ -37,6 +39,54 @@ type RuntimeContainer struct {
 	ID        string
 	Addresses []Address
 	Image     string
+	Env       map[string]string
+}
+
+func deepGet(item interface{}, path string) interface{} {
+	if path == "" {
+		return item
+	}
+
+	parts := strings.Split(path, ".")
+	itemValue := reflect.ValueOf(item)
+
+	if len(parts) > 0 {
+		switch itemValue.Kind() {
+		case reflect.Struct:
+			fieldValue := itemValue.FieldByName(parts[0])
+			if fieldValue.IsValid() {
+				return deepGet(fieldValue.Interface(), strings.Join(parts[1:], "."))
+			}
+		case reflect.Map:
+			mapValue := itemValue.MapIndex(reflect.ValueOf(parts[0]))
+			if mapValue.IsValid() {
+				return deepGet(mapValue.Interface(), strings.Join(parts[1:], "."))
+			}
+		default:
+			fmt.Printf("can't group by %s", path)
+		}
+		return nil
+	}
+
+	return itemValue.Interface()
+}
+
+func groupBy(entries []*RuntimeContainer, key string) map[string][]*RuntimeContainer {
+	groups := make(map[string][]*RuntimeContainer)
+	for _, v := range entries {
+		value := deepGet(*v, key)
+		if value != nil {
+			groups[value.(string)] = append(groups[value.(string)], v)
+		}
+	}
+	return groups
+}
+
+func contains(a map[string]string, b string) bool {
+	if _, ok := a[b]; ok {
+		return true
+	}
+	return false
 }
 
 func usage() {
@@ -44,12 +94,15 @@ func usage() {
 }
 
 func generateFile(templatePath string, containers []*RuntimeContainer) {
-
-	tmpl, err := template.ParseFiles(templatePath)
+	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(template.FuncMap{
+		"contains": contains,
+		"groupBy":  groupBy,
+	}).ParseFiles(templatePath)
 	if err != nil {
 		panic(err)
 	}
 
+	tmpl = tmpl
 	dest := os.Stdout
 	if flag.NArg() == 2 {
 		dest, err = os.Create(flag.Arg(1))
@@ -149,6 +202,7 @@ func generateFromContainers(client *docker.Client) {
 			ID:        container.ID,
 			Image:     container.Config.Image,
 			Addresses: []Address{},
+			Env:       make(map[string]string),
 		}
 		for k, _ := range container.NetworkSettings.Ports {
 			runtimeContainer.Addresses = append(runtimeContainer.Addresses,
@@ -157,7 +211,21 @@ func generateFromContainers(client *docker.Client) {
 					Port: k.Port(),
 				})
 		}
-		containers = append(containers, runtimeContainer)
+
+		for _, entry := range container.Config.Env {
+			parts := strings.Split(entry, "=")
+			runtimeContainer.Env[parts[0]] = parts[1]
+		}
+
+		if !onlyExposed {
+			containers = append(containers, runtimeContainer)
+			continue
+		}
+
+		if onlyExposed && len(runtimeContainer.Addresses) > 0 {
+			containers = append(containers, runtimeContainer)
+		}
+
 	}
 
 	generateFile(flag.Arg(0), containers)
@@ -179,8 +247,8 @@ func runNotifyCmd() {
 }
 
 func main() {
-
 	flag.BoolVar(&watch, "watch", false, "watch for container changes")
+	flag.BoolVar(&onlyExposed, "only-exposed", false, "only include containers with exposed ports")
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated")
 	flag.Parse()
 
@@ -205,9 +273,11 @@ func main() {
 	eventChan := getEvents()
 	for {
 		event := <-eventChan
-		if event.Status == "start" || event.Status == "stop" {
+		if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
 			generateFromContainers(client)
 			runNotifyCmd()
+		} else {
+			println(event.Status)
 		}
 	}
 

@@ -1,21 +1,28 @@
-upstream docker {
-{{range $key, $value := .}}
-	{}
-	{{with $address := index $value.Addresses 0 }}
-	server {{ $address.IP}}:{{ $address.Port}};
-	{{end}}
-{{end}}
+{{ range $host, $containers := groupBy $ "Env.VIRTUAL_HOST" }}
+upstream {{ $host }} {
+
+{{ range $index, $value := $containers }}
+{{ if (gt (len $value.Addresses) 0) }}
+	{{ with $address := index $value.Addresses 0 }}
+	server {{ $address.IP }}:{{ $address.Port }};
+	{{ end }}
+{{ end }}
+{{ end }}
+
 }
 
 server {
-	root /usr/share/nginx/www;
-	index index.html index.htm;
+	#ssl_certificate /etc/nginx/certs/demo.pem;
+	#ssl_certificate_key /etc/nginx/certs/demo.key;
 
-	server_name localhost;
+	gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
+
+	server_name {{ $host }};
 
 	location / {
-	    proxy_pass http://docker;
+	    proxy_pass http://{{ $host }};
 	    include /etc/nginx/proxy_params;
 	}
 }
 
+{{ end }}

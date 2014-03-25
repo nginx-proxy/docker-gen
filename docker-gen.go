@@ -63,7 +63,7 @@ func deepGet(item interface{}, path string) interface{} {
 				return deepGet(mapValue.Interface(), strings.Join(parts[1:], "."))
 			}
 		default:
-			fmt.Printf("can't group by %s", path)
+			fmt.Printf("can't group by %s\n", path)
 		}
 		return nil
 	}
@@ -107,7 +107,7 @@ func generateFile(templatePath string, containers []*RuntimeContainer) {
 	if flag.NArg() == 2 {
 		dest, err = os.Create(flag.Arg(1))
 		if err != nil {
-			fmt.Println("unable to create dest file %s: %s", flag.Arg(1), err)
+			fmt.Println("unable to create dest file %s: %s\n", flag.Arg(1), err)
 			os.Exit(1)
 		}
 	}
@@ -131,22 +131,24 @@ func getEvents() chan *Event {
 	go func() {
 		defer close(eventChan)
 
+	restart:
+
 		c, err := newConn()
 		if err != nil {
-			fmt.Printf("cannot connect to docker: %s", err)
+			fmt.Printf("cannot connect to docker: %s\n", err)
 			return
 		}
 		defer c.Close()
 
 		req, err := http.NewRequest("GET", "/events", nil)
 		if err != nil {
-			fmt.Printf("bad request for events: %s", err)
+			fmt.Printf("bad request for events: %s\n", err)
 			return
 		}
 
 		resp, err := c.Do(req)
 		if err != nil {
-			fmt.Printf("cannot connect to events endpoint: %s", err)
+			fmt.Printf("cannot connect to events endpoint: %s\n", err)
 			return
 		}
 		defer resp.Body.Close()
@@ -171,12 +173,12 @@ func getEvents() chan *Event {
 				if err == io.EOF {
 					break
 				}
-				fmt.Printf("cannot decode json: %s", err)
-				continue
+				fmt.Printf("cannot decode json: %s\n", err)
+				goto restart
 			}
 			eventChan <- event
 		}
-		fmt.Printf("closing event channel")
+		fmt.Printf("closing event channel\n")
 	}()
 	return eventChan
 }
@@ -186,7 +188,7 @@ func generateFromContainers(client *docker.Client) {
 		All: false,
 	})
 	if err != nil {
-		fmt.Printf("error listing containers: %s", err)
+		fmt.Printf("error listing containers: %s\n", err)
 		return
 	}
 
@@ -194,7 +196,7 @@ func generateFromContainers(client *docker.Client) {
 	for _, apiContainer := range apiContainers {
 		container, err := client.InspectContainer(apiContainer.ID)
 		if err != nil {
-			fmt.Printf("error inspecting container: %s: %s", apiContainer.ID, err)
+			fmt.Printf("error inspecting container: %s: %s\n", apiContainer.ID, err)
 			continue
 		}
 
@@ -276,8 +278,6 @@ func main() {
 		if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
 			generateFromContainers(client)
 			runNotifyCmd()
-		} else {
-			println(event.Status)
 		}
 	}
 

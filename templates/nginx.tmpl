@@ -2,11 +2,9 @@
 upstream {{ $host }} {
 
 {{ range $index, $value := $containers }}
-{{ if (gt (len $value.Addresses) 0) }}
 	{{ with $address := index $value.Addresses 0 }}
 	server {{ $address.IP }}:{{ $address.Port }};
 	{{ end }}
-{{ end }}
 {{ end }}
 
 }

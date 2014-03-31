@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/BurntSushi/toml"
 	"github.com/fsouza/go-dockerclient"
 	"io"
 	"net"
@@ -23,6 +24,8 @@ var (
 	watch       bool
 	notifyCmd   string
 	onlyExposed bool
+	configFile  string
+	configs     ConfigFile
 )
 
 type Event struct {
@@ -40,6 +43,31 @@ type RuntimeContainer struct {
 	Addresses []Address
 	Image     string
 	Env       map[string]string
+}
+
+type Config struct {
+	Template    string
+	Dest        string
+	Watch       bool
+	NotifyCmd   string
+	OnlyExposed bool
+}
+
+type ConfigFile struct {
+	Config []Config
+}
+
+func (c *ConfigFile) filterWatches() ConfigFile {
+	configWithWatches := []Config{}
+
+	for _, config := range c.Config {
+		if config.Watch {
+			configWithWatches = append(configWithWatches, config)
+		}
+	}
+	return ConfigFile{
+		Config: configWithWatches,
+	}
 }
 
 func deepGet(item interface{}, path string) interface{} {
@@ -90,10 +118,11 @@ func contains(a map[string]string, b string) bool {
 }
 
 func usage() {
-	println("Usage: docker-gen [-watch=false] [-notify=\"restart xyz\"] <template> [<dest>]")
+	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"] <template> [<dest>]")
 }
 
-func generateFile(templatePath string, containers []*RuntimeContainer) {
+func generateFile(config Config, containers []*RuntimeContainer) {
+	templatePath := config.Template
 	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(template.FuncMap{
 		"contains": contains,
 		"groupBy":  groupBy,
@@ -102,12 +131,23 @@ func generateFile(templatePath string, containers []*RuntimeContainer) {
 		panic(err)
 	}
 
+	filteredContainers := []*RuntimeContainer{}
+	if config.OnlyExposed {
+		for _, container := range containers {
+			if len(container.Addresses) > 0 {
+				filteredContainers = append(filteredContainers, container)
+			}
+		}
+	} else {
+		filteredContainers = containers
+	}
+
 	tmpl = tmpl
 	dest := os.Stdout
-	if flag.NArg() == 2 {
-		dest, err = os.Create(flag.Arg(1))
+	if config.Dest != "" {
+		dest, err = os.Create(config.Dest)
 		if err != nil {
-			fmt.Println("unable to create dest file %s: %s\n", flag.Arg(1), err)
+			fmt.Println("unable to create dest file %s: %s\n", config.Dest, err)
 			os.Exit(1)
 		}
 	}
@@ -219,44 +259,65 @@ func generateFromContainers(client *docker.Client) {
 			runtimeContainer.Env[parts[0]] = parts[1]
 		}
 
-		if !onlyExposed {
-			containers = append(containers, runtimeContainer)
-			continue
-		}
-
-		if onlyExposed && len(runtimeContainer.Addresses) > 0 {
-			containers = append(containers, runtimeContainer)
-		}
-
+		containers = append(containers, runtimeContainer)
 	}
 
-	generateFile(flag.Arg(0), containers)
+	for _, config := range configs.Config {
+		generateFile(config, containers)
+		runNotifyCmd(config)
+	}
+
 }
 
-func runNotifyCmd() {
-	if notifyCmd == "" {
+func runNotifyCmd(config Config) {
+	if config.NotifyCmd == "" {
 		return
 	}
 
-	args := strings.Split(notifyCmd, " ")
+	args := strings.Split(config.NotifyCmd, " ")
 	cmd := exec.Command(args[0], args[1:]...)
-	output, err := cmd.CombinedOutput()
+	_, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Printf("error running notify command: %s\n", err)
+		fmt.Printf("error running notify command: %s, %s\n", config.NotifyCmd, err)
 	}
-	print(string(output))
+}
 
+func loadConfig(file string) error {
+	_, err := toml.DecodeFile(file, &configs)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func main() {
 	flag.BoolVar(&watch, "watch", false, "watch for container changes")
 	flag.BoolVar(&onlyExposed, "only-exposed", false, "only include containers with exposed ports")
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated")
+	flag.StringVar(&configFile, "config", "", "config file with template directives")
 	flag.Parse()
 
-	if flag.NArg() < 1 {
+	if flag.NArg() < 1 && configFile == "" {
 		usage()
 		os.Exit(1)
+	}
+
+	if configFile != "" {
+		err := loadConfig(configFile)
+		if err != nil {
+			fmt.Printf("error loading config %s: %s\n", configFile, err)
+			os.Exit(1)
+		}
+	} else {
+		config := Config{
+			Template:    flag.Arg(0),
+			Dest:        flag.Arg(1),
+			Watch:       watch,
+			NotifyCmd:   notifyCmd,
+			OnlyExposed: onlyExposed,
+		}
+		configs = ConfigFile{
+			Config: []Config{config}}
 	}
 
 	endpoint := "unix:///var/run/docker.sock"
@@ -267,8 +328,10 @@ func main() {
 	}
 
 	generateFromContainers(client)
-	runNotifyCmd()
-	if !watch {
+
+	configs = configs.filterWatches()
+
+	if len(configs.Config) == 0 {
 		return
 	}
 
@@ -277,7 +340,6 @@ func main() {
 		event := <-eventChan
 		if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
 			generateFromContainers(client)
-			runNotifyCmd()
 		}
 	}
 

@@ -276,9 +276,10 @@ func runNotifyCmd(config Config) {
 
 	args := strings.Split(config.NotifyCmd, " ")
 	cmd := exec.Command(args[0], args[1:]...)
-	_, err := cmd.CombinedOutput()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Printf("error running notify command: %s, %s\n", config.NotifyCmd, err)
+		fmt.Println(string(out))
 	}
 }
 

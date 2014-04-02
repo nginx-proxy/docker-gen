@@ -7,6 +7,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/fsouza/go-dockerclient"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -145,9 +146,10 @@ func generateFile(config Config, containers []*RuntimeContainer) {
 	tmpl = tmpl
 	dest := os.Stdout
 	if config.Dest != "" {
-		dest, err = os.Create(config.Dest)
+		dest, err = ioutil.TempFile("", "docker-gen")
+		defer dest.Close()
 		if err != nil {
-			fmt.Println("unable to create dest file %s: %s\n", config.Dest, err)
+			fmt.Println("unable to create temp file: %s\n", err)
 			os.Exit(1)
 		}
 	}
@@ -156,6 +158,15 @@ func generateFile(config Config, containers []*RuntimeContainer) {
 	if err != nil {
 		fmt.Printf("template error: %s\n", err)
 	}
+
+	if config.Dest != "" {
+		err = os.Rename(dest.Name(), config.Dest)
+		if err != nil {
+			fmt.Println("unable to create dest file %s: %s\n", config.Dest, err)
+			os.Exit(1)
+		}
+	}
+
 }
 
 func newConn() (*httputil.ClientConn, error) {

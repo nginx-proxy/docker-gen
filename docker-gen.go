@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -122,7 +123,7 @@ func usage() {
 	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"] <template> [<dest>]")
 }
 
-func generateFile(config Config, containers []*RuntimeContainer) {
+func generateFile(config Config, containers []*RuntimeContainer) bool {
 	templatePath := config.Template
 	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(template.FuncMap{
 		"contains": contains,
@@ -149,24 +150,40 @@ func generateFile(config Config, containers []*RuntimeContainer) {
 		dest, err = ioutil.TempFile("", "docker-gen")
 		defer dest.Close()
 		if err != nil {
-			fmt.Println("unable to create temp file: %s\n", err)
+			fmt.Printf("unable to create temp file: %s\n", err)
 			os.Exit(1)
 		}
 	}
 
-	err = tmpl.ExecuteTemplate(dest, filepath.Base(templatePath), containers)
+	var buf bytes.Buffer
+	multiwriter := io.MultiWriter(dest, &buf)
+	err = tmpl.ExecuteTemplate(multiwriter, filepath.Base(templatePath), containers)
 	if err != nil {
 		fmt.Printf("template error: %s\n", err)
 	}
 
 	if config.Dest != "" {
-		err = os.Rename(dest.Name(), config.Dest)
-		if err != nil {
-			fmt.Println("unable to create dest file %s: %s\n", config.Dest, err)
-			os.Exit(1)
-		}
-	}
 
+		contents := []byte{}
+		if _, err := os.Stat(config.Dest); err == nil {
+			contents, err = ioutil.ReadFile(config.Dest)
+			if err != nil {
+				fmt.Printf("unable to compare current file contents: %s: %s\n", config.Dest, err)
+				os.Exit(1)
+			}
+		}
+
+		if bytes.Compare(contents, buf.Bytes()) != 0 {
+			err = os.Rename(dest.Name(), config.Dest)
+			if err != nil {
+				fmt.Printf("unable to create dest file %s: %s\n", config.Dest, err)
+				os.Exit(1)
+			}
+			return true
+		}
+		return false
+	}
+	return true
 }
 
 func newConn() (*httputil.ClientConn, error) {
@@ -274,8 +291,11 @@ func generateFromContainers(client *docker.Client) {
 	}
 
 	for _, config := range configs.Config {
-		generateFile(config, containers)
-		runNotifyCmd(config)
+		changed := generateFile(config, containers)
+		if changed {
+			runNotifyCmd(config)
+		}
+
 	}
 
 }

@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 )
 
@@ -33,6 +34,7 @@ func generateFile(config Config, containers []*RuntimeContainer) bool {
 	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(template.FuncMap{
 		"contains": contains,
 		"groupBy":  groupBy,
+		"split":    strings.Split,
 	}).ParseFiles(templatePath)
 	if err != nil {
 		panic(err)

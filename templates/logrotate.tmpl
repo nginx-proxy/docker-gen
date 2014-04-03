@@ -1,0 +1,27 @@
+{{ range $index, $value := $ }}
+{{ $logs := $value.Env.LOG_FILES }}
+{{ if $logs }}
+{{ range $index, $logfile := split $logs "," }}
+/var/lib/docker/containers/{{ $value.ID }}/root{{ $logfile }}{{ end}}
+{
+    daily
+    missingok
+    rotate 52
+    compress
+    delaycompress
+    notifempty
+    create 644 root root
+}
+{{ end }}
+/var/lib/docker/containers/{{ $value.ID }}/{{ $value.ID }}-json.log
+{
+    daily
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    create 644 root root
+}
+{{ end }}
+

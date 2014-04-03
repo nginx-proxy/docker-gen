@@ -1,25 +1,21 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/fsouza/go-dockerclient"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"os"
 	"os/exec"
 	"os/signal"
-	"path/filepath"
 
 	"strings"
 	"syscall"
-	"text/template"
 )
 
 var (
@@ -76,89 +72,8 @@ func (r *RuntimeContainer) Equals(o RuntimeContainer) bool {
 	return r.ID == o.ID && r.Image == o.Image
 }
 
-func groupBy(entries []*RuntimeContainer, key string) map[string][]*RuntimeContainer {
-	groups := make(map[string][]*RuntimeContainer)
-	for _, v := range entries {
-		value := deepGet(*v, key)
-		if value != nil {
-			groups[value.(string)] = append(groups[value.(string)], v)
-		}
-	}
-	return groups
-}
-
-func contains(a map[string]string, b string) bool {
-	if _, ok := a[b]; ok {
-		return true
-	}
-	return false
-}
-
 func usage() {
 	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"] <template> [<dest>]")
-}
-
-func generateFile(config Config, containers []*RuntimeContainer) bool {
-	templatePath := config.Template
-	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(template.FuncMap{
-		"contains": contains,
-		"groupBy":  groupBy,
-	}).ParseFiles(templatePath)
-	if err != nil {
-		panic(err)
-	}
-
-	filteredContainers := []*RuntimeContainer{}
-	if config.OnlyExposed {
-		for _, container := range containers {
-			if len(container.Addresses) > 0 {
-				filteredContainers = append(filteredContainers, container)
-			}
-		}
-	} else {
-		filteredContainers = containers
-	}
-
-	tmpl = tmpl
-	dest := os.Stdout
-	if config.Dest != "" {
-		dest, err = ioutil.TempFile("", "docker-gen")
-		defer dest.Close()
-		if err != nil {
-			fmt.Printf("unable to create temp file: %s\n", err)
-			os.Exit(1)
-		}
-	}
-
-	var buf bytes.Buffer
-	multiwriter := io.MultiWriter(dest, &buf)
-	err = tmpl.ExecuteTemplate(multiwriter, filepath.Base(templatePath), containers)
-	if err != nil {
-		fmt.Printf("template error: %s\n", err)
-	}
-
-	if config.Dest != "" {
-
-		contents := []byte{}
-		if _, err := os.Stat(config.Dest); err == nil {
-			contents, err = ioutil.ReadFile(config.Dest)
-			if err != nil {
-				fmt.Printf("unable to compare current file contents: %s: %s\n", config.Dest, err)
-				os.Exit(1)
-			}
-		}
-
-		if bytes.Compare(contents, buf.Bytes()) != 0 {
-			err = os.Rename(dest.Name(), config.Dest)
-			if err != nil {
-				fmt.Printf("unable to create dest file %s: %s\n", config.Dest, err)
-				os.Exit(1)
-			}
-			return true
-		}
-		return false
-	}
-	return true
 }
 
 func newConn() (*httputil.ClientConn, error) {

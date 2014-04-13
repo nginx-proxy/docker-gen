@@ -19,7 +19,7 @@ This is can be used to generate config files for:
 docker-gen
 Usage: docker-gen [-config file] [-watch=false] [-notify="restart xyz"] <template> [<dest>]
 ```
-  
+
 *Options:*
 * `-watch` - runs continuously and monitors docker container events.  When containers are started
 or stopped, the template is regenerated.
@@ -29,14 +29,23 @@ haproxy, etc..
 
 If no `<dest>` file is specified, the output is send to stdout.  Mainly useful for debugging.
 
-### Examples
+#### NGINX Reverse Proxy Config
+
+`docker-gen -only-exposed -watch -notify "/etc/init.d/nginx reload" templates/nginx.tmpl /etc/nginx/sites-enabled/default`
+
+[Automated Nginx Reverse Proxy for Docker](http://jasonwilder.com/blog/2014/03/25/automated-nginx-reverse-proxy-for-docker/)
+
+#### Fluentd Log Management
+
+`docker-gen -watch -notify "restart fluentd" templates/fluentd.tmpl /etc/fluent/fluent.conf`
 
 [Docker Log Management With Fluentd](http://jasonwilder.com/blog/2014/03/17/docker-log-management-using-fluentd/)
 
-[Automated Nginx Reverse Proxy for Docker](http://jasonwilder.com/blog/2014/03/25/automated-nginx-reverse-proxy-for-docker/)
+#### Register Containers in Etcd
+
+`docker-gen -notify "/bin/bash /tmp/etcd.sh" -interval 10 templates/etcd.tmpl /tmp/etcd.sh`
 
 
 ### TODO
 
  * Add a way to filter out containers in templates
- * Add a notify interval option

@@ -42,8 +42,47 @@ type Address struct {
 type RuntimeContainer struct {
 	ID        string
 	Addresses []Address
-	Image     string
+	Image     DockerImage
 	Env       map[string]string
+}
+
+type DockerImage struct {
+	Registry   string
+	Repository string
+	Tag        string
+}
+
+func (i *DockerImage) String() string {
+	ret := i.Repository
+	if i.Registry != "" {
+		ret = i.Registry + "/" + i.Repository
+	}
+	if i.Tag != "" {
+		ret = ret + ":" + i.Tag
+	}
+	return ret
+}
+
+func splitDockerImage(img string) (string, string, string) {
+
+	index := 0
+	repository := img
+	var registry, tag string
+	if strings.Contains(img, "/") {
+		separator := strings.Index(img, "/")
+		registry = img[index:separator]
+		index = separator + 1
+		repository = img[index:]
+	}
+
+	if strings.Contains(img, ":") {
+		separator := strings.Index(img, ":")
+		repository = img[index:separator]
+		index = separator + 1
+		tag = img[index:]
+	}
+
+	return registry, repository, tag
 }
 
 type Config struct {
@@ -161,9 +200,14 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 			continue
 		}
 
+		registry, repository, tag := splitDockerImage(container.Config.Image)
 		runtimeContainer := &RuntimeContainer{
-			ID:        container.ID,
-			Image:     container.Config.Image,
+			ID: container.ID,
+			Image: DockerImage{
+				Registry:   registry,
+				Repository: repository,
+				Tag:        tag,
+			},
 			Addresses: []Address{},
 			Env:       make(map[string]string),
 		}

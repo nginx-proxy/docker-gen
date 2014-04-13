@@ -1,0 +1,9 @@
+
+#!/bin/bash
+
+
+{{range $key, $value := .}}
+{{ with $address := index $value.Addresses 0 }}
+curl -L http://127.0.0.1:4001/v2/keys/backends/{{ $value.Image.Repository}}/{{printf "%.*s" 12 $value.ID}} -XPUT -d value="{{ $address.IP }}:{{ $address.Port }}" -d ttl=15
+{{ end }}
+{{end}}

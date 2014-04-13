@@ -13,9 +13,10 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-
 	"strings"
+	"sync"
 	"syscall"
+	"time"
 )
 
 var (
@@ -24,6 +25,8 @@ var (
 	onlyExposed bool
 	configFile  string
 	configs     ConfigFile
+	interval    int
+	wg          sync.WaitGroup
 )
 
 type Event struct {
@@ -49,6 +52,7 @@ type Config struct {
 	Watch       bool
 	NotifyCmd   string
 	OnlyExposed bool
+	Interval    int
 }
 
 type ConfigFile struct {
@@ -73,7 +77,7 @@ func (r *RuntimeContainer) Equals(o RuntimeContainer) bool {
 }
 
 func usage() {
-	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"] <template> [<dest>]")
+	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"] [-interval=0] <template> [<dest>]")
 }
 
 func newConn() (*httputil.ClientConn, error) {
@@ -141,13 +145,12 @@ func getEvents() chan *Event {
 	return eventChan
 }
 
-func generateFromContainers(client *docker.Client) {
+func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 	apiContainers, err := client.ListContainers(docker.ListContainersOptions{
 		All: false,
 	})
 	if err != nil {
-		fmt.Printf("error listing containers: %s\n", err)
-		return
+		return nil, err
 	}
 
 	containers := []*RuntimeContainer{}
@@ -179,15 +182,21 @@ func generateFromContainers(client *docker.Client) {
 
 		containers = append(containers, runtimeContainer)
 	}
+	return containers, nil
 
+}
+func generateFromContainers(client *docker.Client) {
+	containers, err := getContainers(client)
+	if err != nil {
+		fmt.Printf("error listing containers: %s\n", err)
+		return
+	}
 	for _, config := range configs.Config {
 		changed := generateFile(config, containers)
 		if changed {
 			runNotifyCmd(config)
 		}
-
 	}
-
 }
 
 func runNotifyCmd(config Config) {
@@ -212,11 +221,62 @@ func loadConfig(file string) error {
 	return nil
 }
 
+func generateAtInterval(client *docker.Client, configs ConfigFile) {
+	for _, config := range configs.Config {
+
+		if config.Interval == 0 {
+			continue
+		}
+
+		wg.Add(1)
+		ticker := time.NewTicker(time.Duration(config.Interval) * time.Second)
+		quit := make(chan struct{})
+		go func() {
+			for {
+				select {
+				case <-ticker.C:
+					containers, err := getContainers(client)
+					if err != nil {
+						fmt.Printf("error listing containers: %s\n", err)
+						continue
+					}
+					// ignore changed return value. always run notify command
+					generateFile(config, containers)
+					runNotifyCmd(config)
+				case <-quit:
+					ticker.Stop()
+					return
+				}
+			}
+			wg.Done()
+		}()
+	}
+}
+
+func generateFromEvents(client *docker.Client, configs ConfigFile) {
+	configs = configs.filterWatches()
+	if len(configs.Config) == 0 {
+		return
+	}
+
+	wg.Add(1)
+	eventChan := getEvents()
+	for {
+		event := <-eventChan
+		if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
+			generateFromContainers(client)
+		}
+	}
+	wg.Done()
+
+}
+
 func main() {
 	flag.BoolVar(&watch, "watch", false, "watch for container changes")
 	flag.BoolVar(&onlyExposed, "only-exposed", false, "only include containers with exposed ports")
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated")
 	flag.StringVar(&configFile, "config", "", "config file with template directives")
+	flag.IntVar(&interval, "interval", 0, "notify command interval (s)")
 	flag.Parse()
 
 	if flag.NArg() < 1 && configFile == "" {
@@ -237,6 +297,7 @@ func main() {
 			Watch:       watch,
 			NotifyCmd:   notifyCmd,
 			OnlyExposed: onlyExposed,
+			Interval:    interval,
 		}
 		configs = ConfigFile{
 			Config: []Config{config}}
@@ -250,19 +311,7 @@ func main() {
 	}
 
 	generateFromContainers(client)
-
-	configs = configs.filterWatches()
-
-	if len(configs.Config) == 0 {
-		return
-	}
-
-	eventChan := getEvents()
-	for {
-		event := <-eventChan
-		if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
-			generateFromContainers(client)
-		}
-	}
-
+	generateAtInterval(client, configs)
+	generateFromEvents(client, configs)
+	wg.Wait()
 }

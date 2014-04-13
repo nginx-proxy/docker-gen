@@ -55,7 +55,10 @@ func generateFile(config Config, containers []*RuntimeContainer) bool {
 	dest := os.Stdout
 	if config.Dest != "" {
 		dest, err = ioutil.TempFile("", "docker-gen")
-		defer dest.Close()
+		defer func() {
+			dest.Close()
+			os.Remove(dest.Name())
+		}()
 		if err != nil {
 			fmt.Printf("unable to create temp file: %s\n", err)
 			os.Exit(1)

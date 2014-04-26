@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"reflect"
 	"strings"
 )
@@ -40,7 +40,7 @@ func deepGet(item interface{}, path string) interface{} {
 				return deepGet(mapValue.Interface(), strings.Join(parts[1:], "."))
 			}
 		default:
-			fmt.Printf("can't group by %s\n", path)
+			log.Printf("can't group by %s\n", path)
 		}
 		return nil
 	}

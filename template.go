@@ -2,9 +2,9 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -37,7 +37,7 @@ func generateFile(config Config, containers []*RuntimeContainer) bool {
 		"split":    strings.Split,
 	}).ParseFiles(templatePath)
 	if err != nil {
-		panic(err)
+		log.Fatalf("unable to parse template: %s", err)
 	}
 
 	filteredContainers := []*RuntimeContainer{}
@@ -59,8 +59,7 @@ func generateFile(config Config, containers []*RuntimeContainer) bool {
 			os.Remove(dest.Name())
 		}()
 		if err != nil {
-			fmt.Printf("unable to create temp file: %s\n", err)
-			os.Exit(1)
+			log.Fatalf("unable to create temp file: %s\n", err)
 		}
 	}
 
@@ -68,7 +67,7 @@ func generateFile(config Config, containers []*RuntimeContainer) bool {
 	multiwriter := io.MultiWriter(dest, &buf)
 	err = tmpl.ExecuteTemplate(multiwriter, filepath.Base(templatePath), containers)
 	if err != nil {
-		fmt.Printf("template error: %s\n", err)
+		log.Fatalf("template error: %s\n", err)
 	}
 
 	if config.Dest != "" {
@@ -77,16 +76,14 @@ func generateFile(config Config, containers []*RuntimeContainer) bool {
 		if _, err := os.Stat(config.Dest); err == nil {
 			contents, err = ioutil.ReadFile(config.Dest)
 			if err != nil {
-				fmt.Printf("unable to compare current file contents: %s: %s\n", config.Dest, err)
-				os.Exit(1)
+				log.Fatalf("unable to compare current file contents: %s: %s\n", config.Dest, err)
 			}
 		}
 
 		if bytes.Compare(contents, buf.Bytes()) != 0 {
 			err = os.Rename(dest.Name(), config.Dest)
 			if err != nil {
-				fmt.Printf("unable to create dest file %s: %s\n", config.Dest, err)
-				os.Exit(1)
+				log.Fatalf("unable to create dest file %s: %s\n", config.Dest, err)
 			}
 			return true
 		}

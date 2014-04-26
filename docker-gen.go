@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -137,20 +138,20 @@ func getEvents() chan *Event {
 
 		c, err := newConn()
 		if err != nil {
-			fmt.Printf("cannot connect to docker: %s\n", err)
+			log.Printf("cannot connect to docker: %s\n", err)
 			return
 		}
 		defer c.Close()
 
 		req, err := http.NewRequest("GET", "/events", nil)
 		if err != nil {
-			fmt.Printf("bad request for events: %s\n", err)
+			log.Printf("bad request for events: %s\n", err)
 			return
 		}
 
 		resp, err := c.Do(req)
 		if err != nil {
-			fmt.Printf("cannot connect to events endpoint: %s\n", err)
+			log.Printf("cannot connect to events endpoint: %s\n", err)
 			return
 		}
 		defer resp.Body.Close()
@@ -160,7 +161,7 @@ func getEvents() chan *Event {
 		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 		go func() {
 			for sig := range sigChan {
-				fmt.Printf("received signal '%v', exiting\n", sig)
+				log.Printf("received signal '%v', exiting\n", sig)
 
 				c.Close()
 				close(eventChan)
@@ -175,12 +176,12 @@ func getEvents() chan *Event {
 				if err == io.EOF {
 					break
 				}
-				fmt.Printf("cannot decode json: %s\n", err)
+				log.Printf("cannot decode json: %s\n", err)
 				goto restart
 			}
 			eventChan <- event
 		}
-		fmt.Printf("closing event channel\n")
+		log.Printf("closing event channel\n")
 	}()
 	return eventChan
 }
@@ -197,7 +198,7 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 	for _, apiContainer := range apiContainers {
 		container, err := client.InspectContainer(apiContainer.ID)
 		if err != nil {
-			fmt.Printf("error inspecting container: %s: %s\n", apiContainer.ID, err)
+			log.Printf("error inspecting container: %s: %s\n", apiContainer.ID, err)
 			continue
 		}
 
@@ -233,7 +234,7 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 func generateFromContainers(client *docker.Client) {
 	containers, err := getContainers(client)
 	if err != nil {
-		fmt.Printf("error listing containers: %s\n", err)
+		log.Printf("error listing containers: %s\n", err)
 		return
 	}
 	for _, config := range configs.Config {
@@ -253,7 +254,7 @@ func runNotifyCmd(config Config) {
 	cmd := exec.Command(args[0], args[1:]...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Printf("error running notify command: %s, %s\n", config.NotifyCmd, err)
+		log.Printf("error running notify command: %s, %s\n", config.NotifyCmd, err)
 		fmt.Println(string(out))
 	}
 }
@@ -284,7 +285,7 @@ func generateAtInterval(client *docker.Client, configs ConfigFile) {
 				case <-ticker.C:
 					containers, err := getContainers(client)
 					if err != nil {
-						fmt.Printf("error listing containers: %s\n", err)
+						log.Printf("error listing containers: %s\n", err)
 						continue
 					}
 					// ignore changed return value. always run notify command
@@ -334,7 +335,7 @@ func main() {
 	if configFile != "" {
 		err := loadConfig(configFile)
 		if err != nil {
-			fmt.Printf("error loading config %s: %s\n", configFile, err)
+			log.Printf("error loading config %s: %s\n", configFile, err)
 			os.Exit(1)
 		}
 	} else {

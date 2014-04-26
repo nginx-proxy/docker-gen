@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/BurntSushi/toml"
-	"github.com/fsouza/go-dockerclient"
 	"io"
 	"net"
 	"net/http"
@@ -17,6 +15,9 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/BurntSushi/toml"
+	docker "github.com/fsouza/go-dockerclient"
 )
 
 var (

@@ -277,6 +277,7 @@ func generateAtInterval(client *docker.Client, configs ConfigFile) {
 		quit := make(chan struct{})
 		configCopy := config
 		go func() {
+			defer wg.Done()
 			for {
 				select {
 				case <-ticker.C:
@@ -293,7 +294,7 @@ func generateAtInterval(client *docker.Client, configs ConfigFile) {
 					return
 				}
 			}
-			wg.Done()
+
 		}()
 	}
 }
@@ -305,6 +306,7 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 	}
 
 	wg.Add(1)
+	defer wg.Done()
 	eventChan := getEvents()
 	for {
 		event := <-eventChan
@@ -312,7 +314,6 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 			generateFromContainers(client)
 		}
 	}
-	wg.Done()
 
 }
 

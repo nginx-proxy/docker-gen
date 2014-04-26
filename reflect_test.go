@@ -22,7 +22,7 @@ func TestDeepGetSimple(t *testing.T) {
 	}
 	value := deepGet(item, "ID")
 	if _, ok := value.(string); !ok {
-		t.Errorf("expected: %u. got: %u", "expected", value)
+		t.Errorf("expected: %#v. got: %#v", "expected", value)
 	}
 
 	if value != "expected" {
@@ -36,7 +36,7 @@ func TestDeepGetSimpleDotPrefix(t *testing.T) {
 	}
 	value := deepGet(item, "...ID")
 	if _, ok := value.(string); !ok {
-		t.Errorf("expected: %u. got: %u", "expected", value)
+		t.Errorf("expected: %#v. got: %#v", "expected", value)
 	}
 
 	if value != "expected" {
@@ -52,7 +52,7 @@ func TestDeepGetMap(t *testing.T) {
 	}
 	value := deepGet(item, "Env.key")
 	if _, ok := value.(string); !ok {
-		t.Errorf("expected: %u. got: %u", "value", value)
+		t.Errorf("expected: %#v. got: %#v", "value", value)
 	}
 
 	if value != "value" {

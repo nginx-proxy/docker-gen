@@ -275,6 +275,7 @@ func generateAtInterval(client *docker.Client, configs ConfigFile) {
 		wg.Add(1)
 		ticker := time.NewTicker(time.Duration(config.Interval) * time.Second)
 		quit := make(chan struct{})
+		configCopy := config
 		go func() {
 			for {
 				select {
@@ -285,8 +286,8 @@ func generateAtInterval(client *docker.Client, configs ConfigFile) {
 						continue
 					}
 					// ignore changed return value. always run notify command
-					generateFile(config, containers)
-					runNotifyCmd(config)
+					generateFile(configCopy, containers)
+					runNotifyCmd(configCopy)
 				case <-quit:
 					ticker.Stop()
 					return

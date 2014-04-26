@@ -51,7 +51,6 @@ func generateFile(config Config, containers []*RuntimeContainer) bool {
 		filteredContainers = containers
 	}
 
-	tmpl = tmpl
 	dest := os.Stdout
 	if config.Dest != "" {
 		dest, err = ioutil.TempFile("", "docker-gen")

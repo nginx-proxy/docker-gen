@@ -122,3 +122,53 @@ func TestSplitDockerImageWithLocalRepositoryAndTag(t *testing.T) {
 	}
 
 }
+
+func TestParseHostUnix(t *testing.T) {
+	proto, addr, err := parseHost("unix:///var/run/docker.sock")
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+	if proto != "unix" || addr != "/var/run/docker.sock" {
+		t.Fatal("failed to parse unix:///var/run/docker.sock")
+	}
+}
+
+func TestParseHostUnixDefault(t *testing.T) {
+	proto, addr, err := parseHost("")
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+	if proto != "unix" || addr != "/var/run/docker.sock" {
+		t.Fatal("failed to parse ''")
+	}
+}
+
+func TestParseHostUnixDefaultNoPath(t *testing.T) {
+	proto, addr, err := parseHost("unix://")
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+	if proto != "unix" || addr != "/var/run/docker.sock" {
+		t.Fatal("failed to parse unix://")
+	}
+}
+
+func TestParseHostTCP(t *testing.T) {
+	proto, addr, err := parseHost("tcp://127.0.0.1:4243")
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+	if proto != "tcp" || addr != "127.0.0.1:4243" {
+		t.Fatal("failed to parse tcp://127.0.0.1:4243")
+	}
+}
+
+func TestParseHostTCPDefault(t *testing.T) {
+	proto, addr, err := parseHost("tcp://:4243")
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+	if proto != "tcp" || addr != "127.0.0.1:4243" {
+		t.Fatal("failed to parse unix:///var/run/docker.sock")
+	}
+}

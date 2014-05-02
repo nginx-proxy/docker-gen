@@ -172,6 +172,9 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 	eventChan := getEvents()
 	for {
 		event := <-eventChan
+		if event == nil {
+			return
+		}
 		if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
 			generateFromContainers(client)
 		}
@@ -211,10 +214,13 @@ func main() {
 	}
 
 	endpoint := "unix:///var/run/docker.sock"
+	if os.Getenv("DOCKER_HOST") != "" {
+		endpoint = os.Getenv("DOCKER_HOST")
+	}
 	client, err := docker.NewClient(endpoint)
 
 	if err != nil {
-		panic(err)
+		log.Fatalf("Unable to parse %s: %s", endpoint, err)
 	}
 
 	generateFromContainers(client)

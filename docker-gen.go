@@ -217,6 +217,8 @@ func main() {
 
 	if endpoint == "" && os.Getenv("DOCKER_HOST") != "" {
 		endpoint = os.Getenv("DOCKER_HOST")
+	} else {
+		endpoint = "unix:///var/run/docker.sock"
 	}
 
 	client, err := docker.NewClient(endpoint)

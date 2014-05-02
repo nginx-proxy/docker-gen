@@ -21,6 +21,7 @@ var (
 	configFile  string
 	configs     ConfigFile
 	interval    int
+	endpoint    string
 	wg          sync.WaitGroup
 )
 
@@ -89,7 +90,7 @@ func (r *RuntimeContainer) Equals(o RuntimeContainer) bool {
 }
 
 func usage() {
-	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"] [-interval=0] <template> [<dest>]")
+	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"] [-interval=0] [-endpoint tcp|unix://..] <template> [<dest>]")
 }
 
 func generateFromContainers(client *docker.Client) {
@@ -187,6 +188,7 @@ func main() {
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated")
 	flag.StringVar(&configFile, "config", "", "config file with template directives")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (s)")
+	flag.StringVar(&endpoint, "endpoint", "", "docker api endpoint")
 	flag.Parse()
 
 	if flag.NArg() < 1 && configFile == "" {
@@ -213,10 +215,10 @@ func main() {
 			Config: []Config{config}}
 	}
 
-	endpoint := "unix:///var/run/docker.sock"
-	if os.Getenv("DOCKER_HOST") != "" {
+	if endpoint == "" && os.Getenv("DOCKER_HOST") != "" {
 		endpoint = os.Getenv("DOCKER_HOST")
 	}
+
 	client, err := docker.NewClient(endpoint)
 
 	if err != nil {

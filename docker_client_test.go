@@ -97,3 +97,28 @@ func TestSplitDockerImageWithRepositoryAndTag(t *testing.T) {
 	}
 
 }
+
+func TestSplitDockerImageWithLocalRepositoryAndTag(t *testing.T) {
+	registry, repository, tag := splitDockerImage("localhost:8888/ubuntu:12.04")
+
+	if registry != "localhost:8888" {
+		t.Fatalf("registry does not match: expected %s got %s", "localhost:8888", registry)
+	}
+
+	if repository != "ubuntu" {
+		t.Fatalf("repository does not match: expected %s got %s", "ubuntu", repository)
+	}
+
+	if tag != "12.04" {
+		t.Fatalf("tag does not match: expected %s got %s", "12.04", tag)
+	}
+	dockerImage := DockerImage{
+		Registry:   registry,
+		Repository: repository,
+		Tag:        tag,
+	}
+	if "localhost:8888/ubuntu:12.04" != dockerImage.String() {
+		t.Fail()
+	}
+
+}

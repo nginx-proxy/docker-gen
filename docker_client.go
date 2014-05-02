@@ -29,11 +29,10 @@ func splitDockerImage(img string) (string, string, string) {
 		repository = img[index:]
 	}
 
-	if strings.Contains(img, ":") {
-		separator := strings.Index(img, ":")
-		repository = img[index:separator]
-		index = separator + 1
-		tag = img[index:]
+	if strings.Contains(repository, ":") {
+		separator := strings.Index(repository, ":")
+		tag = repository[separator+1:]
+		repository = repository[0:separator]
 	}
 
 	return registry, repository, tag

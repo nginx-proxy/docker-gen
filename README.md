@@ -14,8 +14,17 @@ docker-gen can be used to generate various kinds of files for:
 
 ### Installation
 
+Linux binaries for release [0.1.0](https://github.com/jwilder/docker-gen/releases)
+
+* [amd64](https://github.com/jwilder/docker-gen/releases/download/0.1.0/docker-gen-linux-amd64-0.1.0.tar.gz)
+* [i386](https://github.com/jwilder/docker-gen/releases/download/0.1.0/docker-gen-linux-i386-0.1.0.tar.gz)
+
+Download the version you need, untar, and install to your PATH.
+
 ```
-go get github.com/jwilder/docker-gen
+wget https://github.com/jwilder/docker-gen/releases/download/0.1.1/docker-gen-linux-amd64-0.1.0.tar.gz
+tar xvzf tar xvzf docker-gen-linux-amd64-0.1.0.tar.gz
+./docker-gen
 ```
 
 ### Usage
@@ -60,6 +69,18 @@ docker-gen -notify "/bin/bash /tmp/etcd.sh" -interval 10 templates/etcd.tmpl /tm
 ```
 
 
+### Development
+
+This project uses [godep](https://github.com/tools/godep) for managing 3rd party dependencies.  You'll need to install godep into your workspace before hacking on docker-gen.
+
+```
+git clone <your fork>
+godep restore
+make
+```
+
 ### TODO
 
+ * Add Dockerfile and trusted build
+ * Add event status for handling start and stop events differently
  * Add a way to filter out containers in templates

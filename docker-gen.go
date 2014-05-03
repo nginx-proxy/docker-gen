@@ -32,12 +32,14 @@ type Event struct {
 }
 
 type Address struct {
-	IP   string
-	Port string
+	IP       string
+	Port     string
+	HostPort string
 }
 type RuntimeContainer struct {
 	ID        string
 	Addresses []Address
+	Gateway   string
 	Image     DockerImage
 	Env       map[string]string
 }

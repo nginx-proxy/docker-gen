@@ -202,15 +202,21 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 				Repository: repository,
 				Tag:        tag,
 			},
+			Gateway:   container.NetworkSettings.Gateway,
 			Addresses: []Address{},
 			Env:       make(map[string]string),
 		}
-		for k, _ := range container.NetworkSettings.Ports {
+		for k, v := range container.NetworkSettings.Ports {
+			address := Address{
+				IP:   container.NetworkSettings.IPAddress,
+				Port: k.Port(),
+			}
+			if len(v) > 0 {
+				address.HostPort = v[0].HostPort
+			}
 			runtimeContainer.Addresses = append(runtimeContainer.Addresses,
-				Address{
-					IP:   container.NetworkSettings.IPAddress,
-					Port: k.Port(),
-				})
+				address)
+
 		}
 
 		for _, entry := range container.Config.Env {

@@ -14,10 +14,10 @@ docker-gen can be used to generate various kinds of files for:
 
 ### Installation
 
-Linux binaries for release [0.1.0](https://github.com/jwilder/docker-gen/releases)
+Linux binaries for release [0.1.1](https://github.com/jwilder/docker-gen/releases)
 
-* [amd64](https://github.com/jwilder/docker-gen/releases/download/0.1.0/docker-gen-linux-amd64-0.1.0.tar.gz)
-* [i386](https://github.com/jwilder/docker-gen/releases/download/0.1.0/docker-gen-linux-i386-0.1.0.tar.gz)
+* [amd64](https://github.com/jwilder/docker-gen/releases/download/0.1.1/docker-gen-linux-amd64-0.1.1.tar.gz)
+* [i386](https://github.com/jwilder/docker-gen/releases/download/0.1.1/docker-gen-linux-i386-0.1.1.tar.gz)
 
 Download the version you need, untar, and install to your PATH.
 

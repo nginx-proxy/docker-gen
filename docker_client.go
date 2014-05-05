@@ -103,10 +103,7 @@ func splitDockerImage(img string) (string, string, string) {
 }
 
 func newConn() (*httputil.ClientConn, error) {
-	dockerHost := endpoint
-	if dockerHost == "" && os.Getenv("DOCKER_HOST") != "" {
-		dockerHost = os.Getenv("DOCKER_HOST")
-	}
+	endpoint := getEndpoint()
 
 	proto, addr, err := parseHost(endpoint)
 	if err != nil {

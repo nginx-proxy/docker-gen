@@ -184,7 +184,7 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 	}
 }
 
-func main() {
+func initFlags() {
 	flag.BoolVar(&watch, "watch", false, "watch for container changes")
 	flag.BoolVar(&onlyExposed, "only-exposed", false, "only include containers with exposed ports")
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated")
@@ -192,6 +192,10 @@ func main() {
 	flag.IntVar(&interval, "interval", 0, "notify command interval (s)")
 	flag.StringVar(&endpoint, "endpoint", "", "docker api endpoint")
 	flag.Parse()
+}
+
+func main() {
+	initFlags()
 
 	if flag.NArg() < 1 && configFile == "" {
 		usage()
@@ -217,12 +221,7 @@ func main() {
 			Config: []Config{config}}
 	}
 
-	if endpoint == "" && os.Getenv("DOCKER_HOST") != "" {
-		endpoint = os.Getenv("DOCKER_HOST")
-	} else {
-		endpoint = "unix:///var/run/docker.sock"
-	}
-
+	endpoint := getEndpoint()
 	client, err := docker.NewClient(endpoint)
 
 	if err != nil {

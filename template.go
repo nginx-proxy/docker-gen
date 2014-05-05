@@ -65,7 +65,7 @@ func generateFile(config Config, containers []*RuntimeContainer) bool {
 
 	var buf bytes.Buffer
 	multiwriter := io.MultiWriter(dest, &buf)
-	err = tmpl.ExecuteTemplate(multiwriter, filepath.Base(templatePath), containers)
+	err = tmpl.ExecuteTemplate(multiwriter, filepath.Base(templatePath), filteredContainers)
 	if err != nil {
 		log.Fatalf("template error: %s\n", err)
 	}

@@ -6,7 +6,7 @@ docker-gen
 docker-gen can be used to generate various kinds of files for:
 
  * **Centralized logging** - fluentd, logstash or other centralized logging tools that tail the containers JSON log file or files within the container.
- * **Log Roatation** - logrotate files to rotate container JSON log files
+ * **Log Rotation** - logrotate files to rotate container JSON log files
  * **Reverse Proxy Configs** - nginx, haproxy, etc. reverse proxy configs to route requests from the host to containers
  * **Service Discovery** - Scripts (python, bash, etc..) to register containers within etcd, hipache, etc..
 

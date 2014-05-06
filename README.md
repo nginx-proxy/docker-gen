@@ -14,23 +14,30 @@ docker-gen can be used to generate various kinds of files for:
 
 ### Installation
 
-Linux binaries for release [0.1.1](https://github.com/jwilder/docker-gen/releases)
+#### Host Install
 
-* [amd64](https://github.com/jwilder/docker-gen/releases/download/0.1.1/docker-gen-linux-amd64-0.1.1.tar.gz)
-* [i386](https://github.com/jwilder/docker-gen/releases/download/0.1.1/docker-gen-linux-i386-0.1.1.tar.gz)
+Linux binaries for release [0.1.2](https://github.com/jwilder/docker-gen/releases)
+
+* [amd64](https://github.com/jwilder/docker-gen/releases/download/0.1.2/docker-gen-linux-amd64-0.1.2.tar.gz)
+* [i386](https://github.com/jwilder/docker-gen/releases/download/0.1.2/docker-gen-linux-i386-0.1.2.tar.gz)
 
 Download the version you need, untar, and install to your PATH.
 
 ```
-wget https://github.com/jwilder/docker-gen/releases/download/0.1.1/docker-gen-linux-amd64-0.1.0.tar.gz
-tar xvzf tar xvzf docker-gen-linux-amd64-0.1.0.tar.gz
-./docker-gen
+$ wget https://github.com/jwilder/docker-gen/releases/download/0.1.1/docker-gen-linux-amd64-0.1.0.tar.gz
+$ tar xvzf tar xvzf docker-gen-linux-amd64-0.1.0.tar.gz
+$ ./docker-gen
 ```
+
+#### Container Install
+
+See [jwilder/nginx-proxy](https://index.docker.io/u/jwilder/nginx-proxy/) trusted build as an example of running docker-gen within a container.
+
 
 ### Usage
 ```
-docker-gen
-Usage: docker-gen [-config file] [-watch=false] [-notify="restart xyz"] [-interval=0] <template> [<dest>]
+$ docker-gen
+Usage: docker-gen [-config file] [-watch=false] [-notify="restart xyz"] [-interval=0] [-endpoint tcp|unix://..] <template> [<dest>]
 ```
 
 *Options:*
@@ -40,6 +47,7 @@ or stopped, the template is regenerated.
 haproxy, etc..
 * `-config file` - Use the specified config file instead of command-line options.  Multiple templates can be defined and they will be executed in the order that they appear in the config file.
 * `-interval <secs>` - Run the notify command on a fixed interval.  Useful for service registration use cases.
+* `-endpoint tcp|unix://..` - Use a different docker remote API endpoint.  This can also be set w/ a `DOCKER_HOST` environment variable.
 
 If no `<dest>` file is specified, the output is sent to stdout.  Mainly useful for debugging.
 
@@ -48,8 +56,25 @@ If no `<dest>` file is specified, the output is sent to stdout.  Mainly useful f
 
 #### NGINX Reverse Proxy Config
 
+##### Containerized
+
+[jwilder/nginx-proxy](https://index.docker.io/u/jwilder/nginx-proxy/) trusted build.
+
+Start nginx-proxy:
+
 ```
-docker-gen -only-exposed -watch -notify "/etc/init.d/nginx reload" templates/nginx.tmpl /etc/nginx/sites-enabled/default
+$ docker run -d -p 80:80 -v /var/run/docker.sock:/tmp/docker.sock -t jwilder/nginx-proxy
+```
+
+Then start containers with a VIRTUAL_HOST env variable:
+```
+$ docker run -e VIRTUAL_HOST=foo.bar.com -t ...
+```
+
+##### Host Install
+
+```
+$ docker-gen -only-exposed -watch -notify "/etc/init.d/nginx reload" templates/nginx.tmpl /etc/nginx/sites-enabled/default
 ```
 
 [Automated Nginx Reverse Proxy for Docker](http://jasonwilder.com/blog/2014/03/25/automated-nginx-reverse-proxy-for-docker/)
@@ -57,7 +82,7 @@ docker-gen -only-exposed -watch -notify "/etc/init.d/nginx reload" templates/ngi
 #### Fluentd Log Management
 
 ```
-docker-gen -watch -notify "restart fluentd" templates/fluentd.tmpl /etc/fluent/fluent.conf
+$ docker-gen -watch -notify "restart fluentd" templates/fluentd.tmpl /etc/fluent/fluent.conf
 ```
 
 [Docker Log Management With Fluentd](http://jasonwilder.com/blog/2014/03/17/docker-log-management-using-fluentd/)
@@ -65,7 +90,7 @@ docker-gen -watch -notify "restart fluentd" templates/fluentd.tmpl /etc/fluent/f
 #### Register Containers in Etcd
 
 ```
-docker-gen -notify "/bin/bash /tmp/etcd.sh" -interval 10 templates/etcd.tmpl /tmp/etcd.sh
+$ docker-gen -notify "/bin/bash /tmp/etcd.sh" -interval 10 templates/etcd.tmpl /tmp/etcd.sh
 ```
 
 
@@ -74,13 +99,12 @@ docker-gen -notify "/bin/bash /tmp/etcd.sh" -interval 10 templates/etcd.tmpl /tm
 This project uses [godep](https://github.com/tools/godep) for managing 3rd party dependencies.  You'll need to install godep into your workspace before hacking on docker-gen.
 
 ```
-git clone <your fork>
-godep restore
-make
+$ git clone <your fork>
+$ godep restore
+$ make
 ```
 
 ### TODO
 
- * Add Dockerfile and trusted build
  * Add event status for handling start and stop events differently
  * Add a way to filter out containers in templates

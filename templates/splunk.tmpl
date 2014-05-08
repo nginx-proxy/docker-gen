@@ -1,0 +1,9 @@
+# /opt/splunk/etc/system/local/inputs.conf
+# OR /opt/splunk/etc/app_name/local/inputs.conf (preferred, it will not override system generated inputs)
+{{range $key, $value := .}}
+[monitor:///var/lib/docker/containers/{{ $value.ID }}/{{ $value.ID }}-json.log]
+disabled = false
+sourcetype = docker.container.{{printf "%.*s" 36 $value.Name}}
+source = docker.container.{{printf "%.*s" 36 $value.Name}}
+
+{{end}}

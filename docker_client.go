@@ -199,6 +199,7 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 				Repository: repository,
 				Tag:        tag,
 			},
+			Name:      strings.TrimLeft(container.Name, "/"),
 			Gateway:   container.NetworkSettings.Gateway,
 			Addresses: []Address{},
 			Env:       make(map[string]string),

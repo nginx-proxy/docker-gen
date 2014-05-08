@@ -40,6 +40,7 @@ type RuntimeContainer struct {
 	ID        string
 	Addresses []Address
 	Gateway   string
+	Name      string
 	Image     DockerImage
 	Env       map[string]string
 }

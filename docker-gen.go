@@ -92,6 +92,16 @@ func (r *RuntimeContainer) Equals(o RuntimeContainer) bool {
 	return r.ID == o.ID && r.Image == o.Image
 }
 
+func (r *RuntimeContainer) PublishedAddresses() []Address {
+	mapped := []Address{}
+	for _, address := range r.Addresses {
+		if address.HostPort != "" {
+			mapped = append(mapped, address)
+		}
+	}
+	return mapped
+}
+
 func usage() {
 	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"] [-interval=0] [-endpoint tcp|unix://..] <template> [<dest>]")
 }

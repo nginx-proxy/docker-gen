@@ -1,11 +1,14 @@
 .SILENT :
 .PHONY : docker-gen clean fmt
 
+TAG:=`git describe --abbrev=0 --tags`
+LDFLAGS:=-X main.buildVersion $(TAG)
+
 all: docker-gen
 
 docker-gen:
 	echo "Building docker-gen"
-	go build
+	go build -ldflags "$(LDFLAGS)"
 
 dist-clean:
 	rm -rf dist
@@ -17,5 +20,5 @@ dist: dist-clean
 
 release: dist
 	godep restore
-	tar -cvzf docker-gen-linux-amd64-latest.tar.gz -C dist/linux/amd64 docker-gen
-	tar -cvzf docker-gen-linux-i386-latest.tar.gz -C dist/linux/i386 docker-gen
+	tar -cvzf docker-gen-linux-amd64-$(TAG).tar.gz -C dist/linux/amd64 docker-gen
+	tar -cvzf docker-gen-linux-i386-$(TAG).tar.gz -C dist/linux/i386 docker-gen

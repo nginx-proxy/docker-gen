@@ -15,6 +15,8 @@ import (
 )
 
 var (
+	buildVersion  string
+	version       bool
 	watch         bool
 	notifyCmd     string
 	onlyExposed   bool
@@ -198,6 +200,7 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 }
 
 func initFlags() {
+	flag.BoolVar(&version, "version", false, "show version")
 	flag.BoolVar(&watch, "watch", false, "watch for container changes")
 	flag.BoolVar(&onlyExposed, "only-exposed", false, "only include containers with exposed ports")
 	flag.BoolVar(&onlyPublished, "only-published", false, "only include containers with published ports (implies -only-exposed)")
@@ -210,6 +213,11 @@ func initFlags() {
 
 func main() {
 	initFlags()
+
+	if version {
+		fmt.Println(buildVersion)
+		return
+	}
 
 	if flag.NArg() < 1 && configFile == "" {
 		usage()

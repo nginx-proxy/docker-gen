@@ -15,14 +15,15 @@ import (
 )
 
 var (
-	watch       bool
-	notifyCmd   string
-	onlyExposed bool
-	configFile  string
-	configs     ConfigFile
-	interval    int
-	endpoint    string
-	wg          sync.WaitGroup
+	watch         bool
+	notifyCmd     string
+	onlyExposed   bool
+	onlyPublished bool
+	configFile    string
+	configs       ConfigFile
+	interval      int
+	endpoint      string
+	wg            sync.WaitGroup
 )
 
 type Event struct {
@@ -63,12 +64,13 @@ func (i *DockerImage) String() string {
 }
 
 type Config struct {
-	Template    string
-	Dest        string
-	Watch       bool
-	NotifyCmd   string
-	OnlyExposed bool
-	Interval    int
+	Template      string
+	Dest          string
+	Watch         bool
+	NotifyCmd     string
+	OnlyExposed   bool
+	OnlyPublished bool
+	Interval      int
 }
 
 type ConfigFile struct {
@@ -198,6 +200,7 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 func initFlags() {
 	flag.BoolVar(&watch, "watch", false, "watch for container changes")
 	flag.BoolVar(&onlyExposed, "only-exposed", false, "only include containers with exposed ports")
+	flag.BoolVar(&onlyPublished, "only-published", false, "only include containers with published ports (implies -only-exposed)")
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated")
 	flag.StringVar(&configFile, "config", "", "config file with template directives")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (s)")
@@ -221,12 +224,13 @@ func main() {
 		}
 	} else {
 		config := Config{
-			Template:    flag.Arg(0),
-			Dest:        flag.Arg(1),
-			Watch:       watch,
-			NotifyCmd:   notifyCmd,
-			OnlyExposed: onlyExposed,
-			Interval:    interval,
+			Template:      flag.Arg(0),
+			Dest:          flag.Arg(1),
+			Watch:         watch,
+			NotifyCmd:     notifyCmd,
+			OnlyExposed:   onlyExposed,
+			OnlyPublished: onlyPublished,
+			Interval:      interval,
 		}
 		configs = ConfigFile{
 			Config: []Config{config}}

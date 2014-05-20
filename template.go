@@ -41,9 +41,15 @@ func generateFile(config Config, containers []*RuntimeContainer) bool {
 	}
 
 	filteredContainers := []*RuntimeContainer{}
-	if config.OnlyExposed {
+	if config.OnlyPublished {
 		for _, container := range containers {
 			if len(container.PublishedAddresses()) > 0 {
+				filteredContainers = append(filteredContainers, container)
+			}
+		}
+	} else if config.OnlyExposed {
+		for _, container := range containers {
+			if len(container.Addresses) > 0 {
 				filteredContainers = append(filteredContainers, container)
 			}
 		}

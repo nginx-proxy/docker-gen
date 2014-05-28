@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
 )
@@ -127,20 +128,25 @@ func getEvents() chan *Event {
 		c, err := newConn()
 		if err != nil {
 			log.Printf("cannot connect to docker: %s\n", err)
-			return
+			time.Sleep(10 * time.Second)
+			goto restart
 		}
 		defer c.Close()
 
 		req, err := http.NewRequest("GET", "/events", nil)
 		if err != nil {
 			log.Printf("bad request for events: %s\n", err)
-			return
+			c.Close()
+			time.Sleep(10 * time.Second)
+			goto restart
 		}
 
 		resp, err := c.Do(req)
 		if err != nil {
 			log.Printf("cannot connect to events endpoint: %s\n", err)
-			return
+			c.Close()
+			time.Sleep(10 * time.Second)
+			goto restart
 		}
 		defer resp.Body.Close()
 

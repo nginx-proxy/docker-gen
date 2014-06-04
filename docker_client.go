@@ -115,6 +115,7 @@ func newConn() (*httputil.ClientConn, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return httputil.NewClientConn(conn, nil), nil
 }
 
@@ -123,59 +124,62 @@ func getEvents() chan *Event {
 	go func() {
 		defer close(eventChan)
 
-	restart:
-
-		c, err := newConn()
-		if err != nil {
-			log.Printf("cannot connect to docker: %s\n", err)
-			time.Sleep(10 * time.Second)
-			goto restart
-		}
-		defer c.Close()
-
-		req, err := http.NewRequest("GET", "/events", nil)
-		if err != nil {
-			log.Printf("bad request for events: %s\n", err)
-			c.Close()
-			time.Sleep(10 * time.Second)
-			goto restart
-		}
-
-		resp, err := c.Do(req)
-		if err != nil {
-			log.Printf("cannot connect to events endpoint: %s\n", err)
-			c.Close()
-			time.Sleep(10 * time.Second)
-			goto restart
-		}
-		defer resp.Body.Close()
-
-		// handle signals to stop the socket
-		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
-		go func() {
-			for sig := range sigChan {
-				log.Printf("received signal '%v', exiting\n", sig)
-
-				c.Close()
-				close(eventChan)
-				os.Exit(0)
-			}
-		}()
-
-		dec := json.NewDecoder(resp.Body)
 		for {
-			var event *Event
-			if err := dec.Decode(&event); err != nil {
-				if err == io.EOF {
+
+			c, err := newConn()
+			if err != nil {
+				log.Printf("cannot connect to docker: %s\n", err)
+				time.Sleep(10 * time.Second)
+				continue
+			}
+
+			req, err := http.NewRequest("GET", "/events", nil)
+			if err != nil {
+				log.Printf("bad request for events: %s\n", err)
+				c.Close()
+				time.Sleep(10 * time.Second)
+				continue
+			}
+
+			resp, err := c.Do(req)
+			if err != nil {
+				log.Printf("cannot connect to events endpoint: %s\n", err)
+				c.Close()
+				time.Sleep(10 * time.Second)
+				continue
+			}
+
+			// handle signals to stop the socket
+			sigChan := make(chan os.Signal, 1)
+			signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+			go func() {
+				for sig := range sigChan {
+					log.Printf("received signal '%v', exiting\n", sig)
+
+					c.Close()
+					resp.Body.Close()
+					close(eventChan)
+					os.Exit(0)
+				}
+			}()
+
+			dec := json.NewDecoder(resp.Body)
+			for {
+				var event *Event
+				if err := dec.Decode(&event); err != nil || event.Status == "" {
+					if err == io.EOF || event.Status == "" {
+						log.Printf("connection closed")
+						break
+					}
+					log.Printf("cannot decode json: %s\n", err)
+					c.Close()
+					resp.Body.Close()
 					break
 				}
-				log.Printf("cannot decode json: %s\n", err)
-				goto restart
+
+				eventChan <- event
 			}
-			eventChan <- event
 		}
-		log.Printf("closing event channel\n")
 	}()
 	return eventChan
 }

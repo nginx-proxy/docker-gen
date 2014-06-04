@@ -29,7 +29,7 @@ var (
 )
 
 type Event struct {
-	ContainerId string `json:"id"`
+	ContainerID string `json:"id"`
 	Status      string `json:"status"`
 	Image       string `json:"from"`
 }
@@ -118,9 +118,11 @@ func generateFromContainers(client *docker.Client) {
 	}
 	for _, config := range configs.Config {
 		changed := generateFile(config, containers)
-		if changed {
-			runNotifyCmd(config)
+		if !changed {
+			log.Printf("Contents of %s did not change. Skipping notification '%s'", config.Dest, config.NotifyCmd)
+			continue
 		}
+		runNotifyCmd(config)
 	}
 }
 
@@ -129,12 +131,13 @@ func runNotifyCmd(config Config) {
 		return
 	}
 
+	log.Printf("Running '%s'", config.NotifyCmd)
 	args := strings.Split(config.NotifyCmd, " ")
 	cmd := exec.Command(args[0], args[1:]...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("error running notify command: %s, %s\n", config.NotifyCmd, err)
-		fmt.Println(string(out))
+		log.Print(string(out))
 	}
 }
 
@@ -153,6 +156,7 @@ func generateAtInterval(client *docker.Client, configs ConfigFile) {
 			continue
 		}
 
+		log.Printf("Generating every %d seconds", config.Interval)
 		wg.Add(1)
 		ticker := time.NewTicker(time.Duration(config.Interval) * time.Second)
 		quit := make(chan struct{})
@@ -187,13 +191,17 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 
 	wg.Add(1)
 	defer wg.Done()
+	log.Println("Watching docker events")
 	eventChan := getEvents()
 	for {
 		event := <-eventChan
+
 		if event == nil {
-			return
+			continue
 		}
+
 		if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
+			log.Printf("Received event %s for container %s", event.Status, event.ContainerID[:12])
 			generateFromContainers(client)
 		}
 	}

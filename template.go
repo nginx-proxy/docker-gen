@@ -91,6 +91,7 @@ func generateFile(config Config, containers []*RuntimeContainer) bool {
 			if err != nil {
 				log.Fatalf("unable to create dest file %s: %s\n", config.Dest, err)
 			}
+			log.Printf("Generated '%s' from %d containers", config.Dest, len(filteredContainers))
 			return true
 		}
 		return false

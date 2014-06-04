@@ -187,7 +187,8 @@ func getEvents() chan *Event {
 func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 
 	apiContainers, err := client.ListContainers(docker.ListContainersOptions{
-		All: false,
+		All:  false,
+		Size: false,
 	})
 	if err != nil {
 		return nil, err

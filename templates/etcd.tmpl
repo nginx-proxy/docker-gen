@@ -1,10 +1,12 @@
 
 #!/bin/bash
 
-
 {{range $key, $value := .}}
+{{ $addrLen := len $value.Addresses }}
+{{ if gt $addrLen 0 }}
 {{ with $address := index $value.Addresses 0 }}
 # {{ $value.Name }}
-curl -L http://127.0.0.1:4001/v2/keys/backends/{{ $value.Image.Repository}}/{{printf "%.*s" 12 $value.ID}} -XPUT -d value="{{ $address.IP }}:{{ $address.Port }}" -d ttl=15
+curl -XPUT -q -d value="{{ $address.IP }}:{{ $address.Port }}" -d ttl=15 http://127.0.0.1:4001/v2/keys/backends/{{ $value.Image.Repository}}/{{printf "%.*s" 12 $value.ID}}
 {{ end }}
+{{end}}
 {{end}}

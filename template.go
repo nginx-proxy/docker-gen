@@ -11,6 +11,21 @@ import (
 	"text/template"
 )
 
+func groupByMulti(entries []*RuntimeContainer, key, sep string) map[string][]*RuntimeContainer {
+	groups := make(map[string][]*RuntimeContainer)
+	for _, v := range entries {
+		value := deepGet(*v, key)
+		if value != nil {
+			items := strings.Split(value.(string), sep)
+			for _, item := range items {
+				groups[item] = append(groups[item], v)
+			}
+
+		}
+	}
+	return groups
+}
+
 func groupBy(entries []*RuntimeContainer, key string) map[string][]*RuntimeContainer {
 	groups := make(map[string][]*RuntimeContainer)
 	for _, v := range entries {
@@ -32,9 +47,10 @@ func contains(item map[string]string, key string) bool {
 func generateFile(config Config, containers []*RuntimeContainer) bool {
 	templatePath := config.Template
 	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(template.FuncMap{
-		"contains": contains,
-		"groupBy":  groupBy,
-		"split":    strings.Split,
+		"contains":     contains,
+		"groupBy":      groupBy,
+		"groupByMulti": groupByMulti,
+		"split":        strings.Split,
 	}).ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalf("unable to parse template: %s", err)

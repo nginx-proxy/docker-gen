@@ -1,8 +1,6 @@
 package main
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestContains(t *testing.T) {
 	env := map[string]string{
@@ -54,5 +52,50 @@ func TestGroupByExitingKey(t *testing.T) {
 	}
 	if groups["demo2.localhost"][0].ID != "3" {
 		t.Fail()
+	}
+}
+
+func TestGroupByMulti(t *testing.T) {
+	containers := []*RuntimeContainer{
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost",
+			},
+			ID: "1",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost,demo3.localhost",
+			},
+			ID: "2",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost",
+			},
+			ID: "3",
+		},
+	}
+
+	groups := groupByMulti(containers, "Env.VIRTUAL_HOST", ",")
+	if len(groups) != 3 {
+		t.Fatalf("expected 3 got %d", len(groups))
+	}
+
+	if len(groups["demo1.localhost"]) != 2 {
+		t.Fatalf("expected 2 got %s", len(groups["demo1.localhost"]))
+	}
+
+	if len(groups["demo2.localhost"]) != 1 {
+		t.Fatalf("expected 1 got %s", len(groups["demo2.localhost"]))
+	}
+	if groups["demo2.localhost"][0].ID != "3" {
+		t.Fatalf("expected 2 got %s", groups["demo2.localhost"][0].ID)
+	}
+	if len(groups["demo3.localhost"]) != 1 {
+		t.Fatalf("expect 1 got %d", len(groups["demo3.localhost"]))
+	}
+	if groups["demo3.localhost"][0].ID != "2" {
+		t.Fatalf("expected 2 got %s", groups["demo3.localhost"][0].ID)
 	}
 }

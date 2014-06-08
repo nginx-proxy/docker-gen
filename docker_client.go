@@ -167,7 +167,7 @@ func getEvents() chan *Event {
 			for {
 				var event *Event
 				if err := dec.Decode(&event); err != nil || event.Status == "" {
-					if err == io.EOF || event.Status == "" {
+					if err == io.EOF || (event != nil && event.Status == "") {
 						log.Printf("connection closed")
 						break
 					}

@@ -1,4 +1,4 @@
-{{ range $host, $containers := groupBy $ "Env.VIRTUAL_HOST" }}
+{{ range $host, $containers := groupByMulti $ "Env.VIRTUAL_HOST" "," }}
 upstream {{ $host }} {
 
 {{ range $index, $value := $containers }}

@@ -1,4 +1,3 @@
 docker-gen
 dist
-docker-gen-linux-amd64-latest.tar.gz
-docker-gen-linux-i386-latest.tar.gz
+*.gz

@@ -16,16 +16,16 @@ docker-gen can be used to generate various kinds of files for:
 
 #### Host Install
 
-Linux binaries for release [0.2.0](https://github.com/jwilder/docker-gen/releases)
+Linux binaries for release [0.3.1](https://github.com/jwilder/docker-gen/releases)
 
-* [amd64](https://github.com/jwilder/docker-gen/releases/download/0.2.0/docker-gen-linux-amd64-0.2.0.tar.gz)
-* [i386](https://github.com/jwilder/docker-gen/releases/download/0.2.0/docker-gen-linux-i386-0.2.0.tar.gz)
+* [amd64](https://github.com/jwilder/docker-gen/releases/download/0.3.1/docker-gen-linux-amd64-0.3.1.tar.gz)
+* [i386](https://github.com/jwilder/docker-gen/releases/download/0.3.1/docker-gen-linux-i386-0.3.1.tar.gz)
 
 Download the version you need, untar, and install to your PATH.
 
 ```
-$ wget https://github.com/jwilder/docker-gen/releases/download/0.2.0/docker-gen-linux-amd64-0.2.0.tar.gz
-$ tar xvzf tar xvzf docker-gen-linux-amd64-0.2.0.tar.gz
+$ wget https://github.com/jwilder/docker-gen/releases/download/0.3.1/docker-gen-linux-amd64-0.3.1.tar.gz
+$ tar xvzf docker-gen-linux-amd64-0.3.1.tar.gz
 $ ./docker-gen
 ```
 
@@ -37,17 +37,25 @@ See [jwilder/nginx-proxy](https://index.docker.io/u/jwilder/nginx-proxy/) truste
 ### Usage
 ```
 $ docker-gen
-Usage: docker-gen [-config file] [-watch=false] [-notify="restart xyz"] [-interval=0] [-endpoint tcp|unix://..] <template> [<dest>]
+Usage: docker-gen [options] <template> [<dest>]
 ```
 
+[-config file] [-watch=false] [-notify="restart xyz"] [-interval=0] [-endpoint tcp|unix://..]
+
 *Options:*
-* `-watch` - runs continuously and monitors docker container events.  When containers are started
-or stopped, the template is regenerated.
-* `-notify` - runs a command after the template is generated.  Useful for restarting nginx, reloading
-haproxy, etc..
-* `-config file` - Use the specified config file instead of command-line options.  Multiple templates can be defined and they will be executed in the order that they appear in the config file.
-* `-interval <secs>` - Run the notify command on a fixed interval.  Useful for service registration use cases.
-* `-endpoint tcp|unix://..` - Use a different docker remote API endpoint.  This can also be set w/ a `DOCKER_HOST` environment variable.
+```
+  -config="": Use the specified config file instead of command-line options.  Multiple templates can be defined and 
+              they will be executed in the order that they appear in the config file.
+  -endpoint="": docker api endpoint [tcp|unix://..]. This can also be set w/ a `DOCKER_HOST` environment.
+  -interval=0:run notify command interval (s). Useful for service registration use cases.
+  -notify="": run command after template is regenerated ["restart xyz"]. Useful for restarting nginx,
+              reloading haproxy, etc..
+  -only-exposed=false: only include containers with exposed ports
+  -only-published=false: only include containers with published ports (implies -only-exposed)
+  -version=false: show version
+  -watch=false: run continuously and monitors docker container events.  When containers are started
+                or stopped, the template is regenerated.
+```
 
 If no `<dest>` file is specified, the output is sent to stdout.  Mainly useful for debugging.
 

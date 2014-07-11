@@ -87,7 +87,7 @@ func generateFile(config Config, containers []*RuntimeContainer) bool {
 
 	dest := os.Stdout
 	if config.Dest != "" {
-		dest, err = ioutil.TempFile("", "docker-gen")
+		dest, err = ioutil.TempFile(filepath.Dir(config.Dest), "docker-gen")
 		defer func() {
 			dest.Close()
 			os.Remove(dest.Name())

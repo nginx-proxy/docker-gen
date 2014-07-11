@@ -11,6 +11,17 @@ import (
 	"text/template"
 )
 
+func exists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
 func groupByMulti(entries []*RuntimeContainer, key, sep string) map[string][]*RuntimeContainer {
 	groups := make(map[string][]*RuntimeContainer)
 	for _, v := range entries {
@@ -48,6 +59,7 @@ func generateFile(config Config, containers []*RuntimeContainer) bool {
 	templatePath := config.Template
 	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(template.FuncMap{
 		"contains":     contains,
+		"exists":       exists,
 		"groupBy":      groupBy,
 		"groupByMulti": groupByMulti,
 		"split":        strings.Split,

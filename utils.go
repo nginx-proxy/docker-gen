@@ -1,8 +1,11 @@
 package main
 
-import "os"
+import (
+	"errors"
+	"os"
+)
 
-func getEndpoint() string {
+func getEndpoint() (string, error) {
 	defaultEndpoint := "unix:///var/run/docker.sock"
 	if os.Getenv("DOCKER_HOST") != "" {
 		defaultEndpoint = os.Getenv("DOCKER_HOST")
@@ -12,6 +15,21 @@ func getEndpoint() string {
 		defaultEndpoint = endpoint
 	}
 
-	return defaultEndpoint
+	proto, host, err := parseHost(defaultEndpoint)
+	if err != nil {
+		return "", err
+	}
 
+	if proto == "unix" {
+		exist, err := exists(host)
+		if err != nil {
+			return "", err
+		}
+
+		if !exist {
+			return "", errors.New(host + " does not exists.")
+		}
+	}
+
+	return defaultEndpoint, nil
 }

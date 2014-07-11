@@ -252,9 +252,12 @@ func main() {
 			Config: []Config{config}}
 	}
 
-	endpoint := getEndpoint()
-	client, err := docker.NewClient(endpoint)
+	endpoint, err := getEndpoint()
+	if err != nil {
+		log.Fatalf("Bad endpoint: %s", err)
+	}
 
+	client, err := docker.NewClient(endpoint)
 	if err != nil {
 		log.Fatalf("Unable to parse %s: %s", endpoint, err)
 	}

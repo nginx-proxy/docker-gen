@@ -55,7 +55,7 @@ func contains(item map[string]string, key string) bool {
 	return false
 }
 
-func generateFile(config Config, containers []*RuntimeContainer) bool {
+func generateFile(config Config, containers Context) bool {
 	templatePath := config.Template
 	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(template.FuncMap{
 		"contains":     contains,
@@ -68,7 +68,7 @@ func generateFile(config Config, containers []*RuntimeContainer) bool {
 		log.Fatalf("unable to parse template: %s", err)
 	}
 
-	filteredContainers := []*RuntimeContainer{}
+	filteredContainers := Context{}
 	if config.OnlyPublished {
 		for _, container := range containers {
 			if len(container.PublishedAddresses()) > 0 {
@@ -99,7 +99,7 @@ func generateFile(config Config, containers []*RuntimeContainer) bool {
 
 	var buf bytes.Buffer
 	multiwriter := io.MultiWriter(dest, &buf)
-	err = tmpl.ExecuteTemplate(multiwriter, filepath.Base(templatePath), filteredContainers)
+	err = tmpl.ExecuteTemplate(multiwriter, filepath.Base(templatePath), &filteredContainers)
 	if err != nil {
 		log.Fatalf("template error: %s\n", err)
 	}

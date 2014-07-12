@@ -1,6 +1,8 @@
 
 #!/bin/bash
 
+# Genenerated by {{ .Env.USER }}
+
 {{range $key, $value := .}}
 {{ $addrLen := len $value.Addresses }}
 {{ if gt $addrLen 0 }}

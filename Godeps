@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/jwilder/docker-gen",
-	"GoVersion": "go1.2.1",
+	"GoVersion": "go1.3",
 	"Packages": [
 		"./..."
 	],
@@ -11,8 +11,8 @@
 		},
 		{
 			"ImportPath": "github.com/fsouza/go-dockerclient",
-			"Comment": "0.2.1-87-ge1b8930",
-			"Rev": "e1b8930d27aaa28b18a396b65c7df63014a1a9cd"
+			"Comment": "0.2.1-177-g1948166",
+			"Rev": "194816684825a3abf28d60e5243ec5240608414d"
 		}
 	]
 }

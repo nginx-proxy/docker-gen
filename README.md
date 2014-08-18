@@ -24,8 +24,8 @@ Linux binaries for release [0.3.3](https://github.com/jwilder/docker-gen/release
 Download the version you need, untar, and install to your PATH.
 
 ```
-$ wget https://github.com/jwilder/docker-gen/releases/download/0.3.1/docker-gen-linux-amd64-0.3.2.tar.gz
-$ tar xvzf docker-gen-linux-amd64-0.3.2.tar.gz
+$ wget https://github.com/jwilder/docker-gen/releases/download/0.3.3/docker-gen-linux-amd64-0.3.3.tar.gz
+$ tar xvzf docker-gen-linux-amd64-0.3.3.tar.gz
 $ ./docker-gen
 ```
 

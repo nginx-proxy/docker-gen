@@ -1,0 +1,11 @@
+language: go
+go:
+  - 1.2
+  - tip
+env:
+  - GOARCH=amd64
+  - GOARCH=386
+install:
+  - go get -d ./...
+script:
+  - go test ./...

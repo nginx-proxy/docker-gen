@@ -44,7 +44,7 @@ Usage: docker-gen [options] <template> [<dest>]
 
 *Options:*
 ```
-  -config="": Use the specified config file instead of command-line options.  Multiple templates can be defined and 
+  -config="": Use the specified config file instead of command-line options.  Multiple templates can be defined and
               they will be executed in the order that they appear in the config file.
   -endpoint="": docker api endpoint [tcp|unix://..]. This can also be set w/ a `DOCKER_HOST` environment.
   -interval=0:run notify command interval (s). Useful for service registration use cases.
@@ -104,11 +104,12 @@ $ docker-gen -notify "/bin/bash /tmp/etcd.sh" -interval 10 templates/etcd.tmpl /
 
 ### Development
 
-This project uses [godep](https://github.com/tools/godep) for managing 3rd party dependencies.  You'll need to install godep into your workspace before hacking on docker-gen.
+This project uses [glock](https://github.com/robfig/glock) for managing 3rd party dependencies.
+You'll need to install glock into your workspace before hacking on docker-gen.
 
 ```
 $ git clone <your fork>
-$ godep restore
+$ glock sync github.com/jwilder/docker-gen
 $ make
 ```
 

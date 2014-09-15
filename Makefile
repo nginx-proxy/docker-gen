@@ -19,6 +19,6 @@ dist: dist-clean
 	mkdir -p dist/linux/i386  && GOOS=linux GOARCH=386 go build -o dist/linux/i386/docker-gen
 
 release: dist
-	godep restore
+	glock sync github.com/jwilder/docker-gen
 	tar -cvzf docker-gen-linux-amd64-$(TAG).tar.gz -C dist/linux/amd64 docker-gen
 	tar -cvzf docker-gen-linux-i386-$(TAG).tar.gz -C dist/linux/i386 docker-gen

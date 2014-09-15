@@ -22,6 +22,10 @@ func exists(path string) (bool, error) {
 	return false, err
 }
 
+func SSLcertExists(host string) (bool, error) {
+	return exists("/etc/nginx/ssl/" + host + "/ssl.crt")
+}
+
 func groupByMulti(entries []*RuntimeContainer, key, sep string) map[string][]*RuntimeContainer {
 	groups := make(map[string][]*RuntimeContainer)
 	for _, v := range entries {
@@ -58,11 +62,12 @@ func contains(item map[string]string, key string) bool {
 func generateFile(config Config, containers Context) bool {
 	templatePath := config.Template
 	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(template.FuncMap{
-		"contains":     contains,
-		"exists":       exists,
-		"groupBy":      groupBy,
-		"groupByMulti": groupByMulti,
-		"split":        strings.Split,
+		"contains":      contains,
+		"SSLcertExists": SSLcertExists,
+		"exists":        exists,
+		"groupBy":       groupBy,
+		"groupByMulti":  groupByMulti,
+		"split":         strings.Split,
 	}).ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalf("unable to parse template: %s", err)

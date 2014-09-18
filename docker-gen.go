@@ -120,7 +120,7 @@ func (r *RuntimeContainer) PublishedAddresses() []Address {
 }
 
 func usage() {
-	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"] [-interval=0] [-endpoint tcp|unix://..] <template> [<dest>]")
+	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"][-notify=\"restart-container container-ID\"] [-interval=0] [-endpoint tcp|unix://..] <template> [<dest>]")
 }
 
 func generateFromContainers(client *docker.Client) {
@@ -135,22 +135,33 @@ func generateFromContainers(client *docker.Client) {
 			log.Printf("Contents of %s did not change. Skipping notification '%s'", config.Dest, config.NotifyCmd)
 			continue
 		}
-		runNotifyCmd(config)
+		runNotifyCmd(client, config)
 	}
 }
 
-func runNotifyCmd(config Config) {
+func runNotifyCmd(client *docker.Client, config Config) {
 	if config.NotifyCmd == "" {
 		return
 	}
 
-	log.Printf("Running '%s'", config.NotifyCmd)
 	args := strings.Split(config.NotifyCmd, " ")
-	cmd := exec.Command(args[0], args[1:]...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("error running notify command: %s, %s\n", config.NotifyCmd, err)
-		log.Print(string(out))
+	if args[0] == "restart-container" {
+		log.Printf("Restarting container '%s'", args[1])
+		err := client.KillContainer(docker.KillContainerOptions{
+			ID:     args[1],
+			Signal: docker.SIGHUP,
+		})
+		if err != nil {
+			log.Printf("Error restarting container: %s", err)
+		}
+	} else {
+		log.Printf("Running '%s'", config.NotifyCmd)
+		cmd := exec.Command(args[0], args[1:]...)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Printf("error running notify command: %s, %s\n", config.NotifyCmd, err)
+			log.Print(string(out))
+		}
 	}
 }
 
@@ -186,7 +197,7 @@ func generateAtInterval(client *docker.Client, configs ConfigFile) {
 					}
 					// ignore changed return value. always run notify command
 					generateFile(configCopy, containers)
-					runNotifyCmd(configCopy)
+					runNotifyCmd(client, configCopy)
 				case <-quit:
 					ticker.Stop()
 					return

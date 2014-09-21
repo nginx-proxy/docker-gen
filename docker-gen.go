@@ -15,17 +15,18 @@ import (
 )
 
 var (
-	buildVersion  string
-	version       bool
-	watch         bool
-	notifyCmd     string
-	onlyExposed   bool
-	onlyPublished bool
-	configFile    string
-	configs       ConfigFile
-	interval      int
-	endpoint      string
-	wg            sync.WaitGroup
+	buildVersion       string
+	version            bool
+	watch              bool
+	notifyCmd          string
+	restartContainerID string
+	onlyExposed        bool
+	onlyPublished      bool
+	configFile         string
+	configs            ConfigFile
+	interval           int
+	endpoint           string
+	wg                 sync.WaitGroup
 )
 
 type Event struct {
@@ -66,13 +67,14 @@ func (i *DockerImage) String() string {
 }
 
 type Config struct {
-	Template      string
-	Dest          string
-	Watch         bool
-	NotifyCmd     string
-	OnlyExposed   bool
-	OnlyPublished bool
-	Interval      int
+	Template           string
+	Dest               string
+	Watch              bool
+	NotifyCmd          string
+	RestartContainerID string
+	OnlyExposed        bool
+	OnlyPublished      bool
+	Interval           int
 }
 
 type ConfigFile struct {
@@ -120,7 +122,7 @@ func (r *RuntimeContainer) PublishedAddresses() []Address {
 }
 
 func usage() {
-	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"][-notify=\"restart-container container-ID\"] [-interval=0] [-endpoint tcp|unix://..] <template> [<dest>]")
+	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"] [-restart-container=\"container-ID\"] [-interval=0] [-endpoint tcp|unix://..] <template> [<dest>]")
 }
 
 func generateFromContainers(client *docker.Client) {
@@ -135,33 +137,39 @@ func generateFromContainers(client *docker.Client) {
 			log.Printf("Contents of %s did not change. Skipping notification '%s'", config.Dest, config.NotifyCmd)
 			continue
 		}
-		runNotifyCmd(client, config)
+		runNotifyCmd(config)
+		restartContainer(client, config)
 	}
 }
 
-func runNotifyCmd(client *docker.Client, config Config) {
+func runNotifyCmd(config Config) {
 	if config.NotifyCmd == "" {
 		return
 	}
 
+	log.Printf("Running '%s'", config.NotifyCmd)
 	args := strings.Split(config.NotifyCmd, " ")
-	if args[0] == "restart-container" {
-		log.Printf("Restarting container '%s'", args[1])
-		err := client.KillContainer(docker.KillContainerOptions{
-			ID:     args[1],
-			Signal: docker.SIGHUP,
-		})
-		if err != nil {
-			log.Printf("Error restarting container: %s", err)
-		}
-	} else {
-		log.Printf("Running '%s'", config.NotifyCmd)
-		cmd := exec.Command(args[0], args[1:]...)
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			log.Printf("error running notify command: %s, %s\n", config.NotifyCmd, err)
-			log.Print(string(out))
-		}
+	cmd := exec.Command(args[0], args[1:]...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("error running notify command: %s, %s\n", config.NotifyCmd, err)
+		log.Print(string(out))
+	}
+
+}
+
+func restartContainer(client *docker.Client, config Config) {
+	if config.RestartContainerID == "" {
+		return
+	}
+
+	log.Printf("Restarting container '%s'", config.RestartContainerID)
+	err := client.KillContainer(docker.KillContainerOptions{
+		ID:     config.RestartContainerID,
+		Signal: docker.SIGHUP,
+	})
+	if err != nil {
+		log.Printf("Error restarting container: %s", err)
 	}
 }
 
@@ -197,7 +205,8 @@ func generateAtInterval(client *docker.Client, configs ConfigFile) {
 					}
 					// ignore changed return value. always run notify command
 					generateFile(configCopy, containers)
-					runNotifyCmd(client, configCopy)
+					runNotifyCmd(configCopy)
+					restartContainer(client, configCopy)
 				case <-quit:
 					ticker.Stop()
 					return
@@ -237,6 +246,7 @@ func initFlags() {
 	flag.BoolVar(&onlyExposed, "only-exposed", false, "only include containers with exposed ports")
 	flag.BoolVar(&onlyPublished, "only-published", false, "only include containers with published ports (implies -only-exposed)")
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated")
+	flag.StringVar(&restartContainerID, "restart-container", "", "restart this container after template is regenerated")
 	flag.StringVar(&configFile, "config", "", "config file with template directives")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (s)")
 	flag.StringVar(&endpoint, "endpoint", "", "docker api endpoint")
@@ -264,13 +274,14 @@ func main() {
 		}
 	} else {
 		config := Config{
-			Template:      flag.Arg(0),
-			Dest:          flag.Arg(1),
-			Watch:         watch,
-			NotifyCmd:     notifyCmd,
-			OnlyExposed:   onlyExposed,
-			OnlyPublished: onlyPublished,
-			Interval:      interval,
+			Template:           flag.Arg(0),
+			Dest:               flag.Arg(1),
+			Watch:              watch,
+			NotifyCmd:          notifyCmd,
+			RestartContainerID: restartContainerID,
+			OnlyExposed:        onlyExposed,
+			OnlyPublished:      onlyPublished,
+			Interval:           interval,
 		}
 		configs = ConfigFile{
 			Config: []Config{config}}

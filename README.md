@@ -40,7 +40,7 @@ $ docker-gen
 Usage: docker-gen [options] <template> [<dest>]
 ```
 
-[-config file] [-watch=false] [-notify="restart xyz"] [-interval=0] [-endpoint tcp|unix://..]
+[-config file] [-watch=false] [-notify="restart xyz"] [-restart-container="nginx-proxy"] [-interval=0] [-endpoint tcp|unix://..]
 
 *Options:*
 ```
@@ -50,6 +50,7 @@ Usage: docker-gen [options] <template> [<dest>]
   -interval=0:run notify command interval (s). Useful for service registration use cases.
   -notify="": run command after template is regenerated ["restart xyz"]. Useful for restarting nginx,
               reloading haproxy, etc..
+  -restart-container="": restart this container after template is regenerated
   -only-exposed=false: only include containers with exposed ports
   -only-published=false: only include containers with published ports (implies -only-exposed)
   -version=false: show version

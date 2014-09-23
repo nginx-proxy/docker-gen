@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"text/template"
 )
 
@@ -107,7 +108,13 @@ func generateFile(config Config, containers Context) bool {
 	if config.Dest != "" {
 
 		contents := []byte{}
-		if _, err := os.Stat(config.Dest); err == nil {
+		if fi, err := os.Stat(config.Dest); err == nil {
+			if err := dest.Chmod(fi.Mode()); err != nil {
+				log.Printf("unable to chmod temp file: %s\n", err)
+			}
+			if err := dest.Chown(int(fi.Sys().(*syscall.Stat_t).Uid), int(fi.Sys().(*syscall.Stat_t).Gid)); err != nil {
+				log.Printf("unable to chown temp file: %s\n", err)
+			}
 			contents, err = ioutil.ReadFile(config.Dest)
 			if err != nil {
 				log.Fatalf("unable to compare current file contents: %s: %s\n", config.Dest, err)

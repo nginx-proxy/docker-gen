@@ -63,6 +63,7 @@ func generateFile(config Config, containers Context) bool {
 		"groupBy":      groupBy,
 		"groupByMulti": groupByMulti,
 		"split":        strings.Split,
+		"replace":      strings.Replace,
 	}).ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalf("unable to parse template: %s", err)

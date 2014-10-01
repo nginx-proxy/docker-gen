@@ -145,8 +145,7 @@ func runNotifyCmd(config Config) {
 	}
 
 	log.Printf("Running '%s'", config.NotifyCmd)
-	args := strings.Split(config.NotifyCmd, " ")
-	cmd := exec.Command(args[0], args[1:]...)
+	cmd := exec.Command("/bin/sh", "-c", config.NotifyCmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("error running notify command: %s, %s\n", config.NotifyCmd, err)

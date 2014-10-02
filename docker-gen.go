@@ -15,17 +15,18 @@ import (
 )
 
 var (
-	buildVersion  string
-	version       bool
-	watch         bool
-	notifyCmd     string
-	onlyExposed   bool
-	onlyPublished bool
-	configFile    string
-	configs       ConfigFile
-	interval      int
-	endpoint      string
-	wg            sync.WaitGroup
+	buildVersion            string
+	version                 bool
+	watch                   bool
+	notifyCmd               string
+	notifySigHUPContainerID string
+	onlyExposed             bool
+	onlyPublished           bool
+	configFile              string
+	configs                 ConfigFile
+	interval                int
+	endpoint                string
+	wg                      sync.WaitGroup
 )
 
 type Event struct {
@@ -66,13 +67,14 @@ func (i *DockerImage) String() string {
 }
 
 type Config struct {
-	Template      string
-	Dest          string
-	Watch         bool
-	NotifyCmd     string
-	OnlyExposed   bool
-	OnlyPublished bool
-	Interval      int
+	Template         string
+	Dest             string
+	Watch            bool
+	NotifyCmd        string
+	NotifyContainers map[string]docker.Signal
+	OnlyExposed      bool
+	OnlyPublished    bool
+	Interval         int
 }
 
 type ConfigFile struct {
@@ -120,7 +122,7 @@ func (r *RuntimeContainer) PublishedAddresses() []Address {
 }
 
 func usage() {
-	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"] [-interval=0] [-endpoint tcp|unix://..] <template> [<dest>]")
+	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"] [-notify-sighup=\"container-ID\"] [-interval=0] [-endpoint tcp|unix://..] <template> [<dest>]")
 }
 
 func generateFromContainers(client *docker.Client) {
@@ -136,6 +138,7 @@ func generateFromContainers(client *docker.Client) {
 			continue
 		}
 		runNotifyCmd(config)
+		sendSignalToContainer(client, config)
 	}
 }
 
@@ -151,6 +154,23 @@ func runNotifyCmd(config Config) {
 	if err != nil {
 		log.Printf("error running notify command: %s, %s\n", config.NotifyCmd, err)
 		log.Print(string(out))
+	}
+}
+
+func sendSignalToContainer(client *docker.Client, config Config) {
+	if len(config.NotifyContainers) < 1 {
+		return
+	}
+
+	for container, signal := range config.NotifyContainers {
+		log.Printf("Sending container '%s' signal '%v'", container, signal)
+		killOpts := docker.KillContainerOptions{
+			ID:     container,
+			Signal: signal,
+		}
+		if err := client.KillContainer(killOpts); err != nil {
+			log.Printf("Error sending signal to container: %s", err)
+		}
 	}
 }
 
@@ -187,6 +207,7 @@ func generateAtInterval(client *docker.Client, configs ConfigFile) {
 					// ignore changed return value. always run notify command
 					generateFile(configCopy, containers)
 					runNotifyCmd(configCopy)
+					sendSignalToContainer(client, configCopy)
 				case <-quit:
 					ticker.Stop()
 					return
@@ -226,6 +247,7 @@ func initFlags() {
 	flag.BoolVar(&onlyExposed, "only-exposed", false, "only include containers with exposed ports")
 	flag.BoolVar(&onlyPublished, "only-published", false, "only include containers with published ports (implies -only-exposed)")
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated")
+	flag.StringVar(&notifySigHUPContainerID, "notify-sighup", "", "send HUP signal to container.  Equivalent to `docker kill -s HUP container-ID`")
 	flag.StringVar(&configFile, "config", "", "config file with template directives")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (s)")
 	flag.StringVar(&endpoint, "endpoint", "", "docker api endpoint")
@@ -253,13 +275,17 @@ func main() {
 		}
 	} else {
 		config := Config{
-			Template:      flag.Arg(0),
-			Dest:          flag.Arg(1),
-			Watch:         watch,
-			NotifyCmd:     notifyCmd,
-			OnlyExposed:   onlyExposed,
-			OnlyPublished: onlyPublished,
-			Interval:      interval,
+			Template:         flag.Arg(0),
+			Dest:             flag.Arg(1),
+			Watch:            watch,
+			NotifyCmd:        notifyCmd,
+			NotifyContainers: make(map[string]docker.Signal),
+			OnlyExposed:      onlyExposed,
+			OnlyPublished:    onlyPublished,
+			Interval:         interval,
+		}
+		if notifySigHUPContainerID != "" {
+			config.NotifyContainers[notifySigHUPContainerID] = docker.SIGHUP
 		}
 		configs = ConfigFile{
 			Config: []Config{config}}

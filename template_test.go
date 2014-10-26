@@ -99,3 +99,36 @@ func TestGroupByMulti(t *testing.T) {
 		t.Fatalf("expected 2 got %s", groups["demo3.localhost"][0].ID)
 	}
 }
+
+func TestDict(t *testing.T) {
+	containers := []*RuntimeContainer{
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost",
+			},
+			ID: "1",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost,demo3.localhost",
+			},
+			ID: "2",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost",
+			},
+			ID: "3",
+		},
+	}
+	d, err := dict("/", containers)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d["/"] == nil {
+		t.Fatalf("did not find containers in dict: %s", d)
+	}
+	if d["MISSING"] != nil {
+		t.Fail()
+	}
+}

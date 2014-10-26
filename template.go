@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"syscall"
 	"text/template"
+	"crypto/sha1"
 )
 
 func exists(path string) (bool, error) {
@@ -72,6 +74,12 @@ func dict(values ...interface{}) (map[string]interface{}, error) {
 	return dict, nil
 }
 
+func hashSha1(input string) string {
+	h := sha1.New()
+	io.WriteString(h, input)
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
 func generateFile(config Config, containers Context) bool {
 	templatePath := config.Template
 	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(template.FuncMap{
@@ -82,6 +90,7 @@ func generateFile(config Config, containers Context) bool {
 		"split":        strings.Split,
 		"replace":      strings.Replace,
 		"dict":         dict,
+		"sha1":         hashSha1,
 	}).ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalf("unable to parse template: %s", err)

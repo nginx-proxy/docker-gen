@@ -132,3 +132,10 @@ func TestDict(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func TestSha1(t *testing.T) {
+  sum := hashSha1("/path")
+	if sum != "4f26609ad3f5185faaa9edf1e93aa131e2131352" {
+		t.Fatal("Incorrect SHA1 sum")
+	}
+}

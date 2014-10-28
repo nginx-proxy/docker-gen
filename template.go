@@ -10,6 +10,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
+	"sort"
 	"strings"
 	"syscall"
 	"text/template"
@@ -90,6 +92,11 @@ func marshalJson(input interface{}) (string,error) {
 	return strings.TrimSuffix(buf.String(), "\n"), nil
 }
 
+func arrayLast(input interface{}) interface{} {
+	arr := reflect.ValueOf(input)
+	return arr.Index(arr.Len() - 1).Interface()
+}
+
 func generateFile(config Config, containers Context) bool {
 	templatePath := config.Template
 	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(template.FuncMap{
@@ -102,6 +109,7 @@ func generateFile(config Config, containers Context) bool {
 		"dict":         dict,
 		"sha1":         hashSha1,
 		"json":         marshalJson,
+		"last":         arrayLast,
 	}).ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalf("unable to parse template: %s", err)

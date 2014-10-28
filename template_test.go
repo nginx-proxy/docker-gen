@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"bytes"
+	"encoding/json"
+	"testing"
+)
 
 func TestContains(t *testing.T) {
 	env := map[string]string{
@@ -137,5 +141,45 @@ func TestSha1(t *testing.T) {
   sum := hashSha1("/path")
 	if sum != "4f26609ad3f5185faaa9edf1e93aa131e2131352" {
 		t.Fatal("Incorrect SHA1 sum")
+	}
+}
+
+func TestJson(t *testing.T) {
+	containers := []*RuntimeContainer{
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost",
+			},
+			ID: "1",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost,demo3.localhost",
+			},
+			ID: "2",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost",
+			},
+			ID: "3",
+		},
+	}
+	output, err := marshalJson(containers)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	buf := bytes.NewBufferString(output)
+	dec := json.NewDecoder(buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded []*RuntimeContainer
+	if err := dec.Decode(&decoded); err != nil {
+		t.Fatal(err)
+	}
+	if len(decoded) != len(containers) {
+		t.Fatal("Incorrect unmarshaled container count. Expected %d, got %d.", len(containers), len(decoded))
 	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,7 +16,6 @@ import (
 	"strings"
 	"syscall"
 	"text/template"
-	"crypto/sha1"
 )
 
 func exists(path string) (bool, error) {
@@ -67,7 +67,7 @@ func dict(values ...interface{}) (map[string]interface{}, error) {
 		return nil, errors.New("invalid dict call")
 	}
 	dict := make(map[string]interface{}, len(values)/2)
-	for i := 0; i < len(values); i+=2 {
+	for i := 0; i < len(values); i += 2 {
 		key, ok := values[i].(string)
 		if !ok {
 			return nil, errors.New("dict keys must be strings")
@@ -83,7 +83,7 @@ func hashSha1(input string) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-func marshalJson(input interface{}) (string,error) {
+func marshalJson(input interface{}) (string, error) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	if err := enc.Encode(input); err != nil {

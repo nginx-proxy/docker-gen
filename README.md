@@ -97,7 +97,7 @@ If no `<dest>` file is specified, the output is sent to stdout.  Mainly useful f
 
 ### Templating
 
-The templates used by nginx-proxy are written the Go [text/template](http://golang.org/pkg/text/template/) language. In addition to the [built-in functions](http://golang.org/pkg/text/template/#hdr-Functions) supplied by Go, nginx-proxy provides a number of additional functions to make it simpler (or possible) to generate your desired output.
+The templates used by docker-gen are written using the Go [text/template](http://golang.org/pkg/text/template/) language. In addition to the [built-in functions](http://golang.org/pkg/text/template/#hdr-Functions) supplied by Go, docker-gen provides a number of additional functions to make it simpler (or possible) to generate your desired output.
 
 #### Functions
 

@@ -9,10 +9,10 @@ import (
 func TestDefaultEndpoint(t *testing.T) {
 	endpoint, err := getEndpoint()
 	if err != nil {
-		t.Fatal("%s", err)
+		t.Fatalf("%s", err)
 	}
 	if endpoint != "unix:///var/run/docker.sock" {
-		t.Fatal("Expected unix:///var/run/docker.sock")
+		t.Fatalf("Expected unix:///var/run/docker.sock, got %s", endpoint)
 	}
 }
 
@@ -28,7 +28,7 @@ func TestDockerHostEndpoint(t *testing.T) {
 	}
 
 	if endpoint != "tcp://127.0.0.1:4243" {
-		t.Fatal("Expected tcp://127.0.0.1:4243")
+		t.Fatalf("Expected tcp://127.0.0.1:4243, got %s", endpoint)
 	}
 }
 
@@ -51,7 +51,7 @@ func TestDockerFlagEndpoint(t *testing.T) {
 		t.Fatal("%s", err)
 	}
 	if endpoint != "tcp://127.0.0.1:5555" {
-		t.Fatal("Expected tcp://127.0.0.1:5555")
+		t.Fatalf("Expected tcp://127.0.0.1:5555, got %s", endpoint)
 	}
 }
 

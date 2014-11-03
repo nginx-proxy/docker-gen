@@ -26,6 +26,10 @@ var (
 	configs                 ConfigFile
 	interval                int
 	endpoint                string
+	tlsCert                 string
+	tlsKey                  string
+	tlsCaCert               string
+	tlsVerify               bool
 	wg                      sync.WaitGroup
 )
 
@@ -123,7 +127,7 @@ func (r *RuntimeContainer) PublishedAddresses() []Address {
 }
 
 func usage() {
-	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"] [-notify-sighup=\"container-ID\"] [-interval=0] [-endpoint tcp|unix://..] <template> [<dest>]")
+	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"] [-notify-sighup=\"container-ID\"] [-interval=0] [-endpoint tcp|unix://..] [-tlscert file] [-tlskey file] [-tlscacert file] [-tlsverify] <template> [<dest>]")
 }
 
 func generateFromContainers(client *docker.Client) {
@@ -225,8 +229,17 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 
 	wg.Add(1)
 	defer wg.Done()
+
+	eventChan := make(chan *docker.APIEvents, 100)
+	defer close(eventChan)
+
+	err := client.AddEventListener((chan<- *docker.APIEvents)(eventChan))
+	if err != nil {
+		log.Fatalf("Unable to add docker event listener: %s", err)
+	}
+	defer client.RemoveEventListener(eventChan)
+
 	log.Println("Watching docker events")
-	eventChan := getEvents()
 	for {
 		event := <-eventChan
 
@@ -235,7 +248,7 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 		}
 
 		if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
-			log.Printf("Received event %s for container %s", event.Status, event.ContainerID[:12])
+			log.Printf("Received event %s for container %s", event.Status, event.ID[:12])
 			generateFromContainers(client)
 		}
 	}
@@ -251,6 +264,10 @@ func initFlags() {
 	flag.StringVar(&configFile, "config", "", "config file with template directives")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (s)")
 	flag.StringVar(&endpoint, "endpoint", "", "docker api endpoint")
+	flag.StringVar(&tlsCert, "tlscert", "", "path to TLS client certificate file")
+	flag.StringVar(&tlsKey, "tlskey", "", "path to TLS client key file")
+	flag.StringVar(&tlsCaCert, "tlscacert", "", "path to TLS CA certificate file")
+	flag.BoolVar(&tlsVerify, "tlsverify", false, "verify docker daemon's TLS certicate")
 	flag.Parse()
 }
 
@@ -270,8 +287,7 @@ func main() {
 	if configFile != "" {
 		err := loadConfig(configFile)
 		if err != nil {
-			log.Printf("error loading config %s: %s\n", configFile, err)
-			os.Exit(1)
+			log.Fatalf("error loading config %s: %s\n", configFile, err)
 		}
 	} else {
 		config := Config{
@@ -296,9 +312,22 @@ func main() {
 		log.Fatalf("Bad endpoint: %s", err)
 	}
 
-	client, err := docker.NewClient(endpoint)
+	var client *docker.Client
+	if strings.HasPrefix(endpoint, "unix:") {
+		client, err = docker.NewClient(endpoint)
+	} else if tlsVerify || tlsCert != "" || tlsKey != "" || tlsCaCert != "" {
+		if tlsVerify {
+			if tlsCaCert == "" {
+				log.Fatal("TLS verification was requested, but no -tlscacert was provided")
+			}
+		}
+
+		client, err = docker.NewTLSClient(endpoint, tlsCert, tlsKey, tlsCaCert)
+	} else {
+		client, err = docker.NewClient(endpoint)
+	}
 	if err != nil {
-		log.Fatalf("Unable to parse %s: %s", endpoint, err)
+		log.Fatalf("Unable to create docker client: %s", err)
 	}
 
 	generateFromContainers(client)

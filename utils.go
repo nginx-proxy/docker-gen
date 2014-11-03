@@ -27,7 +27,7 @@ func getEndpoint() (string, error) {
 		}
 
 		if !exist {
-			return "", errors.New(host + " does not exists.")
+			return "", errors.New(host + " does not exist")
 		}
 	}
 

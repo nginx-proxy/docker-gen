@@ -1,19 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net"
-	"net/http"
-	"net/http/httputil"
-	"os"
-	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
-	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
 )
@@ -101,90 +92,6 @@ func splitDockerImage(img string) (string, string, string) {
 	}
 
 	return registry, repository, tag
-}
-
-func newConn() (*httputil.ClientConn, error) {
-	endpoint, err := getEndpoint()
-	if err != nil {
-		return nil, err
-	}
-
-	proto, addr, err := parseHost(endpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	conn, err := net.Dial(proto, addr)
-	if err != nil {
-		return nil, err
-	}
-
-	return httputil.NewClientConn(conn, nil), nil
-}
-
-func getEvents() chan *Event {
-	eventChan := make(chan *Event, 100)
-	go func() {
-		defer close(eventChan)
-
-		for {
-
-			c, err := newConn()
-			if err != nil {
-				log.Printf("cannot connect to docker: %s\n", err)
-				time.Sleep(10 * time.Second)
-				continue
-			}
-
-			req, err := http.NewRequest("GET", "/events", nil)
-			if err != nil {
-				log.Printf("bad request for events: %s\n", err)
-				c.Close()
-				time.Sleep(10 * time.Second)
-				continue
-			}
-
-			resp, err := c.Do(req)
-			if err != nil {
-				log.Printf("cannot connect to events endpoint: %s\n", err)
-				c.Close()
-				time.Sleep(10 * time.Second)
-				continue
-			}
-
-			// handle signals to stop the socket
-			sigChan := make(chan os.Signal, 1)
-			signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
-			go func() {
-				for sig := range sigChan {
-					log.Printf("received signal '%v', exiting\n", sig)
-
-					c.Close()
-					resp.Body.Close()
-					close(eventChan)
-					os.Exit(0)
-				}
-			}()
-
-			dec := json.NewDecoder(resp.Body)
-			for {
-				var event *Event
-				if err := dec.Decode(&event); err != nil || event.Status == "" {
-					if err == io.EOF || (event != nil && event.Status == "") {
-						log.Printf("connection closed")
-						break
-					}
-					log.Printf("cannot decode json: %s\n", err)
-					c.Close()
-					resp.Body.Close()
-					break
-				}
-
-				eventChan <- event
-			}
-		}
-	}()
-	return eventChan
 }
 
 func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {

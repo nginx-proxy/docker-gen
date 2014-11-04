@@ -95,9 +95,31 @@ func TestSplitDockerImageWithRepositoryAndTag(t *testing.T) {
 	if "ubuntu:12.04" != dockerImage.String() {
 		t.Fail()
 	}
-
 }
 
+func TestSplitDockerImageWithPrivateRegistryPath(t *testing.T) {
+	registry, repository, tag := splitDockerImage("localhost:8888/ubuntu/foo:12.04")
+
+	if registry != "localhost:8888" {
+		t.Fail()
+	}
+
+	if repository != "ubuntu/foo" {
+		t.Fail()
+	}
+
+	if tag != "12.04" {
+		t.Fail()
+	}
+	dockerImage := DockerImage{
+		Registry:   registry,
+		Repository: repository,
+		Tag:        tag,
+	}
+	if "localhost:8888/ubuntu/foo:12.04" != dockerImage.String() {
+		t.Fail()
+	}
+}
 func TestSplitDockerImageWithLocalRepositoryAndTag(t *testing.T) {
 	registry, repository, tag := splitDockerImage("localhost:8888/ubuntu:12.04")
 

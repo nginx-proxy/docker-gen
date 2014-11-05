@@ -220,8 +220,9 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 		}
 		for k, v := range container.NetworkSettings.Ports {
 			address := Address{
-				IP:   container.NetworkSettings.IPAddress,
-				Port: k.Port(),
+				IP:    container.NetworkSettings.IPAddress,
+				Port:  k.Port(),
+				Proto: k.Proto(),
 			}
 			if len(v) > 0 {
 				address.HostPort = v[0].HostPort

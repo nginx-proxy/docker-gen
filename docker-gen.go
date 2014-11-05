@@ -39,7 +39,9 @@ type Address struct {
 	IP       string
 	Port     string
 	HostPort string
+	Proto    string
 }
+
 type RuntimeContainer struct {
 	ID        string
 	Addresses []Address

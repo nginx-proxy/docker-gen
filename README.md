@@ -21,16 +21,16 @@ There are three common ways to run docker-gen:
 
 #### Host Install
 
-Linux binaries for release [0.3.4](https://github.com/jwilder/docker-gen/releases)
+Linux binaries for release [0.3.5](https://github.com/jwilder/docker-gen/releases)
 
-* [amd64](https://github.com/jwilder/docker-gen/releases/download/0.3.4/docker-gen-linux-amd64-0.3.4.tar.gz)
-* [i386](https://github.com/jwilder/docker-gen/releases/download/0.3.4/docker-gen-linux-i386-0.3.4.tar.gz)
+* [amd64](https://github.com/jwilder/docker-gen/releases/download/0.3.5/docker-gen-linux-amd64-0.3.5.tar.gz)
+* [i386](https://github.com/jwilder/docker-gen/releases/download/0.3.5/docker-gen-linux-i386-0.3.5.tar.gz)
 
 Download the version you need, untar, and install to your PATH.
 
 ```
-$ wget https://github.com/jwilder/docker-gen/releases/download/0.3.4/docker-gen-linux-amd64-0.3.4.tar.gz
-$ tar xvzf docker-gen-linux-amd64-0.3.4.tar.gz
+$ wget https://github.com/jwilder/docker-gen/releases/download/0.3.5/docker-gen-linux-amd64-0.3.5.tar.gz
+$ tar xvzf docker-gen-linux-amd64-0.3.5.tar.gz
 $ ./docker-gen
 ```
 

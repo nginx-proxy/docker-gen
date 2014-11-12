@@ -58,12 +58,14 @@ Start nginx with a shared volume:
 $ docker run -d -p 80:80 --name nginx -v /tmp/nginx:/etc/nginx/conf.d -t nginx
 ```
 
-Start the docker-gen container with the shared volume:
+Fetch the template and start the docker-gen container with the shared volume:
 ```
-$ docker run --volumes-from nginx \
-    -v /var/run/docker.sock:/tmp/docker.sock \
-   -v $(pwd)/templates:/etc/docker-gen/templates
-   -t docker-gen -notify-sighup nginx -watch --only-published /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
+$ mkdir -p /tmp/templates && cd /tmp/templates
+$ curl -o nginx.tmpl https://raw.githubusercontent.com/jwilder/docker-gen/master/templates/nginx.tmpl
+$ docker run -d --name nginx-gen --volumes-from nginx \
+   -v /var/run/docker.sock:/tmp/docker.sock \
+   -v /tmp/templates:/etc/docker-gen/templates \
+   -t jwilder/docker-gen:0.3.4 -notify-sighup nginx -watch --only-published /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
 ```
 
 ===

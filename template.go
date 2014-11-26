@@ -177,6 +177,7 @@ func generateFile(config Config, containers Context) bool {
 		"json":         marshalJson,
 		"last":         arrayLast,
 		"dir":          dirList,
+		"getenv":       os.Getenv,
 	}).ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalf("unable to parse template: %s", err)

@@ -111,6 +111,7 @@ Within those templates, the object emitted by docker-gen will have [this structu
 * *`dir $path`: Returns an array of filenames in the specified `$path`.
 * *`exists $path`*: Returns `true` if `$path` refers to an existing file or directory. Takes a string.
 * *`first $array`*: Returns the first value of an array or nil if the arry is nil or empty.
+* *`getenv $string`*: Returns the value of the environment variable called `$string`, or an empty string if the variable is unset.
 * *`groupBy $containers $fieldPath`*: Groups an array of `RuntimeContainer` instances based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value, which must be a string. Returns a map from the value of the field path expression to an array of containers having that value. Containers that do not have a value for the field path in question are omitted.
 * *`groupByKeys $containers $fieldPath`*: Returns the same as `groupBy` but only returns the keys of the map.
 * *`groupByMulti $containers $fieldPath $sep`*: Like `groupBy`, but the string value specified by `$fieldPath` is first split by `$sep` into a list of strings. A container whose `$fieldPath` value contains a list of strings will show up in the map output under each of those strings.

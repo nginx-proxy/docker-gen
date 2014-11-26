@@ -183,3 +183,21 @@ func TestJson(t *testing.T) {
 		t.Fatal("Incorrect unmarshaled container count. Expected %d, got %d.", len(containers), len(decoded))
 	}
 }
+
+func TestArrayClosestExact(t *testing.T) {
+	if arrayClosest([]string{"foo.bar.com", "bar.com"}, "foo.bar.com") != "foo.bar.com" {
+		t.Fatal("Expected foo.bar.com")
+	}
+}
+
+func TestArrayClosestSubstring(t *testing.T) {
+	if arrayClosest([]string{"foo.fo.com", "bar.com"}, "foo.bar.com") != "bar.com" {
+		t.Fatal("Expected bar.com")
+	}
+}
+
+func TestArrayClosestNoMatch(t *testing.T) {
+	if arrayClosest([]string{"foo.fo.com", "bip.com"}, "foo.bar.com") != "" {
+		t.Fatal("Expected ''")
+	}
+}

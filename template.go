@@ -43,6 +43,7 @@ func groupByMulti(entries []*RuntimeContainer, key, sep string) map[string][]*Ru
 	return groups
 }
 
+// groupBy groups a list of *RuntimeContainers by the path property key
 func groupBy(entries []*RuntimeContainer, key string) map[string][]*RuntimeContainer {
 	groups := make(map[string][]*RuntimeContainer)
 	for _, v := range entries {
@@ -52,6 +53,16 @@ func groupBy(entries []*RuntimeContainer, key string) map[string][]*RuntimeConta
 		}
 	}
 	return groups
+}
+
+// groupByKeys is the same as groupBy but only returns a list of keys
+func groupByKeys(entries []*RuntimeContainer, key string) []string {
+	groups := groupBy(entries, key)
+	ret := []string{}
+	for k, _ := range groups {
+		ret = append(ret, k)
+	}
+	return ret
 }
 
 func contains(item map[string]string, key string) bool {
@@ -91,24 +102,81 @@ func marshalJson(input interface{}) (string, error) {
 	return strings.TrimSuffix(buf.String(), "\n"), nil
 }
 
+// arrayFirst returns first item in the array or nil if the
+// input is nil or empty
+func arrayFirst(input interface{}) interface{} {
+	if input == nil {
+		return nil
+	}
+
+	arr := reflect.ValueOf(input)
+
+	if arr.Len() == 0 {
+		return nil
+	}
+
+	return arr.Index(0).Interface()
+}
+
+// arrayLast returns last item in the array
 func arrayLast(input interface{}) interface{} {
 	arr := reflect.ValueOf(input)
 	return arr.Index(arr.Len() - 1).Interface()
 }
 
+// arrayClosest find the longest matching substring in values
+// that matches input
+func arrayClosest(values []string, input string) string {
+	best := ""
+	for _, v := range values {
+		if strings.Contains(input, v) && len(v) > len(best) {
+			best = v
+		}
+	}
+	return best
+}
+
+// dirList returns a list of files in the specified path
+func dirList(path string) ([]string, error) {
+	names := []string{}
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return names, err
+	}
+	for _, f := range files {
+		names = append(names, f.Name())
+	}
+	return names, nil
+}
+
+// coalesce returns the first non nil argument
+func coalesce(input ...interface{}) interface{} {
+	for _, v := range input {
+		if v != nil {
+			return v
+		}
+	}
+	return nil
+}
+
 func generateFile(config Config, containers Context) bool {
 	templatePath := config.Template
 	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(template.FuncMap{
+		"closest":      arrayClosest,
+		"coalesce":     coalesce,
 		"contains":     contains,
 		"exists":       exists,
+		"first":        arrayFirst,
 		"groupBy":      groupBy,
 		"groupByMulti": groupByMulti,
+		"groupByKeys":  groupByKeys,
 		"split":        strings.Split,
 		"replace":      strings.Replace,
 		"dict":         dict,
 		"sha1":         hashSha1,
 		"json":         marshalJson,
 		"last":         arrayLast,
+		"dir":          dirList,
 	}).ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalf("unable to parse template: %s", err)

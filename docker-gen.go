@@ -93,7 +93,6 @@ func (c *Context) Env() map[string]string {
 		env[parts[0]] = parts[1]
 	}
 	return env
-
 }
 
 func (c *ConfigFile) filterWatches() ConfigFile {

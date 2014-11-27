@@ -118,6 +118,7 @@ Within those templates, the object emitted by docker-gen will have [this structu
 * *`hasPrefix $prefix $string`*: Returns whether `$prefix` is a prefix of `$string`.
 * *`hasSuffix $suffix $string`*: Returns whether `$suffix` is a suffix of `$string`.
 * *`json $value`*: Returns the JSON representation of `$value` as a `string`.
+* *`keys $map`*: Returns the keys from `$map`. If `$map` is `nil`, a `nil` is returned. If `$map` is not a `map`, an error will be thrown.
 * *`last $array`*: Returns the last value of an array.
 * *`replace $string $old $new $count`*: Replaces up to `$count` occurences of `$old` with `$new` in `$string`. Alias for [`strings.Replace`](http://golang.org/pkg/strings/#Replace)
 * *`sha1 $string`*: Returns the hexadecimal representation of the SHA1 hash of `$string`.

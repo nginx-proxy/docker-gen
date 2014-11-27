@@ -20,7 +20,7 @@ func TestContains(t *testing.T) {
 	}
 }
 
-func TestGroupByExitingKey(t *testing.T) {
+func TestGroupByExistingKey(t *testing.T) {
 	containers := []*RuntimeContainer{
 		&RuntimeContainer{
 			Env: map[string]string{

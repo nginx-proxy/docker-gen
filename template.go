@@ -169,6 +169,16 @@ func coalesce(input ...interface{}) interface{} {
 	return nil
 }
 
+// trimPrefix returns whether a given string is a prefix of another string
+func trimPrefix(prefix, s string) string {
+	return strings.TrimPrefix(s, prefix)
+}
+
+// trimSuffix returns whether a given string is a suffix of another string
+func trimSuffix(suffix, s string) string {
+	return strings.TrimSuffix(s, suffix)
+}
+
 func generateFile(config Config, containers Context) bool {
 	templatePath := config.Template
 	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(template.FuncMap{
@@ -189,6 +199,8 @@ func generateFile(config Config, containers Context) bool {
 		"replace":      strings.Replace,
 		"sha1":         hashSha1,
 		"split":        strings.Split,
+		"trimPrefix":   trimPrefix,
+		"trimSuffix":   trimSuffix,
 	}).ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalf("unable to parse template: %s", err)

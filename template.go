@@ -65,6 +65,16 @@ func groupByKeys(entries []*RuntimeContainer, key string) []string {
 	return ret
 }
 
+// hasPrefix returns whether a given string is a prefix of another string
+func hasPrefix(prefix, s string) bool {
+	return strings.HasPrefix(s, prefix)
+}
+
+// hasSuffix returns whether a given string is a suffix of another string
+func hasSuffix(suffix, s string) bool {
+	return strings.HasSuffix(s, suffix)
+}
+
 func contains(item map[string]string, key string) bool {
 	if _, ok := item[key]; ok {
 		return true
@@ -170,6 +180,8 @@ func generateFile(config Config, containers Context) bool {
 		"groupBy":      groupBy,
 		"groupByMulti": groupByMulti,
 		"groupByKeys":  groupByKeys,
+		"hasPrefix":    hasPrefix,
+		"hasSuffix":    hasSuffix,
 		"split":        strings.Split,
 		"replace":      strings.Replace,
 		"dict":         dict,

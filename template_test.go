@@ -104,6 +104,22 @@ func TestGroupByMulti(t *testing.T) {
 	}
 }
 
+func TestHasPrefix(t *testing.T) {
+	const prefix = "tcp://"
+	const str = "tcp://127.0.0.1:2375"
+	if !hasPrefix(prefix, str) {
+		t.Fatalf("expected %s to have prefix %s", str, prefix)
+	}
+}
+
+func TestHasSuffix(t *testing.T) {
+	const suffix = ".local"
+	const str = "myhost.local"
+	if !hasSuffix(suffix, str) {
+		t.Fatalf("expected %s to have suffix %s", str, suffix)
+	}
+}
+
 func TestDict(t *testing.T) {
 	containers := []*RuntimeContainer{
 		&RuntimeContainer{

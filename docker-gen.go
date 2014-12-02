@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -130,6 +131,21 @@ func usage() {
 	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"] [-notify-sighup=\"container-ID\"] [-interval=0] [-endpoint tcp|unix://..] [-tlscert file] [-tlskey file] [-tlscacert file] [-tlsverify] <template> [<dest>]")
 }
 
+func NewDockerClient(endpoint string) (*docker.Client, error) {
+	if strings.HasPrefix(endpoint, "unix:") {
+		return docker.NewClient(endpoint)
+	} else if tlsVerify || tlsCert != "" || tlsKey != "" || tlsCaCert != "" {
+		if tlsVerify {
+			if tlsCaCert == "" {
+				return nil, errors.New("TLS verification was requested, but no -tlscacert was provided")
+			}
+		}
+
+		return docker.NewTLSClient(endpoint, tlsCert, tlsKey, tlsCaCert)
+	}
+	return docker.NewClient(endpoint)
+}
+
 func generateFromContainers(client *docker.Client) {
 	containers, err := getContainers(client)
 	if err != nil {
@@ -156,7 +172,7 @@ func runNotifyCmd(config Config) {
 	cmd := exec.Command("/bin/sh", "-c", config.NotifyCmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Printf("error running notify command: %s, %s\n", config.NotifyCmd, err)
+		log.Printf("Error running notify command: %s, %s\n", config.NotifyCmd, err)
 		log.Print(string(out))
 	}
 }
@@ -205,7 +221,7 @@ func generateAtInterval(client *docker.Client, configs ConfigFile) {
 				case <-ticker.C:
 					containers, err := getContainers(client)
 					if err != nil {
-						log.Printf("error listing containers: %s\n", err)
+						log.Printf("Error listing containers: %s\n", err)
 						continue
 					}
 					// ignore changed return value. always run notify command
@@ -229,28 +245,103 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 
 	wg.Add(1)
 	defer wg.Done()
-
-	eventChan := make(chan *docker.APIEvents, 100)
-	defer close(eventChan)
-
-	err := client.AddEventListener((chan<- *docker.APIEvents)(eventChan))
-	if err != nil {
-		log.Fatalf("Unable to add docker event listener: %s", err)
-	}
-	defer client.RemoveEventListener(eventChan)
-
-	log.Println("Watching docker events")
-	for {
-		event := <-eventChan
-
-		if event == nil {
-			continue
+	/*
+		err := client.AddEventListener((chan<- *docker.APIEvents)(eventChan))
+		if err != nil {
+			log.Fatalf("Unable to add docker event listener: %s", err)
 		}
+		defer client.RemoveEventListener(eventChan)*/
 
-		if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
-			log.Printf("Received event %s for container %s", event.Status, event.ID[:12])
+	for {
+		if client == nil {
+			var err error
+			endpoint, err := getEndpoint()
+			if err != nil {
+				log.Printf("Bad endpoint: %s", err)
+				time.Sleep(10 * time.Second)
+				continue
+			}
+
+			client, err = NewDockerClient(endpoint)
+			if err != nil {
+				log.Printf("Unable to connect to docker daemaon: %s", err)
+				time.Sleep(10 * time.Second)
+				continue
+			}
 			generateFromContainers(client)
 		}
+
+		eventChan := make(chan *docker.APIEvents, 100)
+		defer close(eventChan)
+
+		watching := false
+		for {
+
+			if client == nil {
+				break
+			}
+			err := client.Ping()
+			if err != nil {
+				log.Printf("Unable to ping docker daemaon: %s", err)
+				if watching {
+					client.RemoveEventListener(eventChan)
+					watching = false
+					client = nil
+				}
+				time.Sleep(10 * time.Second)
+				break
+
+			}
+
+			if !watching {
+				err = client.AddEventListener(eventChan)
+				if err != nil && err != docker.ErrListenerAlreadyExists {
+					log.Printf("Error registering docker event listener: %s", err)
+					time.Sleep(10 * time.Second)
+					continue
+				}
+				watching = true
+				log.Println("Watching docker events")
+			}
+
+			select {
+
+			case event := <-eventChan:
+				if event == nil {
+					if watching {
+						client.RemoveEventListener(eventChan)
+						watching = false
+						client = nil
+					}
+					break
+				}
+
+				if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
+					log.Printf("Received event %s for container %s", event.Status, event.ID[:12])
+					generateFromContainers(client)
+				}
+			case <-time.After(10 * time.Second):
+				// check for docker liveness
+			}
+
+		}
+
+		/*		event := <-eventChan
+				println(event)
+				if event == nil {
+					client.RemoveEventListener(eventChan)
+					client, err = NewDockerClient(endpoint)
+					println(client)
+					if err != nil {
+						log.Printf("Error connecting to docker daemon: %s", err)
+					}
+					goto RESTART
+				}
+
+				if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
+					log.Printf("Received event %s for container %s", event.Status, event.ID[:12])
+					generateFromContainers(client)
+				}*/
 	}
 }
 
@@ -312,20 +403,7 @@ func main() {
 		log.Fatalf("Bad endpoint: %s", err)
 	}
 
-	var client *docker.Client
-	if strings.HasPrefix(endpoint, "unix:") {
-		client, err = docker.NewClient(endpoint)
-	} else if tlsVerify || tlsCert != "" || tlsKey != "" || tlsCaCert != "" {
-		if tlsVerify {
-			if tlsCaCert == "" {
-				log.Fatal("TLS verification was requested, but no -tlscacert was provided")
-			}
-		}
-
-		client, err = docker.NewTLSClient(endpoint, tlsCert, tlsKey, tlsCaCert)
-	} else {
-		client, err = docker.NewClient(endpoint)
-	}
+	client, err := NewDockerClient(endpoint)
 	if err != nil {
 		log.Fatalf("Unable to create docker client: %s", err)
 	}

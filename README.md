@@ -108,18 +108,22 @@ Within those templates, the object emitted by docker-gen will have [this structu
 * *`closest $array $value`: Returns the longest matching substring in `$array` that matches `$value`
 * *`coalesce ...`*: Returns the first non-nil argument.
 * *`contains $map $key`*: Returns `true` if `$map` contains `$key`. Takes maps from `string` to `string`.
+* *`dict $key $value ...`*: Creates a map from a list of pairs. Each `$key` value must be a `string`, but the `$value` can be any type (or `nil`). Useful for passing more than one value as a pipeline context to subtemplates.
 * *`dir $path`: Returns an array of filenames in the specified `$path`.
 * *`exists $path`*: Returns `true` if `$path` refers to an existing file or directory. Takes a string.
 * *`first $array`*: Returns the first value of an array or nil if the arry is nil or empty.
 * *`groupBy $containers $fieldPath`*: Groups an array of `RuntimeContainer` instances based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value, which must be a string. Returns a map from the value of the field path expression to an array of containers having that value. Containers that do not have a value for the field path in question are omitted.
 * *`groupByKeys $containers $fieldPath`*: Returns the same as `groupBy` but only returns the keys of the map.
 * *`groupByMulti $containers $fieldPath $sep`*: Like `groupBy`, but the string value specified by `$fieldPath` is first split by `$sep` into a list of strings. A container whose `$fieldPath` value contains a list of strings will show up in the map output under each of those strings.
-* *`split $string $sep`*: Splits `$string` into a slice of substrings delimited by `$sep`. Alias for [`strings.Split`](http://golang.org/pkg/strings/#Split)
-* *`replace $string $old $new $count`*: Replaces up to `$count` occurences of `$old` with `$new` in `$string`. Alias for [`strings.Replace`](http://golang.org/pkg/strings/#Replace)
-* *`dict $key $value ...`*: Creates a map from a list of pairs. Each `$key` value must be a `string`, but the `$value` can be any type (or `nil`). Useful for passing more than one value as a pipeline context to subtemplates.
-* *`sha1 $string`*: Returns the hexadecimal representation of the SHA1 hash of `$string`.
+* *`hasPrefix $prefix $string`*: Returns whether `$prefix` is a prefix of `$string`.
+* *`hasSuffix $suffix $string`*: Returns whether `$suffix` is a suffix of `$string`.
 * *`json $value`*: Returns the JSON representation of `$value` as a `string`.
 * *`last $array`*: Returns the last value of an array.
+* *`replace $string $old $new $count`*: Replaces up to `$count` occurences of `$old` with `$new` in `$string`. Alias for [`strings.Replace`](http://golang.org/pkg/strings/#Replace)
+* *`sha1 $string`*: Returns the hexadecimal representation of the SHA1 hash of `$string`.
+* *`split $string $sep`*: Splits `$string` into a slice of substrings delimited by `$sep`. Alias for [`strings.Split`](http://golang.org/pkg/strings/#Split)
+* *`trimPrefix $prefix $string`*: If `$prefix` is a prefix of `$string`, return `$string` with `$prefix` trimmed from the beginning. Otherwise, return `$string` unchanged.
+* *`trimSuffix $suffix $string`*: If `$suffix` is a suffix of `$string`, return `$string` with `$suffix` trimmed from the end. Otherwise, return `$string` unchanged.
 
 ===
 

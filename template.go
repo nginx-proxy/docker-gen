@@ -65,6 +65,16 @@ func groupByKeys(entries []*RuntimeContainer, key string) []string {
 	return ret
 }
 
+// hasPrefix returns whether a given string is a prefix of another string
+func hasPrefix(prefix, s string) bool {
+	return strings.HasPrefix(s, prefix)
+}
+
+// hasSuffix returns whether a given string is a suffix of another string
+func hasSuffix(suffix, s string) bool {
+	return strings.HasSuffix(s, suffix)
+}
+
 func contains(item map[string]string, key string) bool {
 	if _, ok := item[key]; ok {
 		return true
@@ -159,24 +169,38 @@ func coalesce(input ...interface{}) interface{} {
 	return nil
 }
 
+// trimPrefix returns whether a given string is a prefix of another string
+func trimPrefix(prefix, s string) string {
+	return strings.TrimPrefix(s, prefix)
+}
+
+// trimSuffix returns whether a given string is a suffix of another string
+func trimSuffix(suffix, s string) string {
+	return strings.TrimSuffix(s, suffix)
+}
+
 func generateFile(config Config, containers Context) bool {
 	templatePath := config.Template
 	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(template.FuncMap{
 		"closest":      arrayClosest,
 		"coalesce":     coalesce,
 		"contains":     contains,
+		"dict":         dict,
+		"dir":          dirList,
 		"exists":       exists,
 		"first":        arrayFirst,
 		"groupBy":      groupBy,
-		"groupByMulti": groupByMulti,
 		"groupByKeys":  groupByKeys,
-		"split":        strings.Split,
-		"replace":      strings.Replace,
-		"dict":         dict,
-		"sha1":         hashSha1,
+		"groupByMulti": groupByMulti,
+		"hasPrefix":    hasPrefix,
+		"hasSuffix":    hasSuffix,
 		"json":         marshalJson,
 		"last":         arrayLast,
-		"dir":          dirList,
+		"replace":      strings.Replace,
+		"sha1":         hashSha1,
+		"split":        strings.Split,
+		"trimPrefix":   trimPrefix,
+		"trimSuffix":   trimSuffix,
 	}).ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalf("unable to parse template: %s", err)

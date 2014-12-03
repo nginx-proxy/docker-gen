@@ -16,10 +16,10 @@ dist-clean:
 	rm -f docker-gen-darwin-*.tar.gz
 
 dist: dist-clean
-	mkdir -p dist/linux/amd64 && GOOS=linux GOARCH=amd64 go build -o dist/linux/amd64/docker-gen
-	mkdir -p dist/linux/i386  && GOOS=linux GOARCH=386 go build -o dist/linux/i386/docker-gen
-	mkdir -p dist/darwin/amd64 && GOOS=darwin GOARCH=amd64 go build -o dist/darwin/amd64/docker-gen
-	mkdir -p dist/darwin/i386  && GOOS=darwin GOARCH=386 go build -o dist/darwin/i386/docker-gen
+	mkdir -p dist/linux/amd64 && GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o dist/linux/amd64/docker-gen
+	mkdir -p dist/linux/i386  && GOOS=linux GOARCH=386 go build -ldflags "$(LDFLAGS)" -o dist/linux/i386/docker-gen
+	mkdir -p dist/darwin/amd64 && GOOS=darwin GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o dist/darwin/amd64/docker-gen
+	mkdir -p dist/darwin/i386  && GOOS=darwin GOARCH=386 go build -ldflags "$(LDFLAGS)" -o dist/darwin/i386/docker-gen
 
 
 release: dist

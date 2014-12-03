@@ -75,6 +75,25 @@ func hasSuffix(suffix, s string) bool {
 	return strings.HasSuffix(s, suffix)
 }
 
+func keys(input interface{}) (interface{}, error) {
+	if input == nil {
+		return nil, nil
+	}
+
+	val := reflect.ValueOf(input)
+	if val.Kind() != reflect.Map {
+		return nil, fmt.Errorf("Cannot call keys on a non-map value: %v", input)
+	}
+
+	vk := val.MapKeys()
+	k := make([]interface{}, val.Len())
+	for i, _ := range k {
+		k[i] = vk[i].Interface()
+	}
+
+	return k, nil
+}
+
 func contains(item map[string]string, key string) bool {
 	if _, ok := item[key]; ok {
 		return true
@@ -195,6 +214,7 @@ func generateFile(config Config, containers Context) bool {
 		"hasPrefix":    hasPrefix,
 		"hasSuffix":    hasSuffix,
 		"json":         marshalJson,
+		"keys":         keys,
 		"last":         arrayLast,
 		"replace":      strings.Replace,
 		"sha1":         hashSha1,

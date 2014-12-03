@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"reflect"
 	"testing"
 )
 
@@ -20,7 +21,60 @@ func TestContains(t *testing.T) {
 	}
 }
 
-func TestGroupByExitingKey(t *testing.T) {
+func TestKeys(t *testing.T) {
+	expected := "VIRTUAL_HOST"
+	env := map[string]string{
+		expected: "demo.local",
+	}
+
+	k, err := keys(env)
+	if err != nil {
+		t.Fatalf("Error fetching keys: %v", err)
+	}
+	vk := reflect.ValueOf(k)
+	if vk.Kind() == reflect.Invalid {
+		t.Fatalf("Got invalid kind for keys: %v", vk)
+	}
+
+	if len(env) != vk.Len() {
+		t.Fatalf("Incorrect key count; expected %s, got %s", len(env), vk.Len())
+	}
+
+	got := vk.Index(0).Interface()
+	if expected != got {
+		t.Fatalf("Incorrect key found; expected %s, got %s", expected, got)
+	}
+}
+
+func TestKeysEmpty(t *testing.T) {
+	input := map[string]int{}
+
+	k, err := keys(input)
+	if err != nil {
+		t.Fatalf("Error fetching keys: %v", err)
+	}
+	vk := reflect.ValueOf(k)
+	if vk.Kind() == reflect.Invalid {
+		t.Fatalf("Got invalid kind for keys: %v", vk)
+	}
+
+	if len(input) != vk.Len() {
+		t.Fatalf("Incorrect key count; expected %s, got %s", len(input), vk.Len())
+	}
+}
+
+func TestKeysNil(t *testing.T) {
+	k, err := keys(nil)
+	if err != nil {
+		t.Fatalf("Error fetching keys: %v", err)
+	}
+	vk := reflect.ValueOf(k)
+	if vk.Kind() != reflect.Invalid {
+		t.Fatalf("Got invalid kind for keys: %v", vk)
+	}
+}
+
+func TestGroupByExistingKey(t *testing.T) {
 	containers := []*RuntimeContainer{
 		&RuntimeContainer{
 			Env: map[string]string{

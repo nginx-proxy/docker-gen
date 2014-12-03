@@ -245,12 +245,6 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 
 	wg.Add(1)
 	defer wg.Done()
-	/*
-		err := client.AddEventListener((chan<- *docker.APIEvents)(eventChan))
-		if err != nil {
-			log.Fatalf("Unable to add docker event listener: %s", err)
-		}
-		defer client.RemoveEventListener(eventChan)*/
 
 	for {
 		if client == nil {
@@ -325,23 +319,6 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 			}
 
 		}
-
-		/*		event := <-eventChan
-				println(event)
-				if event == nil {
-					client.RemoveEventListener(eventChan)
-					client, err = NewDockerClient(endpoint)
-					println(client)
-					if err != nil {
-						log.Printf("Error connecting to docker daemon: %s", err)
-					}
-					goto RESTART
-				}
-
-				if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
-					log.Printf("Received event %s for container %s", event.Status, event.ID[:12])
-					generateFromContainers(client)
-				}*/
 	}
 }
 

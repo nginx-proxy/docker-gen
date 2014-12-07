@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+	"text/template"
 )
 
 func TestContains(t *testing.T) {
@@ -27,20 +28,16 @@ func TestKeys(t *testing.T) {
 		expected: "demo.local",
 	}
 
-	k, err := keys(env)
+	const text = "{{range (keys $)}}{{.}}{{end}}"
+	tmpl := template.Must(newTemplate("keys-test").Parse(text))
+
+	var b bytes.Buffer
+	err := tmpl.ExecuteTemplate(&b, "keys-test", env)
 	if err != nil {
-		t.Fatalf("Error fetching keys: %v", err)
-	}
-	vk := reflect.ValueOf(k)
-	if vk.Kind() == reflect.Invalid {
-		t.Fatalf("Got invalid kind for keys: %v", vk)
+		t.Fatalf("Error executing template: %v", err)
 	}
 
-	if len(env) != vk.Len() {
-		t.Fatalf("Incorrect key count; expected %s, got %s", len(env), vk.Len())
-	}
-
-	got := vk.Index(0).Interface()
+	got := b.String()
 	if expected != got {
 		t.Fatalf("Incorrect key found; expected %s, got %s", expected, got)
 	}

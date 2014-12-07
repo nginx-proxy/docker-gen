@@ -283,9 +283,8 @@ func trimSuffix(suffix, s string) string {
 	return strings.TrimSuffix(s, suffix)
 }
 
-func generateFile(config Config, containers Context) bool {
-	templatePath := config.Template
-	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(template.FuncMap{
+func newTemplate(name string) *template.Template {
+	tmpl := template.New(name).Funcs(template.FuncMap{
 		"closest":       arrayClosest,
 		"coalesce":      coalesce,
 		"contains":      contains,
@@ -312,7 +311,13 @@ func generateFile(config Config, containers Context) bool {
 		"whereNotExist": whereNotExist,
 		"whereAny":      whereAny,
 		"whereAll":      whereAll,
-	}).ParseFiles(templatePath)
+	})
+	return tmpl
+}
+
+func generateFile(config Config, containers Context) bool {
+	templatePath := config.Template
+	tmpl, err := newTemplate(filepath.Base(templatePath)).ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalf("unable to parse template: %s", err)
 	}

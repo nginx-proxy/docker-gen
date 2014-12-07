@@ -124,6 +124,7 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 			Gateway:   container.NetworkSettings.Gateway,
 			Addresses: []Address{},
 			Env:       make(map[string]string),
+			Volumes:   make(map[string]Volume),
 		}
 		for k, v := range container.NetworkSettings.Ports {
 			address := Address{
@@ -137,6 +138,13 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 			runtimeContainer.Addresses = append(runtimeContainer.Addresses,
 				address)
 
+		}
+		for k, v := range container.Volumes {
+			runtimeContainer.Volumes[k] = Volume{
+				Path:      k,
+				HostPath:  v,
+				ReadWrite: container.VolumesRW[k],
+			}
 		}
 
 		for _, entry := range container.Config.Env {

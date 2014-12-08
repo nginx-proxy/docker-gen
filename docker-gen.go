@@ -265,7 +265,7 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 
 			client, err = NewDockerClient(endpoint)
 			if err != nil {
-				log.Printf("Unable to connect to docker daemaon: %s", err)
+				log.Printf("Unable to connect to docker daemon: %s", err)
 				time.Sleep(10 * time.Second)
 				continue
 			}
@@ -283,7 +283,7 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 			}
 			err := client.Ping()
 			if err != nil {
-				log.Printf("Unable to ping docker daemaon: %s", err)
+				log.Printf("Unable to ping docker daemon: %s", err)
 				if watching {
 					client.RemoveEventListener(eventChan)
 					watching = false

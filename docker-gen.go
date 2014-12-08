@@ -47,6 +47,12 @@ type Address struct {
 	Proto    string
 }
 
+type Volume struct {
+	Path      string
+	HostPath  string
+	ReadWrite bool
+}
+
 type RuntimeContainer struct {
 	ID        string
 	Addresses []Address
@@ -54,6 +60,7 @@ type RuntimeContainer struct {
 	Name      string
 	Image     DockerImage
 	Env       map[string]string
+	Volumes   map[string]Volume
 }
 
 type DockerImage struct {

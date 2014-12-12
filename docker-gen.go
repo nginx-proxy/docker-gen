@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -201,11 +202,36 @@ func sendSignalToContainer(client *docker.Client, config Config) {
 	}
 }
 
-func loadConfig(file string) error {
-	_, err := toml.DecodeFile(file, &configs)
-	if err != nil {
-		return err
+func loadConfig(allPatterns string) error {
+	patterns := strings.Split(allPatterns, ",")
+
+	files := []string{}
+	for _, pattern := range patterns {
+		localFiles, err := filepath.Glob(pattern)
+		if err != nil {
+			return err
+		}
+		files = append(files, localFiles...)
 	}
+
+	mainConfig := []Config{}
+
+	for _, file := range files {
+		var localConfig ConfigFile
+
+		_, err := toml.DecodeFile(file, &localConfig)
+
+		if err != nil {
+			return err
+		}
+
+		mainConfig = append(mainConfig, localConfig.Config...)
+	}
+
+	configs = ConfigFile{
+		Config: mainConfig,
+	}
+
 	return nil
 }
 

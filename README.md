@@ -79,8 +79,9 @@ Usage: docker-gen [-config file] [-watch=false] [-notify="restart xyz"] [-notify
 *Options:*
 
 ```
-  -config="": Use the specified config file instead of command-line options.  Multiple templates can be defined and
-              they will be executed in the order that they appear in the config file.
+  -config="": Use the specified config file[s], separated by comas, instead of command-line options. All file patterns
+              are processed with [filepath.Glob](http://golang.org/pkg/path/filepath/#Glob). One file can contain
+              multiple templates and they will be executed in the order that they appear in the config file.
   -endpoint="": docker api endpoint [tcp|unix://..]. This can also be set w/ a `DOCKER_HOST` environment.
   -interval=0:run notify command interval (s). Useful for service registration use cases.
   -notify="": run command after template is regenerated ["restart xyz"]. Useful for restarting nginx,

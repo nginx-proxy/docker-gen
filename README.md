@@ -40,7 +40,7 @@ Docker-gen can be bundled inside of a container along-side and applications.
 
 [jwilder/nginx-proxy](https://index.docker.io/u/jwilder/nginx-proxy/) trusted build is an example of
 running docker-gen within a container along-side nginx.
-[jwilder/docker-register](https://github.com/jwilder/docker-register) is an example or running
+[jwilder/docker-register](https://github.com/jwilder/docker-register) is an example of running
 docker-gen within a container to do service registration with etcd.
 
 #### Separate Container Install

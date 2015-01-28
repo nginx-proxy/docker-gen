@@ -65,6 +65,18 @@ func groupByKeys(entries []*RuntimeContainer, key string) []string {
 	return ret
 }
 
+// selects entries based on key
+func where(entries []*RuntimeContainer, key string, cmp string) []*RuntimeContainer {
+	selection := []*RuntimeContainer{}
+	for _, v := range entries {
+		value := deepGet(*v, key)
+		if value == cmp {
+			selection = append(selection, v)
+		}
+	}
+	return selection
+}
+
 // hasPrefix returns whether a given string is a prefix of another string
 func hasPrefix(prefix, s string) bool {
 	return strings.HasPrefix(s, prefix)
@@ -240,6 +252,7 @@ func generateFile(config Config, containers Context) bool {
 		"split":        strings.Split,
 		"trimPrefix":   trimPrefix,
 		"trimSuffix":   trimSuffix,
+		"where":		where,
 	}).ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalf("unable to parse template: %s", err)

@@ -92,6 +92,22 @@ func whereSomeMatch(entries []*RuntimeContainer, key, sep string, cmp []string) 
 	return selection
 }
 
+// selects entries based on key.  Assumes key is delimited and breaks it apart before comparing
+func whereRequires(entries []*RuntimeContainer, key, sep string, cmp []string) []*RuntimeContainer {
+	selection := []*RuntimeContainer{}
+	req_count := len(cmp)
+	for _, v := range entries {
+		value := deepGet(*v, key)
+		if value != nil {
+			items := strings.Split(value.(string), sep)
+			if len(intersect(cmp, items)) == req_count {
+				selection = append(selection, v)
+			}
+		}
+	}
+	return selection
+}
+
 // hasPrefix returns whether a given string is a prefix of another string
 func hasPrefix(prefix, s string) bool {
 	return strings.HasPrefix(s, prefix)
@@ -269,6 +285,7 @@ func generateFile(config Config, containers Context) bool {
 		"trimSuffix":   trimSuffix,
 		"where":		where,
 		"whereSomeMatch": whereSomeMatch,
+		"whereRequires": whereRequires,
 	}).ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalf("unable to parse template: %s", err)

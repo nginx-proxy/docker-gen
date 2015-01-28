@@ -132,6 +132,7 @@ Within those templates, the object emitted by docker-gen will have [this structu
 * *`trimSuffix $suffix $string`*: If `$suffix` is a suffix of `$string`, return `$string` with `$suffix` trimmed from the end. Otherwise, return `$string` unchanged.
 * *`where $containers $fieldPath $value`*: Filters an array of `RuntimeContainer` instances based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value, which must be a string. Returns an array of containers having that value.
 * *`whereSomeMatch $containers $fieldPath $sep $values`*: Like `where`, but the string value specified by `$fieldPath` is first split by `$sep` into a list of strings. The comparison value is a string slice with possible matches. Returns containers which OR intersect these values.
+* *`whereRequires $containers $fieldPath $sep $values`*: Like `whereSomeMatch`, except all `$values` must exist in the `$fieldPath`.
 
 ===
 

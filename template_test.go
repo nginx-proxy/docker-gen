@@ -74,6 +74,24 @@ func TestKeysNil(t *testing.T) {
 	}
 }
 
+func TestIntersect(t *testing.T) {
+	if len(intersect([]string{"foo.fo.com", "bar.com"}, []string{"foo.bar.com"})) != 0 {
+		t.Fatal("Expected no match")
+	}
+
+	if len(intersect([]string{"foo.fo.com", "bar.com"}, []string{"bar.com", "foo.com"})) != 1 {
+		t.Fatal("Expected only one match")
+	}
+
+	if len(intersect([]string{"foo.com"}, []string{"bar.com", "foo.com"})) != 1 {
+		t.Fatal("Expected only one match")
+	}
+
+	if len(intersect([]string{"foo.fo.com", "foo.com", "bar.com"}, []string{"bar.com", "foo.com"})) != 2 {
+		t.Fatal("Expected two matches")
+	}
+}
+
 func TestGroupByExistingKey(t *testing.T) {
 	containers := []*RuntimeContainer{
 		&RuntimeContainer{
@@ -155,6 +173,141 @@ func TestGroupByMulti(t *testing.T) {
 	}
 	if groups["demo3.localhost"][0].ID != "2" {
 		t.Fatalf("expected 2 got %s", groups["demo3.localhost"][0].ID)
+	}
+}
+
+func TestWhere(t *testing.T) {
+	containers := []*RuntimeContainer{
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost",
+			},
+			ID: "1",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost",
+			},
+			ID: "2",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo3.localhost",
+			},
+			ID: "3",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost",
+			},
+			ID: "4",
+		},
+	}
+
+	if len(where(containers, "Env.VIRTUAL_HOST", "demo1.localhost")) != 1 {
+		t.Fatalf("demo1.localhost expected 1 match")
+	}
+
+	if len(where(containers, "Env.VIRTUAL_HOST", "demo2.localhost")) != 2 {
+		t.Fatalf("demo2.localhost expected 2 matches")
+	}
+
+	if len(where(containers, "Env.VIRTUAL_HOST", "demo3.localhost")) != 1 {
+		t.Fatalf("demo3.localhost expected 1 match")
+	}
+
+	if len(where(containers, "Env.NOEXIST", "demo3.localhost")) != 0 {
+		t.Fatalf("NOEXIST demo3.localhost expected 0 match")
+	}
+}
+
+func TestWhereSomeMatch(t *testing.T) {
+	containers := []*RuntimeContainer{
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost",
+			},
+			ID: "1",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost,demo4.localhost",
+			},
+			ID: "2",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "bar,demo3.localhost,foo",
+			},
+			ID: "3",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost",
+			},
+			ID: "4",
+		},
+	}
+
+	if len(whereSomeMatch(containers, "Env.VIRTUAL_HOST", ",", []string{"demo1.localhost"})) != 1 {
+		t.Fatalf("demo1.localhost expected 1 match")
+	}
+
+	if len(whereSomeMatch(containers, "Env.VIRTUAL_HOST", ",", []string{"demo2.localhost", "lala"})) != 2 {
+		t.Fatalf("demo2.localhost expected 2 matches")
+	}
+
+	if len(whereSomeMatch(containers, "Env.VIRTUAL_HOST", ",", []string{"something", "demo3.localhost"})) != 1 {
+		t.Fatalf("demo3.localhost expected 1 match")
+	}
+
+	if len(whereSomeMatch(containers, "Env.NOEXIST", ",", []string{"demo3.localhost"})) != 0 {
+		t.Fatalf("NOEXIST demo3.localhost expected 0 match")
+	}
+}
+
+func TestWhereRequires(t *testing.T) {
+	containers := []*RuntimeContainer{
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost",
+			},
+			ID: "1",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost,demo4.localhost",
+			},
+			ID: "2",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "bar,demo3.localhost,foo",
+			},
+			ID: "3",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost",
+			},
+			ID: "4",
+		},
+	}
+
+	if len(whereRequires(containers, "Env.VIRTUAL_HOST", ",", []string{"demo1.localhost"})) != 1 {
+		t.Fatalf("demo1.localhost expected 1 match")
+	}
+
+	if len(whereRequires(containers, "Env.VIRTUAL_HOST", ",", []string{"demo2.localhost", "lala"})) != 0 {
+		t.Fatalf("demo2.localhost,lala expected 0 matches")
+	}
+
+	if len(whereRequires(containers, "Env.VIRTUAL_HOST", ",", []string{"demo3.localhost"})) != 1 {
+		t.Fatalf("demo3.localhost expected 1 match")
+	}
+
+	if len(whereRequires(containers, "Env.NOEXIST", ",", []string{"demo3.localhost"})) != 0 {
+		t.Fatalf("NOEXIST demo3.localhost expected 0 match")
 	}
 }
 

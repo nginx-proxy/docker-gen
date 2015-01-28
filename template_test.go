@@ -74,6 +74,24 @@ func TestKeysNil(t *testing.T) {
 	}
 }
 
+func TestIntersect(t *testing.T) {
+	if len(intersect([]string{"foo.fo.com", "bar.com"}, []string{"foo.bar.com"})) != 0 {
+		t.Fatal("Expected no match")
+	}
+
+	if len(intersect([]string{"foo.fo.com", "bar.com"}, []string{"bar.com", "foo.com"})) != 1 {
+		t.Fatal("Expected only one match")
+	}
+
+	if len(intersect([]string{"foo.com"}, []string{"bar.com", "foo.com"})) != 1 {
+		t.Fatal("Expected only one match")
+	}
+
+	if len(intersect([]string{"foo.fo.com", "foo.com", "bar.com"}, []string{"bar.com", "foo.com"})) != 2 {
+		t.Fatal("Expected two matches")
+	}
+}
+
 func TestGroupByExistingKey(t *testing.T) {
 	containers := []*RuntimeContainer{
 		&RuntimeContainer{

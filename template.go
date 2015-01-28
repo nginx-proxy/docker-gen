@@ -94,6 +94,24 @@ func keys(input interface{}) (interface{}, error) {
 	return k, nil
 }
 
+func intersect(l1, l2 []string) []string {
+	m := make(map[string]bool)
+	m2 := make(map[string]bool)
+	for _, v := range l2 {
+		m2[v] = true
+	}
+	for _, v := range l1 {
+		if m2[v] {
+			m[v] = true
+		}
+	}
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 func contains(item map[string]string, key string) bool {
 	if _, ok := item[key]; ok {
 		return true
@@ -214,6 +232,7 @@ func generateFile(config Config, containers Context) bool {
 		"hasPrefix":    hasPrefix,
 		"hasSuffix":    hasSuffix,
 		"json":         marshalJson,
+		"intersect":	intersect,
 		"keys":         keys,
 		"last":         arrayLast,
 		"replace":      strings.Replace,

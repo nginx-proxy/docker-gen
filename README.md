@@ -121,6 +121,7 @@ Within those templates, the object emitted by docker-gen will have [this structu
 * *`groupByMulti $containers $fieldPath $sep`*: Like `groupBy`, but the string value specified by `$fieldPath` is first split by `$sep` into a list of strings. A container whose `$fieldPath` value contains a list of strings will show up in the map output under each of those strings.
 * *`hasPrefix $prefix $string`*: Returns whether `$prefix` is a prefix of `$string`.
 * *`hasSuffix $suffix $string`*: Returns whether `$suffix` is a suffix of `$string`.
+* *`intersect $slice1 $slice2`*: Returns the strings that exist in both string slices.
 * *`json $value`*: Returns the JSON representation of `$value` as a `string`.
 * *`keys $map`*: Returns the keys from `$map`. If `$map` is `nil`, a `nil` is returned. If `$map` is not a `map`, an error will be thrown.
 * *`last $array`*: Returns the last value of an array.

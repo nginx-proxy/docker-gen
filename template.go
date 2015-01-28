@@ -78,7 +78,7 @@ func where(entries []*RuntimeContainer, key string, cmp string) []*RuntimeContai
 }
 
 // selects entries based on key.  Assumes key is delimited and breaks it apart before comparing
-func whereSomeMatch(entries []*RuntimeContainer, key, sep string, cmp []string) []*RuntimeContainer {
+func whereAny(entries []*RuntimeContainer, key, sep string, cmp []string) []*RuntimeContainer {
 	selection := []*RuntimeContainer{}
 	for _, v := range entries {
 		value := deepGet(*v, key)
@@ -93,7 +93,7 @@ func whereSomeMatch(entries []*RuntimeContainer, key, sep string, cmp []string) 
 }
 
 // selects entries based on key.  Assumes key is delimited and breaks it apart before comparing
-func whereRequires(entries []*RuntimeContainer, key, sep string, cmp []string) []*RuntimeContainer {
+func whereAll(entries []*RuntimeContainer, key, sep string, cmp []string) []*RuntimeContainer {
 	selection := []*RuntimeContainer{}
 	req_count := len(cmp)
 	for _, v := range entries {
@@ -275,7 +275,7 @@ func generateFile(config Config, containers Context) bool {
 		"hasPrefix":    hasPrefix,
 		"hasSuffix":    hasSuffix,
 		"json":         marshalJson,
-		"intersect":	intersect,
+		"intersect":    intersect,
 		"keys":         keys,
 		"last":         arrayLast,
 		"replace":      strings.Replace,
@@ -283,9 +283,9 @@ func generateFile(config Config, containers Context) bool {
 		"split":        strings.Split,
 		"trimPrefix":   trimPrefix,
 		"trimSuffix":   trimSuffix,
-		"where":		where,
-		"whereSomeMatch": whereSomeMatch,
-		"whereRequires": whereRequires,
+		"where":        where,
+		"whereAny":     whereAny,
+		"whereAll":     whereAll,
 	}).ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalf("unable to parse template: %s", err)

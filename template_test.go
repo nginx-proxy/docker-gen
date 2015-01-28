@@ -249,19 +249,19 @@ func TestWhereSomeMatch(t *testing.T) {
 		},
 	}
 
-	if len(whereSomeMatch(containers, "Env.VIRTUAL_HOST", ",", []string{"demo1.localhost"})) != 1 {
+	if len(whereAny(containers, "Env.VIRTUAL_HOST", ",", []string{"demo1.localhost"})) != 1 {
 		t.Fatalf("demo1.localhost expected 1 match")
 	}
 
-	if len(whereSomeMatch(containers, "Env.VIRTUAL_HOST", ",", []string{"demo2.localhost", "lala"})) != 2 {
+	if len(whereAny(containers, "Env.VIRTUAL_HOST", ",", []string{"demo2.localhost", "lala"})) != 2 {
 		t.Fatalf("demo2.localhost expected 2 matches")
 	}
 
-	if len(whereSomeMatch(containers, "Env.VIRTUAL_HOST", ",", []string{"something", "demo3.localhost"})) != 1 {
+	if len(whereAny(containers, "Env.VIRTUAL_HOST", ",", []string{"something", "demo3.localhost"})) != 1 {
 		t.Fatalf("demo3.localhost expected 1 match")
 	}
 
-	if len(whereSomeMatch(containers, "Env.NOEXIST", ",", []string{"demo3.localhost"})) != 0 {
+	if len(whereAny(containers, "Env.NOEXIST", ",", []string{"demo3.localhost"})) != 0 {
 		t.Fatalf("NOEXIST demo3.localhost expected 0 match")
 	}
 }
@@ -294,19 +294,19 @@ func TestWhereRequires(t *testing.T) {
 		},
 	}
 
-	if len(whereRequires(containers, "Env.VIRTUAL_HOST", ",", []string{"demo1.localhost"})) != 1 {
+	if len(whereAll(containers, "Env.VIRTUAL_HOST", ",", []string{"demo1.localhost"})) != 1 {
 		t.Fatalf("demo1.localhost expected 1 match")
 	}
 
-	if len(whereRequires(containers, "Env.VIRTUAL_HOST", ",", []string{"demo2.localhost", "lala"})) != 0 {
+	if len(whereAll(containers, "Env.VIRTUAL_HOST", ",", []string{"demo2.localhost", "lala"})) != 0 {
 		t.Fatalf("demo2.localhost,lala expected 0 matches")
 	}
 
-	if len(whereRequires(containers, "Env.VIRTUAL_HOST", ",", []string{"demo3.localhost"})) != 1 {
+	if len(whereAll(containers, "Env.VIRTUAL_HOST", ",", []string{"demo3.localhost"})) != 1 {
 		t.Fatalf("demo3.localhost expected 1 match")
 	}
 
-	if len(whereRequires(containers, "Env.NOEXIST", ",", []string{"demo3.localhost"})) != 0 {
+	if len(whereAll(containers, "Env.NOEXIST", ",", []string{"demo3.localhost"})) != 0 {
 		t.Fatalf("NOEXIST demo3.localhost expected 0 match")
 	}
 }

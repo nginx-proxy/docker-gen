@@ -55,20 +55,6 @@ func TestDockerFlagEndpoint(t *testing.T) {
 	}
 }
 
-func TestUnixNotExists(t *testing.T) {
-
-	endpoint = ""
-	err := os.Setenv("DOCKER_HOST", "unix:///does/not/exist")
-	if err != nil {
-		t.Fatalf("Unable to set DOCKER_HOST: %s", err)
-	}
-
-	_, err = getEndpoint()
-	if err == nil {
-		t.Fatal("endpoint should have failed")
-	}
-}
-
 func TestUnixBadFormat(t *testing.T) {
 	endpoint = "unix:/var/run/docker.sock"
 	_, err := getEndpoint()

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"os"
 )
 
@@ -15,20 +14,9 @@ func getEndpoint() (string, error) {
 		defaultEndpoint = endpoint
 	}
 
-	proto, host, err := parseHost(defaultEndpoint)
+	_, _, err := parseHost(defaultEndpoint)
 	if err != nil {
 		return "", err
-	}
-
-	if proto == "unix" {
-		exist, err := exists(host)
-		if err != nil {
-			return "", err
-		}
-
-		if !exist {
-			return "", errors.New(host + " does not exist")
-		}
 	}
 
 	return defaultEndpoint, nil

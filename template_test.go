@@ -176,6 +176,51 @@ func TestGroupByMulti(t *testing.T) {
 	}
 }
 
+func TestWhere(t *testing.T) {
+	containers := []*RuntimeContainer{
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost",
+			},
+			ID: "1",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost",
+			},
+			ID: "2",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo3.localhost",
+			},
+			ID: "3",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost",
+			},
+			ID: "4",
+		},
+	}
+
+	if len(where(containers, "Env.VIRTUAL_HOST", "demo1.localhost")) != 1 {
+		t.Fatalf("expected 1 match")
+	}
+
+	if len(where(containers, "Env.VIRTUAL_HOST", "demo2.localhost")) != 2 {
+		t.Fatalf("expected 2 matches")
+	}
+
+	if len(where(containers, "Env.VIRTUAL_HOST", "demo3.localhost")) != 1 {
+		t.Fatalf("expected 1 match")
+	}
+
+	if len(where(containers, "Env.NOEXIST", "demo3.localhost")) != 0 {
+		t.Fatalf("expected 0 match")
+	}
+}
+
 func TestHasPrefix(t *testing.T) {
 	const prefix = "tcp://"
 	const str = "tcp://127.0.0.1:2375"

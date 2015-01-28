@@ -266,6 +266,51 @@ func TestWhereSomeMatch(t *testing.T) {
 	}
 }
 
+func TestWhereRequires(t *testing.T) {
+	containers := []*RuntimeContainer{
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost",
+			},
+			ID: "1",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost,demo4.localhost",
+			},
+			ID: "2",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "bar,demo3.localhost,foo",
+			},
+			ID: "3",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost",
+			},
+			ID: "4",
+		},
+	}
+
+	if len(whereRequires(containers, "Env.VIRTUAL_HOST", ",", []string{"demo1.localhost"})) != 1 {
+		t.Fatalf("demo1.localhost expected 1 match")
+	}
+
+	if len(whereRequires(containers, "Env.VIRTUAL_HOST", ",", []string{"demo2.localhost", "lala"})) != 0 {
+		t.Fatalf("demo2.localhost,lala expected 0 matches")
+	}
+
+	if len(whereRequires(containers, "Env.VIRTUAL_HOST", ",", []string{"demo3.localhost"})) != 1 {
+		t.Fatalf("demo3.localhost expected 1 match")
+	}
+
+	if len(whereRequires(containers, "Env.NOEXIST", ",", []string{"demo3.localhost"})) != 0 {
+		t.Fatalf("NOEXIST demo3.localhost expected 0 match")
+	}
+}
+
 func TestHasPrefix(t *testing.T) {
 	const prefix = "tcp://"
 	const str = "tcp://127.0.0.1:2375"

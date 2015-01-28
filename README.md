@@ -1,7 +1,9 @@
 docker-gen
 =====
 
+![latest v0.3.6](https://img.shields.io/badge/latest-v0.3.6-green.svg?style=flat)
 [![Build Status](https://travis-ci.org/jwilder/docker-gen.svg?branch=master)](https://travis-ci.org/jwilder/docker-gen)
+![License MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)
 
 `docker-gen` is a file generator that renders templates using docker container meta-data.
 
@@ -200,4 +202,8 @@ $ make
 ### TODO
 
  * Add event status for handling start and stop events differently
- * Add a way to filter out containers in templates
+
+### License
+
+MIT
+ 

@@ -77,6 +77,30 @@ func where(entries []*RuntimeContainer, key string, cmp string) []*RuntimeContai
 	return selection
 }
 
+// selects entries where a key exists
+func whereExist(entries []*RuntimeContainer, key string) []*RuntimeContainer {
+	selection := []*RuntimeContainer{}
+	for _, v := range entries {
+		value := deepGet(*v, key)
+		if value != nil {
+			selection = append(selection, v)
+		}
+	}
+	return selection
+}
+
+// selects entries where a key does not exist
+func whereNotExist(entries []*RuntimeContainer, key string) []*RuntimeContainer {
+	selection := []*RuntimeContainer{}
+        for _, v := range entries {
+                value := deepGet(*v, key)
+                if value == nil {
+                        selection = append(selection, v)
+                }
+        }
+        return selection
+}
+
 // selects entries based on key.  Assumes key is delimited and breaks it apart before comparing
 func whereAny(entries []*RuntimeContainer, key, sep string, cmp []string) []*RuntimeContainer {
 	selection := []*RuntimeContainer{}
@@ -284,6 +308,8 @@ func generateFile(config Config, containers Context) bool {
 		"trimPrefix":   trimPrefix,
 		"trimSuffix":   trimSuffix,
 		"where":        where,
+		"whereExist":	whereExist,
+		"whereNotExist":	whereNotExist,
 		"whereAny":     whereAny,
 		"whereAll":     whereAll,
 	}).ParseFiles(templatePath)

@@ -221,6 +221,100 @@ func TestWhere(t *testing.T) {
 	}
 }
 
+func TestWhereExist(t *testing.T) {
+	containers := []*RuntimeContainer{
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost",
+				"VIRTUAL_PATH": "/api",
+			},
+			ID: "1",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost",
+			},
+			ID: "2",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo3.localhost",
+				"VIRTUAL_PATH": "/api",
+			},
+			ID: "3",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_PROTO": "https",
+			},
+			ID: "4",
+		},
+	}
+
+	if len(whereExist(containers, "Env.VIRTUAL_HOST")) != 3 {
+		t.Fatalf("Env.VIRTUAL_HOST expected 3 matches")
+	}
+
+	if len(whereExist(containers, "Env.VIRTUAL_PATH")) != 2 {
+		t.Fatalf("Env.VIRTUAL_PATH expected 2 matches")
+	}
+
+	if len(whereExist(containers, "Env.NOT_A_KEY")) != 0 {
+		t.Fatalf("Env.NOT_A_KEY expected 0 matches")
+	}
+
+	if len(whereExist(containers, "Env.VIRTUAL_PROTO")) != 1 {
+		t.Fatalf("Env.VIRTUAL_PROTO expected 1 matche")
+	}
+}
+
+func TestWhereNotExist(t *testing.T) {
+	containers := []*RuntimeContainer{
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost",
+				"VIRTUAL_PATH": "/api",
+			},
+			ID: "1",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost",
+			},
+			ID: "2",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo3.localhost",
+				"VIRTUAL_PATH": "/api",
+			},
+			ID: "3",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_PROTO": "https",
+			},
+			ID: "4",
+		},
+	}
+
+	if len(whereNotExist(containers, "Env.VIRTUAL_HOST")) != 1 {
+		t.Fatalf("Env.VIRTUAL_HOST expected 1 match")
+	}
+
+	if len(whereNotExist(containers, "Env.VIRTUAL_PATH")) != 2 {
+		t.Fatalf("Env.VIRTUAL_PATH expected 2 matches")
+	}
+
+	if len(whereNotExist(containers, "Env.NOT_A_KEY")) != 4 {
+		t.Fatalf("Env.NOT_A_KEY expected 4 matches")
+	}
+
+	if len(whereNotExist(containers, "Env.VIRTUAL_PROTO")) != 3 {
+		t.Fatalf("Env.VIRTUAL_PROTO expected 3 matches")
+	}
+}
+
 func TestWhereSomeMatch(t *testing.T) {
 	containers := []*RuntimeContainer{
 		&RuntimeContainer{

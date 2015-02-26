@@ -92,13 +92,13 @@ func whereExist(entries []*RuntimeContainer, key string) []*RuntimeContainer {
 // selects entries where a key does not exist
 func whereNotExist(entries []*RuntimeContainer, key string) []*RuntimeContainer {
 	selection := []*RuntimeContainer{}
-        for _, v := range entries {
-                value := deepGet(*v, key)
-                if value == nil {
-                        selection = append(selection, v)
-                }
-        }
-        return selection
+	for _, v := range entries {
+		value := deepGet(*v, key)
+		if value == nil {
+			selection = append(selection, v)
+		}
+	}
+	return selection
 }
 
 // selects entries based on key.  Assumes key is delimited and breaks it apart before comparing
@@ -286,32 +286,32 @@ func trimSuffix(suffix, s string) string {
 func generateFile(config Config, containers Context) bool {
 	templatePath := config.Template
 	tmpl, err := template.New(filepath.Base(templatePath)).Funcs(template.FuncMap{
-		"closest":      arrayClosest,
-		"coalesce":     coalesce,
-		"contains":     contains,
-		"dict":         dict,
-		"dir":          dirList,
-		"exists":       exists,
-		"first":        arrayFirst,
-		"groupBy":      groupBy,
-		"groupByKeys":  groupByKeys,
-		"groupByMulti": groupByMulti,
-		"hasPrefix":    hasPrefix,
-		"hasSuffix":    hasSuffix,
-		"json":         marshalJson,
-		"intersect":    intersect,
-		"keys":         keys,
-		"last":         arrayLast,
-		"replace":      strings.Replace,
-		"sha1":         hashSha1,
-		"split":        strings.Split,
-		"trimPrefix":   trimPrefix,
-		"trimSuffix":   trimSuffix,
-		"where":        where,
-		"whereExist":	whereExist,
-		"whereNotExist":	whereNotExist,
-		"whereAny":     whereAny,
-		"whereAll":     whereAll,
+		"closest":       arrayClosest,
+		"coalesce":      coalesce,
+		"contains":      contains,
+		"dict":          dict,
+		"dir":           dirList,
+		"exists":        exists,
+		"first":         arrayFirst,
+		"groupBy":       groupBy,
+		"groupByKeys":   groupByKeys,
+		"groupByMulti":  groupByMulti,
+		"hasPrefix":     hasPrefix,
+		"hasSuffix":     hasSuffix,
+		"json":          marshalJson,
+		"intersect":     intersect,
+		"keys":          keys,
+		"last":          arrayLast,
+		"replace":       strings.Replace,
+		"sha1":          hashSha1,
+		"split":         strings.Split,
+		"trimPrefix":    trimPrefix,
+		"trimSuffix":    trimSuffix,
+		"where":         where,
+		"whereExist":    whereExist,
+		"whereNotExist": whereNotExist,
+		"whereAny":      whereAny,
+		"whereAll":      whereAll,
 	}).ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalf("unable to parse template: %s", err)

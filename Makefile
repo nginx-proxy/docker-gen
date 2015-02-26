@@ -37,5 +37,12 @@ get-deps:
 	go get github.com/robfig/glock
 	glock sync -n < GLOCKFILE
 
+check-gofmt:
+	if [ -n "$(shell gofmt -l .)" ]; then \
+		echo 1>&2 'The following files need to be formatted:'; \
+		gofmt -l .; \
+		exit 1; \
+	fi
+
 test:
 	go test

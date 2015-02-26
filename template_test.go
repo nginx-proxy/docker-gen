@@ -518,6 +518,44 @@ func TestJson(t *testing.T) {
 	}
 }
 
+func TestParseJsonArray(t *testing.T) {
+	const expected = "true"
+	const testJson = `[{"enabled":true}]`
+
+	const text = `{{index (parseJsonArray . | first) "enabled"}}`
+	tmpl := template.Must(newTemplate("parseJsonArray-test").Parse(text))
+
+	var b bytes.Buffer
+	err := tmpl.ExecuteTemplate(&b, "parseJsonArray-test", testJson)
+	if err != nil {
+		t.Fatalf("Error executing template: %v", err)
+	}
+
+	got := b.String()
+	if expected != got {
+		t.Fatalf("Incorrect output found; expected %s, got %s", expected, got)
+	}
+}
+
+func TestParseJsonObject(t *testing.T) {
+	const expected = "true"
+	const testJson = `{"enabled":true}`
+
+	const text = `{{index (parseJsonObject .) "enabled"}}`
+	tmpl := template.Must(newTemplate("parseJsonObject-test").Parse(text))
+
+	var b bytes.Buffer
+	err := tmpl.ExecuteTemplate(&b, "parseJsonObject-test", testJson)
+	if err != nil {
+		t.Fatalf("Error executing template: %v", err)
+	}
+
+	got := b.String()
+	if expected != got {
+		t.Fatalf("Incorrect output found; expected %s, got %s", expected, got)
+	}
+}
+
 func TestArrayClosestExact(t *testing.T) {
 	if arrayClosest([]string{"foo.bar.com", "bar.com"}, "foo.bar.com") != "foo.bar.com" {
 		t.Fatal("Expected foo.bar.com")

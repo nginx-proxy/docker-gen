@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 	"text/template"
@@ -515,6 +516,37 @@ func TestJson(t *testing.T) {
 	}
 	if len(decoded) != len(containers) {
 		t.Fatal("Incorrect unmarshaled container count. Expected %d, got %d.", len(containers), len(decoded))
+	}
+}
+
+func TestParseJson(t *testing.T) {
+	tests := []struct {
+		tmpl     string
+		context  interface{}
+		expected string
+	}{
+		{`{{parseJson .}}`, `null`, `<no value>`},
+		{`{{parseJson .}}`, `true`, `true`},
+		{`{{parseJson .}}`, `1`, `1`},
+		{`{{parseJson .}}`, `0.5`, `0.5`},
+		{`{{index (parseJson .) "enabled"}}`, `{"enabled":true}`, `true`},
+		{`{{index (parseJson . | first) "enabled"}}`, `[{"enabled":true}]`, `true`},
+	}
+
+	for n, test := range tests {
+		tmplName := fmt.Sprintf("parseJson-test-%d", n)
+		tmpl := template.Must(newTemplate(tmplName).Parse(test.tmpl))
+
+		var b bytes.Buffer
+		err := tmpl.ExecuteTemplate(&b, tmplName, test.context)
+		if err != nil {
+			t.Fatalf("Error executing template: %v", err)
+		}
+
+		got := b.String()
+		if test.expected != got {
+			t.Fatalf("Incorrect output found; expected %s, got %s", test.expected, got)
+		}
 	}
 }
 

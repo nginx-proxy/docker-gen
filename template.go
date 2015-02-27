@@ -216,6 +216,14 @@ func marshalJson(input interface{}) (string, error) {
 	return strings.TrimSuffix(buf.String(), "\n"), nil
 }
 
+func unmarshalJson(input string) (interface{}, error) {
+	var v interface{}
+	if err := json.Unmarshal([]byte(input), &v); err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
 // arrayFirst returns first item in the array or nil if the
 // input is nil or empty
 func arrayFirst(input interface{}) interface{} {
@@ -302,6 +310,7 @@ func newTemplate(name string) *template.Template {
 		"keys":          keys,
 		"last":          arrayLast,
 		"replace":       strings.Replace,
+		"parseJson":     unmarshalJson,
 		"sha1":          hashSha1,
 		"split":         strings.Split,
 		"trimPrefix":    trimPrefix,

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 	"text/template"
@@ -518,41 +519,30 @@ func TestJson(t *testing.T) {
 	}
 }
 
-func TestParseJsonArray(t *testing.T) {
-	const expected = "true"
-	const testJson = `[{"enabled":true}]`
-
-	const text = `{{index (parseJsonArray . | first) "enabled"}}`
-	tmpl := template.Must(newTemplate("parseJsonArray-test").Parse(text))
-
-	var b bytes.Buffer
-	err := tmpl.ExecuteTemplate(&b, "parseJsonArray-test", testJson)
-	if err != nil {
-		t.Fatalf("Error executing template: %v", err)
+func TestParseJson(t *testing.T) {
+	tests := []struct {
+		tmpl     string
+		input    string
+		expected string
+	}{
+		{`{{index (parseJson .) "enabled"}}`, `{"enabled":true}`, "true"},
+		{`{{index (parseJson . | first) "enabled"}}`, `[{"enabled":true}]`, "true"},
 	}
 
-	got := b.String()
-	if expected != got {
-		t.Fatalf("Incorrect output found; expected %s, got %s", expected, got)
-	}
-}
+	for n, test := range tests {
+		tmplName := fmt.Sprintf("parseJson-test-%d", n)
+		tmpl := template.Must(newTemplate(tmplName).Parse(test.tmpl))
 
-func TestParseJsonObject(t *testing.T) {
-	const expected = "true"
-	const testJson = `{"enabled":true}`
+		var b bytes.Buffer
+		err := tmpl.ExecuteTemplate(&b, tmplName, test.input)
+		if err != nil {
+			t.Fatalf("Error executing template: %v", err)
+		}
 
-	const text = `{{index (parseJsonObject .) "enabled"}}`
-	tmpl := template.Must(newTemplate("parseJsonObject-test").Parse(text))
-
-	var b bytes.Buffer
-	err := tmpl.ExecuteTemplate(&b, "parseJsonObject-test", testJson)
-	if err != nil {
-		t.Fatalf("Error executing template: %v", err)
-	}
-
-	got := b.String()
-	if expected != got {
-		t.Fatalf("Incorrect output found; expected %s, got %s", expected, got)
+		got := b.String()
+		if test.expected != got {
+			t.Fatalf("Incorrect output found; expected %s, got %s", test.expected, got)
+		}
 	}
 }
 

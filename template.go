@@ -216,16 +216,8 @@ func marshalJson(input interface{}) (string, error) {
 	return strings.TrimSuffix(buf.String(), "\n"), nil
 }
 
-func unmarshalJsonArray(input string) ([]interface{}, error) {
-	var v []interface{}
-	if err := json.Unmarshal([]byte(input), &v); err != nil {
-		return nil, err
-	}
-	return v, nil
-}
-
-func unmarshalJsonObject(input string) (interface{}, error) {
-	var v map[string]interface{}
+func unmarshalJson(input string) (interface{}, error) {
+	var v interface{}
 	if err := json.Unmarshal([]byte(input), &v); err != nil {
 		return nil, err
 	}
@@ -301,34 +293,33 @@ func trimSuffix(suffix, s string) string {
 
 func newTemplate(name string) *template.Template {
 	tmpl := template.New(name).Funcs(template.FuncMap{
-		"closest":         arrayClosest,
-		"coalesce":        coalesce,
-		"contains":        contains,
-		"dict":            dict,
-		"dir":             dirList,
-		"exists":          exists,
-		"first":           arrayFirst,
-		"groupBy":         groupBy,
-		"groupByKeys":     groupByKeys,
-		"groupByMulti":    groupByMulti,
-		"hasPrefix":       hasPrefix,
-		"hasSuffix":       hasSuffix,
-		"json":            marshalJson,
-		"intersect":       intersect,
-		"keys":            keys,
-		"last":            arrayLast,
-		"replace":         strings.Replace,
-		"parseJsonArray":  unmarshalJsonArray,
-		"parseJsonObject": unmarshalJsonObject,
-		"sha1":            hashSha1,
-		"split":           strings.Split,
-		"trimPrefix":      trimPrefix,
-		"trimSuffix":      trimSuffix,
-		"where":           where,
-		"whereExist":      whereExist,
-		"whereNotExist":   whereNotExist,
-		"whereAny":        whereAny,
-		"whereAll":        whereAll,
+		"closest":       arrayClosest,
+		"coalesce":      coalesce,
+		"contains":      contains,
+		"dict":          dict,
+		"dir":           dirList,
+		"exists":        exists,
+		"first":         arrayFirst,
+		"groupBy":       groupBy,
+		"groupByKeys":   groupByKeys,
+		"groupByMulti":  groupByMulti,
+		"hasPrefix":     hasPrefix,
+		"hasSuffix":     hasSuffix,
+		"json":          marshalJson,
+		"intersect":     intersect,
+		"keys":          keys,
+		"last":          arrayLast,
+		"replace":       strings.Replace,
+		"parseJson":     unmarshalJson,
+		"sha1":          hashSha1,
+		"split":         strings.Split,
+		"trimPrefix":    trimPrefix,
+		"trimSuffix":    trimSuffix,
+		"where":         where,
+		"whereExist":    whereExist,
+		"whereNotExist": whereNotExist,
+		"whereAny":      whereAny,
+		"whereAll":      whereAll,
 	})
 	return tmpl
 }

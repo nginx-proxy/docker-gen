@@ -522,11 +522,15 @@ func TestJson(t *testing.T) {
 func TestParseJson(t *testing.T) {
 	tests := []struct {
 		tmpl     string
-		input    string
+		context  interface{}
 		expected string
 	}{
-		{`{{index (parseJson .) "enabled"}}`, `{"enabled":true}`, "true"},
-		{`{{index (parseJson . | first) "enabled"}}`, `[{"enabled":true}]`, "true"},
+		{`{{parseJson .}}`, `null`, `<no value>`},
+		{`{{parseJson .}}`, `true`, `true`},
+		{`{{parseJson .}}`, `1`, `1`},
+		{`{{parseJson .}}`, `0.5`, `0.5`},
+		{`{{index (parseJson .) "enabled"}}`, `{"enabled":true}`, `true`},
+		{`{{index (parseJson . | first) "enabled"}}`, `[{"enabled":true}]`, `true`},
 	}
 
 	for n, test := range tests {
@@ -534,7 +538,7 @@ func TestParseJson(t *testing.T) {
 		tmpl := template.Must(newTemplate(tmplName).Parse(test.tmpl))
 
 		var b bytes.Buffer
-		err := tmpl.ExecuteTemplate(&b, tmplName, test.input)
+		err := tmpl.ExecuteTemplate(&b, tmplName, test.context)
 		if err != nil {
 			t.Fatalf("Error executing template: %v", err)
 		}

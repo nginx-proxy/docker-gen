@@ -6,4 +6,4 @@ go:
 install:
 - make get-deps
 script:
-- make all test
+- make all check-gofmt test

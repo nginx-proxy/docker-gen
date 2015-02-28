@@ -25,7 +25,7 @@ dist: dist-clean
 
 
 release: dist
-	glock sync github.com/jwilder/docker-gen
+	glock sync -n < GLOCKFILE
 	tar -cvzf docker-gen-linux-amd64-$(TAG).tar.gz -C dist/linux/amd64 docker-gen
 	tar -cvzf docker-gen-linux-i386-$(TAG).tar.gz -C dist/linux/i386 docker-gen
 	tar -cvzf docker-gen-linux-armel-$(TAG).tar.gz -C dist/linux/armel docker-gen

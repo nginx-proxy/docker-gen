@@ -147,14 +147,7 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 			}
 		}
 
-		for _, entry := range container.Config.Env {
-			parts := strings.SplitN(entry, "=", 2)
-			if len(parts) != 2 {
-				parts = append(parts, "")
-			}
-			runtimeContainer.Env[parts[0]] = parts[1]
-		}
-
+		runtimeContainer.Env = splitKeyValueSlice(container.Config.Env)
 		containers = append(containers, runtimeContainer)
 	}
 	return containers, nil

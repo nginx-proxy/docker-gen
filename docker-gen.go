@@ -98,13 +98,7 @@ type ConfigFile struct {
 type Context []*RuntimeContainer
 
 func (c *Context) Env() map[string]string {
-
-	env := make(map[string]string)
-	for _, i := range os.Environ() {
-		parts := strings.Split(i, "=")
-		env[parts[0]] = parts[1]
-	}
-	return env
+	return splitKeyValueSlice(os.Environ())
 }
 
 func (c *ConfigFile) filterWatches() ConfigFile {

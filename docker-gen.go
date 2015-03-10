@@ -61,12 +61,19 @@ type RuntimeContainer struct {
 	Image     DockerImage
 	Env       map[string]string
 	Volumes   map[string]Volume
+	Node      SwarmNode
 }
 
 type DockerImage struct {
 	Registry   string
 	Repository string
 	Tag        string
+}
+
+type SwarmNode struct {
+	ID      string
+	Name    string
+	Address Address
 }
 
 func (i *DockerImage) String() string {

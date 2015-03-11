@@ -125,6 +125,7 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 			Addresses: []Address{},
 			Env:       make(map[string]string),
 			Volumes:   make(map[string]Volume),
+			Node:      SwarmNode{},
 		}
 		for k, v := range container.NetworkSettings.Ports {
 			address := Address{
@@ -144,6 +145,13 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 				Path:      k,
 				HostPath:  v,
 				ReadWrite: container.VolumesRW[k],
+			}
+		}
+		if container.Node != nil {
+			runtimeContainer.Node.ID = container.Node.ID
+			runtimeContainer.Node.Name = container.Node.Name
+			runtimeContainer.Node.Address = Address{
+				IP: container.Node.IP,
 			}
 		}
 

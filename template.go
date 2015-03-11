@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -311,6 +312,7 @@ func newTemplate(name string) *template.Template {
 		"last":          arrayLast,
 		"replace":       strings.Replace,
 		"parseJson":     unmarshalJson,
+		"queryEscape":   url.QueryEscape,
 		"sha1":          hashSha1,
 		"split":         strings.Split,
 		"trimPrefix":    trimPrefix,

@@ -550,6 +550,35 @@ func TestParseJson(t *testing.T) {
 	}
 }
 
+func TestQueryEscape(t *testing.T) {
+	tests := []struct {
+		tmpl     string
+		context  interface{}
+		expected string
+	}{
+		{`{{queryEscape .}}`, `example.com`, `example.com`},
+		{`{{queryEscape .}}`, `.example.com`, `.example.com`},
+		{`{{queryEscape .}}`, `*.example.com`, `%2A.example.com`},
+		{`{{queryEscape .}}`, `~^example\.com(\..*\.xip\.io)?$`, `~%5Eexample%5C.com%28%5C..%2A%5C.xip%5C.io%29%3F%24`},
+	}
+
+	for n, test := range tests {
+		tmplName := fmt.Sprintf("queryEscape-test-%d", n)
+		tmpl := template.Must(newTemplate(tmplName).Parse(test.tmpl))
+
+		var b bytes.Buffer
+		err := tmpl.ExecuteTemplate(&b, tmplName, test.context)
+		if err != nil {
+			t.Fatalf("Error executing template: %v", err)
+		}
+
+		got := b.String()
+		if test.expected != got {
+			t.Fatalf("Incorrect output found; expected %s, got %s", test.expected, got)
+		}
+	}
+}
+
 func TestArrayClosestExact(t *testing.T) {
 	if arrayClosest([]string{"foo.bar.com", "bar.com"}, "foo.bar.com") != "foo.bar.com" {
 		t.Fatal("Expected foo.bar.com")

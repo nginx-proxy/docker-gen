@@ -135,6 +135,7 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 			}
 			if len(v) > 0 {
 				address.HostPort = v[0].HostPort
+				address.HostIP = v[0].HostIP
 			}
 			runtimeContainer.Addresses = append(runtimeContainer.Addresses,
 				address)

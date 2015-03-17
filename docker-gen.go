@@ -44,6 +44,7 @@ type Address struct {
 	IP       string
 	Port     string
 	HostPort string
+	HostIP   string
 	Proto    string
 }
 

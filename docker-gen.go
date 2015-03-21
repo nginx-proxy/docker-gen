@@ -151,7 +151,21 @@ func (r *RuntimeContainer) PublishedAddresses() []Address {
 }
 
 func usage() {
-	println("Usage: docker-gen [-config file] [-watch=false] [-notify=\"restart xyz\"] [-notify-sighup=\"container-ID\"] [-interval=0] [-endpoint tcp|unix://..] [-tlscert file] [-tlskey file] [-tlscacert file] [-tlsverify] <template> [<dest>]")
+	println(`Usage: docker-gen [options] template [dest]
+
+Generate files from docker container meta-data
+
+Options:`)
+	flag.PrintDefaults()
+
+	println(`
+Arguments:
+  template - path to a template to generate
+  dest - path to a write the template.  If not specfied, STDOUT is used
+
+Environment Variables:
+  DOCKER_HOST - default value for -endpoint
+`)
 }
 
 func NewDockerClient(endpoint string) (*docker.Client, error) {
@@ -349,16 +363,20 @@ func initFlags() {
 	flag.BoolVar(&version, "version", false, "show version")
 	flag.BoolVar(&watch, "watch", false, "watch for container changes")
 	flag.BoolVar(&onlyExposed, "only-exposed", false, "only include containers with exposed ports")
-	flag.BoolVar(&onlyPublished, "only-published", false, "only include containers with published ports (implies -only-exposed)")
-	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated")
-	flag.StringVar(&notifySigHUPContainerID, "notify-sighup", "", "send HUP signal to container.  Equivalent to `docker kill -s HUP container-ID`")
+
+	flag.BoolVar(&onlyPublished, "only-published", false,
+		"only include containers with published ports (implies -only-exposed)")
+	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated (e.g `restart xyz`)")
+	flag.StringVar(&notifySigHUPContainerID, "notify-sighup", "",
+		"send HUP signal to container.  Equivalent to `docker kill -s HUP container-ID`")
 	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
-	flag.IntVar(&interval, "interval", 0, "notify command interval (s)")
-	flag.StringVar(&endpoint, "endpoint", "", "docker api endpoint")
+	flag.IntVar(&interval, "interval", 0, "notify command interval (secs)")
+	flag.StringVar(&endpoint, "endpoint", "", "docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock")
 	flag.StringVar(&tlsCert, "tlscert", "", "path to TLS client certificate file")
 	flag.StringVar(&tlsKey, "tlskey", "", "path to TLS client key file")
 	flag.StringVar(&tlsCaCert, "tlscacert", "", "path to TLS CA certificate file")
 	flag.BoolVar(&tlsVerify, "tlsverify", false, "verify docker daemon's TLS certicate")
+	flag.Usage = usage
 	flag.Parse()
 }
 

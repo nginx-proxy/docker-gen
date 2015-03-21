@@ -163,10 +163,13 @@ Options:`)
 	println(`
 Arguments:
   template - path to a template to generate
-  dest - path to a write the template.  If not specfied, STDOUT is used
+  dest - path to a write the template.  If not specfied, STDOUT is used`)
 
+	println(`
 Environment Variables:
   DOCKER_HOST - default value for -endpoint
+  DOCKER_CERT_PATH - directory path containing key.pem, cert.pm and ca.pem
+  DOCKER_TLS_VERIFY - enable client TLS verification
 `)
 }
 

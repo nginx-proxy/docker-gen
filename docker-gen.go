@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -33,6 +34,7 @@ var (
 	tlsKey                  string
 	tlsCaCert               string
 	tlsVerify               bool
+	tlsCertPath             string
 	wg                      sync.WaitGroup
 )
 
@@ -168,13 +170,22 @@ Environment Variables:
 `)
 }
 
+func tlsEnabled() bool {
+	for _, v := range []string{tlsCert, tlsCaCert, tlsKey} {
+		if e, err := pathExists(v); e && err == nil {
+			return true
+		}
+	}
+	return false
+}
+
 func NewDockerClient(endpoint string) (*docker.Client, error) {
 	if strings.HasPrefix(endpoint, "unix:") {
 		return docker.NewClient(endpoint)
-	} else if tlsVerify || tlsCert != "" || tlsKey != "" || tlsCaCert != "" {
+	} else if tlsVerify || tlsEnabled() {
 		if tlsVerify {
-			if tlsCaCert == "" {
-				return nil, errors.New("TLS verification was requested, but no -tlscacert was provided")
+			if e, err := pathExists(tlsCaCert); !e || err != nil {
+				return nil, errors.New("TLS verification was requested, but CA cert does not exist")
 			}
 		}
 
@@ -360,6 +371,11 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 }
 
 func initFlags() {
+
+	certPath := filepath.Join(os.Getenv("DOCKER_CERT_PATH"))
+	if certPath == "" {
+		certPath = filepath.Join(os.Getenv("HOME"), ".docker")
+	}
 	flag.BoolVar(&version, "version", false, "show version")
 	flag.BoolVar(&watch, "watch", false, "watch for container changes")
 	flag.BoolVar(&onlyExposed, "only-exposed", false, "only include containers with exposed ports")
@@ -372,10 +388,11 @@ func initFlags() {
 	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (secs)")
 	flag.StringVar(&endpoint, "endpoint", "", "docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock")
-	flag.StringVar(&tlsCert, "tlscert", "", "path to TLS client certificate file")
-	flag.StringVar(&tlsKey, "tlskey", "", "path to TLS client key file")
-	flag.StringVar(&tlsCaCert, "tlscacert", "", "path to TLS CA certificate file")
-	flag.BoolVar(&tlsVerify, "tlsverify", false, "verify docker daemon's TLS certicate")
+	flag.StringVar(&tlsCert, "tlscert", filepath.Join(certPath, "cert.pem"), "path to TLS client certificate file")
+	flag.StringVar(&tlsKey, "tlskey", filepath.Join(certPath, "key.pem"), "path to TLS client key file")
+	flag.StringVar(&tlsCaCert, "tlscacert", filepath.Join(certPath, "ca.pem"), "path to TLS CA certificate file")
+	flag.BoolVar(&tlsVerify, "tlsverify", os.Getenv("DOCKER_TLS_VERIFY") != "", "verify docker daemon's TLS certicate")
+
 	flag.Usage = usage
 	flag.Parse()
 }

@@ -67,15 +67,27 @@ func groupByKeys(entries []*RuntimeContainer, key string) []string {
 }
 
 // selects entries based on key
-func where(entries []*RuntimeContainer, key string, cmp string) []*RuntimeContainer {
-	selection := []*RuntimeContainer{}
-	for _, v := range entries {
-		value := deepGet(*v, key)
-		if value == cmp {
+func where(entries interface{}, key string, cmp interface{}) (interface{}, error) {
+	entriesVal := reflect.ValueOf(entries)
+
+	switch entriesVal.Kind() {
+	case reflect.Array, reflect.Slice:
+		break
+	default:
+		return nil, fmt.Errorf("Must pass an array or slice to 'where'; received %v", entries)
+	}
+
+	selection := make([]interface{}, 0)
+	for i := 0; i < entriesVal.Len(); i++ {
+		v := reflect.Indirect(entriesVal.Index(i)).Interface()
+
+		value := deepGet(v, key)
+		if reflect.DeepEqual(value, cmp) {
 			selection = append(selection, v)
 		}
 	}
-	return selection
+
+	return selection, nil
 }
 
 // selects entries where a key exists

@@ -181,12 +181,26 @@ func TestWhere(t *testing.T) {
 				"VIRTUAL_HOST": "demo1.localhost",
 			},
 			ID: "1",
+			Addresses: []Address{
+				Address{
+					IP:    "172.16.42.1",
+					Port:  "80",
+					Proto: "tcp",
+				},
+			},
 		},
 		&RuntimeContainer{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost",
 			},
 			ID: "2",
+			Addresses: []Address{
+				Address{
+					IP:    "172.16.42.1",
+					Port:  "9999",
+					Proto: "tcp",
+				},
+			},
 		},
 		&RuntimeContainer{
 			Env: map[string]string{
@@ -211,6 +225,19 @@ func TestWhere(t *testing.T) {
 		{`{{where . "Env.VIRTUAL_HOST" "demo2.localhost" | len}}`, containers, `2`},
 		{`{{where . "Env.VIRTUAL_HOST" "demo3.localhost" | len}}`, containers, `1`},
 		{`{{where . "Env.NOEXIST" "demo3.localhost" | len}}`, containers, `0`},
+		{`{{where .Addresses "Port" "80" | len}}`, containers[0], `1`},
+		{`{{where .Addresses "Port" "80" | len}}`, containers[1], `0`},
+		{
+			`{{where . "Value" 5 | len}}`,
+			[]struct {
+				Value int
+			}{
+				{Value: 5},
+				{Value: 3},
+				{Value: 5},
+			},
+			`2`,
+		},
 	}
 
 	for n, test := range tests {

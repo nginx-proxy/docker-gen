@@ -67,14 +67,14 @@ func groupByKeys(entries []*RuntimeContainer, key string) []string {
 }
 
 // Generalized where function
-func generalizedWhere(entries interface{}, key string, test func(interface{}) bool) (interface{}, error) {
+func generalizedWhere(funcName string, entries interface{}, key string, test func(interface{}) bool) (interface{}, error) {
 	entriesVal := reflect.ValueOf(entries)
 
 	switch entriesVal.Kind() {
 	case reflect.Array, reflect.Slice:
 		break
 	default:
-		return nil, fmt.Errorf("Must pass an array or slice to 'where'; received %v", entries)
+		return nil, fmt.Errorf("Must pass an array or slice to '%s'; received %v", funcName, entries)
 	}
 
 	selection := make([]interface{}, 0)
@@ -92,28 +92,28 @@ func generalizedWhere(entries interface{}, key string, test func(interface{}) bo
 
 // selects entries based on key
 func where(entries interface{}, key string, cmp interface{}) (interface{}, error) {
-	return generalizedWhere(entries, key, func(value interface{}) bool {
+	return generalizedWhere("where", entries, key, func(value interface{}) bool {
 		return reflect.DeepEqual(value, cmp)
 	})
 }
 
 // selects entries where a key exists
 func whereExist(entries interface{}, key string) (interface{}, error) {
-	return generalizedWhere(entries, key, func(value interface{}) bool {
+	return generalizedWhere("whereExist", entries, key, func(value interface{}) bool {
 		return value != nil
 	})
 }
 
 // selects entries where a key does not exist
 func whereNotExist(entries interface{}, key string) (interface{}, error) {
-	return generalizedWhere(entries, key, func(value interface{}) bool {
+	return generalizedWhere("whereNotExist", entries, key, func(value interface{}) bool {
 		return value == nil
 	})
 }
 
 // selects entries based on key.  Assumes key is delimited and breaks it apart before comparing
 func whereAny(entries interface{}, key, sep string, cmp []string) (interface{}, error) {
-	return generalizedWhere(entries, key, func(value interface{}) bool {
+	return generalizedWhere("whereAny", entries, key, func(value interface{}) bool {
 		if value == nil {
 			return false
 		} else {
@@ -126,7 +126,7 @@ func whereAny(entries interface{}, key, sep string, cmp []string) (interface{}, 
 // selects entries based on key.  Assumes key is delimited and breaks it apart before comparing
 func whereAll(entries interface{}, key, sep string, cmp []string) (interface{}, error) {
 	req_count := len(cmp)
-	return generalizedWhere(entries, key, func(value interface{}) bool {
+	return generalizedWhere("whereAll", entries, key, func(value interface{}) bool {
 		if value == nil {
 			return false
 		} else {

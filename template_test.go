@@ -202,20 +202,31 @@ func TestWhere(t *testing.T) {
 		},
 	}
 
-	if len(where(containers, "Env.VIRTUAL_HOST", "demo1.localhost")) != 1 {
-		t.Fatalf("demo1.localhost expected 1 match")
+	tests := []struct {
+		tmpl     string
+		context  interface{}
+		expected string
+	}{
+		{`{{where . "Env.VIRTUAL_HOST" "demo1.localhost" | len}}`, containers, `1`},
+		{`{{where . "Env.VIRTUAL_HOST" "demo2.localhost" | len}}`, containers, `2`},
+		{`{{where . "Env.VIRTUAL_HOST" "demo3.localhost" | len}}`, containers, `1`},
+		{`{{where . "Env.NOEXIST" "demo3.localhost" | len}}`, containers, `0`},
 	}
 
-	if len(where(containers, "Env.VIRTUAL_HOST", "demo2.localhost")) != 2 {
-		t.Fatalf("demo2.localhost expected 2 matches")
-	}
+	for n, test := range tests {
+		tmplName := fmt.Sprintf("where-test-%d", n)
+		tmpl := template.Must(newTemplate(tmplName).Parse(test.tmpl))
 
-	if len(where(containers, "Env.VIRTUAL_HOST", "demo3.localhost")) != 1 {
-		t.Fatalf("demo3.localhost expected 1 match")
-	}
+		var b bytes.Buffer
+		err := tmpl.ExecuteTemplate(&b, tmplName, test.context)
+		if err != nil {
+			t.Fatalf("Error executing template: %v", err)
+		}
 
-	if len(where(containers, "Env.NOEXIST", "demo3.localhost")) != 0 {
-		t.Fatalf("NOEXIST demo3.localhost expected 0 match")
+		got := b.String()
+		if test.expected != got {
+			t.Fatalf("Incorrect output found; expected %s, got %s", test.expected, got)
+		}
 	}
 }
 

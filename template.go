@@ -66,8 +66,8 @@ func groupByKeys(entries []*RuntimeContainer, key string) []string {
 	return ret
 }
 
-// selects entries based on key
-func where(entries interface{}, key string, cmp interface{}) (interface{}, error) {
+// Generalized where function
+func generalizedWhere(entries interface{}, key string, test func(interface{}) bool) (interface{}, error) {
 	entriesVal := reflect.ValueOf(entries)
 
 	switch entriesVal.Kind() {
@@ -82,7 +82,7 @@ func where(entries interface{}, key string, cmp interface{}) (interface{}, error
 		v := reflect.Indirect(entriesVal.Index(i)).Interface()
 
 		value := deepGet(v, key)
-		if reflect.DeepEqual(value, cmp) {
+		if test(value) {
 			selection = append(selection, v)
 		}
 	}
@@ -90,59 +90,50 @@ func where(entries interface{}, key string, cmp interface{}) (interface{}, error
 	return selection, nil
 }
 
+// selects entries based on key
+func where(entries interface{}, key string, cmp interface{}) (interface{}, error) {
+	return generalizedWhere(entries, key, func(value interface{}) bool {
+		return reflect.DeepEqual(value, cmp)
+	})
+}
+
 // selects entries where a key exists
-func whereExist(entries []*RuntimeContainer, key string) []*RuntimeContainer {
-	selection := []*RuntimeContainer{}
-	for _, v := range entries {
-		value := deepGet(*v, key)
-		if value != nil {
-			selection = append(selection, v)
-		}
-	}
-	return selection
+func whereExist(entries interface{}, key string) (interface{}, error) {
+	return generalizedWhere(entries, key, func(value interface{}) bool {
+		return value != nil
+	})
 }
 
 // selects entries where a key does not exist
-func whereNotExist(entries []*RuntimeContainer, key string) []*RuntimeContainer {
-	selection := []*RuntimeContainer{}
-	for _, v := range entries {
-		value := deepGet(*v, key)
+func whereNotExist(entries interface{}, key string) (interface{}, error) {
+	return generalizedWhere(entries, key, func(value interface{}) bool {
+		return value == nil
+	})
+}
+
+// selects entries based on key.  Assumes key is delimited and breaks it apart before comparing
+func whereAny(entries interface{}, key, sep string, cmp []string) (interface{}, error) {
+	return generalizedWhere(entries, key, func(value interface{}) bool {
 		if value == nil {
-			selection = append(selection, v)
-		}
-	}
-	return selection
-}
-
-// selects entries based on key.  Assumes key is delimited and breaks it apart before comparing
-func whereAny(entries []*RuntimeContainer, key, sep string, cmp []string) []*RuntimeContainer {
-	selection := []*RuntimeContainer{}
-	for _, v := range entries {
-		value := deepGet(*v, key)
-		if value != nil {
+			return false
+		} else {
 			items := strings.Split(value.(string), sep)
-			if len(intersect(cmp, items)) > 0 {
-				selection = append(selection, v)
-			}
+			return len(intersect(cmp, items)) > 0
 		}
-	}
-	return selection
+	})
 }
 
 // selects entries based on key.  Assumes key is delimited and breaks it apart before comparing
-func whereAll(entries []*RuntimeContainer, key, sep string, cmp []string) []*RuntimeContainer {
-	selection := []*RuntimeContainer{}
+func whereAll(entries interface{}, key, sep string, cmp []string) (interface{}, error) {
 	req_count := len(cmp)
-	for _, v := range entries {
-		value := deepGet(*v, key)
-		if value != nil {
+	return generalizedWhere(entries, key, func(value interface{}) bool {
+		if value == nil {
+			return false
+		} else {
 			items := strings.Split(value.(string), sep)
-			if len(intersect(cmp, items)) == req_count {
-				selection = append(selection, v)
-			}
+			return len(intersect(cmp, items)) == req_count
 		}
-	}
-	return selection
+	})
 }
 
 // hasPrefix returns whether a given string is a prefix of another string

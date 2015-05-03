@@ -7,6 +7,11 @@ import (
 )
 
 func TestDefaultEndpoint(t *testing.T) {
+	err := os.Unsetenv("DOCKER_HOST")
+	if err != nil {
+		t.Fatalf("Unable to unset DOCKER_HOST: %s", err)
+	}
+
 	endpoint, err := getEndpoint()
 	if err != nil {
 		t.Fatalf("%s", err)

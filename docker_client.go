@@ -126,6 +126,7 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 			Env:       make(map[string]string),
 			Volumes:   make(map[string]Volume),
 			Node:      SwarmNode{},
+			Labels:    make(map[string]string),
 		}
 		for k, v := range container.NetworkSettings.Ports {
 			address := Address{
@@ -156,6 +157,7 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 		}
 
 		runtimeContainer.Env = splitKeyValueSlice(container.Config.Env)
+		runtimeContainer.Labels = container.Config.Labels
 		containers = append(containers, runtimeContainer)
 	}
 	return containers, nil

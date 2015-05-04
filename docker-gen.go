@@ -62,6 +62,7 @@ type RuntimeContainer struct {
 	Env       map[string]string
 	Volumes   map[string]Volume
 	Node      SwarmNode
+	Labels    map[string]string
 }
 
 type DockerImage struct {

@@ -40,7 +40,7 @@ func deepGet(item interface{}, path string) interface{} {
 				return deepGet(mapValue.Interface(), strings.Join(parts[1:], "."))
 			}
 		default:
-			log.Printf("can't group by %s\n", path)
+			log.Printf("can't group by %s (value %v, kind %s)\n", path, itemValue, itemValue.Kind())
 		}
 		return nil
 	}

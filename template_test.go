@@ -9,6 +9,30 @@ import (
 	"text/template"
 )
 
+type templateTestList []struct {
+	tmpl     string
+	context  interface{}
+	expected string
+}
+
+func (tests templateTestList) run(t *testing.T, prefix string) {
+	for n, test := range tests {
+		tmplName := fmt.Sprintf("%s-test-%d", prefix, n)
+		tmpl := template.Must(newTemplate(tmplName).Parse(test.tmpl))
+
+		var b bytes.Buffer
+		err := tmpl.ExecuteTemplate(&b, tmplName, test.context)
+		if err != nil {
+			t.Fatalf("Error executing template: %v (test %s)", err, tmplName)
+		}
+
+		got := b.String()
+		if test.expected != got {
+			t.Fatalf("Incorrect output found; expected %s, got %s (test %s)", test.expected, got, tmplName)
+		}
+	}
+}
+
 func TestContains(t *testing.T) {
 	env := map[string]string{
 		"PORT": "1234",
@@ -24,24 +48,14 @@ func TestContains(t *testing.T) {
 }
 
 func TestKeys(t *testing.T) {
-	expected := "VIRTUAL_HOST"
 	env := map[string]string{
-		expected: "demo.local",
+		"VIRTUAL_HOST": "demo.local",
+	}
+	tests := templateTestList{
+		{`{{range (keys $)}}{{.}}{{end}}`, env, `VIRTUAL_HOST`},
 	}
 
-	const text = "{{range (keys $)}}{{.}}{{end}}"
-	tmpl := template.Must(newTemplate("keys-test").Parse(text))
-
-	var b bytes.Buffer
-	err := tmpl.ExecuteTemplate(&b, "keys-test", env)
-	if err != nil {
-		t.Fatalf("Error executing template: %v", err)
-	}
-
-	got := b.String()
-	if expected != got {
-		t.Fatalf("Incorrect key found; expected %s, got %s", expected, got)
-	}
+	tests.run(t, "keys")
 }
 
 func TestKeysEmpty(t *testing.T) {
@@ -181,12 +195,26 @@ func TestWhere(t *testing.T) {
 				"VIRTUAL_HOST": "demo1.localhost",
 			},
 			ID: "1",
+			Addresses: []Address{
+				Address{
+					IP:    "172.16.42.1",
+					Port:  "80",
+					Proto: "tcp",
+				},
+			},
 		},
 		&RuntimeContainer{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost",
 			},
 			ID: "2",
+			Addresses: []Address{
+				Address{
+					IP:    "172.16.42.1",
+					Port:  "9999",
+					Proto: "tcp",
+				},
+			},
 		},
 		&RuntimeContainer{
 			Env: map[string]string{
@@ -202,21 +230,27 @@ func TestWhere(t *testing.T) {
 		},
 	}
 
-	if len(where(containers, "Env.VIRTUAL_HOST", "demo1.localhost")) != 1 {
-		t.Fatalf("demo1.localhost expected 1 match")
+	tests := templateTestList{
+		{`{{where . "Env.VIRTUAL_HOST" "demo1.localhost" | len}}`, containers, `1`},
+		{`{{where . "Env.VIRTUAL_HOST" "demo2.localhost" | len}}`, containers, `2`},
+		{`{{where . "Env.VIRTUAL_HOST" "demo3.localhost" | len}}`, containers, `1`},
+		{`{{where . "Env.NOEXIST" "demo3.localhost" | len}}`, containers, `0`},
+		{`{{where .Addresses "Port" "80" | len}}`, containers[0], `1`},
+		{`{{where .Addresses "Port" "80" | len}}`, containers[1], `0`},
+		{
+			`{{where . "Value" 5 | len}}`,
+			[]struct {
+				Value int
+			}{
+				{Value: 5},
+				{Value: 3},
+				{Value: 5},
+			},
+			`2`,
+		},
 	}
 
-	if len(where(containers, "Env.VIRTUAL_HOST", "demo2.localhost")) != 2 {
-		t.Fatalf("demo2.localhost expected 2 matches")
-	}
-
-	if len(where(containers, "Env.VIRTUAL_HOST", "demo3.localhost")) != 1 {
-		t.Fatalf("demo3.localhost expected 1 match")
-	}
-
-	if len(where(containers, "Env.NOEXIST", "demo3.localhost")) != 0 {
-		t.Fatalf("NOEXIST demo3.localhost expected 0 match")
-	}
+	tests.run(t, "where")
 }
 
 func TestWhereExist(t *testing.T) {
@@ -249,21 +283,14 @@ func TestWhereExist(t *testing.T) {
 		},
 	}
 
-	if len(whereExist(containers, "Env.VIRTUAL_HOST")) != 3 {
-		t.Fatalf("Env.VIRTUAL_HOST expected 3 matches")
+	tests := templateTestList{
+		{`{{whereExist . "Env.VIRTUAL_HOST" | len}}`, containers, `3`},
+		{`{{whereExist . "Env.VIRTUAL_PATH" | len}}`, containers, `2`},
+		{`{{whereExist . "Env.NOT_A_KEY" | len}}`, containers, `0`},
+		{`{{whereExist . "Env.VIRTUAL_PROTO" | len}}`, containers, `1`},
 	}
 
-	if len(whereExist(containers, "Env.VIRTUAL_PATH")) != 2 {
-		t.Fatalf("Env.VIRTUAL_PATH expected 2 matches")
-	}
-
-	if len(whereExist(containers, "Env.NOT_A_KEY")) != 0 {
-		t.Fatalf("Env.NOT_A_KEY expected 0 matches")
-	}
-
-	if len(whereExist(containers, "Env.VIRTUAL_PROTO")) != 1 {
-		t.Fatalf("Env.VIRTUAL_PROTO expected 1 matche")
-	}
+	tests.run(t, "whereExist")
 }
 
 func TestWhereNotExist(t *testing.T) {
@@ -296,21 +323,14 @@ func TestWhereNotExist(t *testing.T) {
 		},
 	}
 
-	if len(whereNotExist(containers, "Env.VIRTUAL_HOST")) != 1 {
-		t.Fatalf("Env.VIRTUAL_HOST expected 1 match")
+	tests := templateTestList{
+		{`{{whereNotExist . "Env.VIRTUAL_HOST" | len}}`, containers, `1`},
+		{`{{whereNotExist . "Env.VIRTUAL_PATH" | len}}`, containers, `2`},
+		{`{{whereNotExist . "Env.NOT_A_KEY" | len}}`, containers, `4`},
+		{`{{whereNotExist . "Env.VIRTUAL_PROTO" | len}}`, containers, `3`},
 	}
 
-	if len(whereNotExist(containers, "Env.VIRTUAL_PATH")) != 2 {
-		t.Fatalf("Env.VIRTUAL_PATH expected 2 matches")
-	}
-
-	if len(whereNotExist(containers, "Env.NOT_A_KEY")) != 4 {
-		t.Fatalf("Env.NOT_A_KEY expected 4 matches")
-	}
-
-	if len(whereNotExist(containers, "Env.VIRTUAL_PROTO")) != 3 {
-		t.Fatalf("Env.VIRTUAL_PROTO expected 3 matches")
-	}
+	tests.run(t, "whereNotExist")
 }
 
 func TestWhereSomeMatch(t *testing.T) {
@@ -341,21 +361,14 @@ func TestWhereSomeMatch(t *testing.T) {
 		},
 	}
 
-	if len(whereAny(containers, "Env.VIRTUAL_HOST", ",", []string{"demo1.localhost"})) != 1 {
-		t.Fatalf("demo1.localhost expected 1 match")
+	tests := templateTestList{
+		{`{{whereAny . "Env.VIRTUAL_HOST" "," (split "demo1.localhost" ",") | len}}`, containers, `1`},
+		{`{{whereAny . "Env.VIRTUAL_HOST" "," (split "demo2.localhost,lala" ",") | len}}`, containers, `2`},
+		{`{{whereAny . "Env.VIRTUAL_HOST" "," (split "something,demo3.localhost" ",") | len}}`, containers, `1`},
+		{`{{whereAny . "Env.NOEXIST" "," (split "demo3.localhost" ",") | len}}`, containers, `0`},
 	}
 
-	if len(whereAny(containers, "Env.VIRTUAL_HOST", ",", []string{"demo2.localhost", "lala"})) != 2 {
-		t.Fatalf("demo2.localhost expected 2 matches")
-	}
-
-	if len(whereAny(containers, "Env.VIRTUAL_HOST", ",", []string{"something", "demo3.localhost"})) != 1 {
-		t.Fatalf("demo3.localhost expected 1 match")
-	}
-
-	if len(whereAny(containers, "Env.NOEXIST", ",", []string{"demo3.localhost"})) != 0 {
-		t.Fatalf("NOEXIST demo3.localhost expected 0 match")
-	}
+	tests.run(t, "whereAny")
 }
 
 func TestWhereRequires(t *testing.T) {
@@ -386,21 +399,14 @@ func TestWhereRequires(t *testing.T) {
 		},
 	}
 
-	if len(whereAll(containers, "Env.VIRTUAL_HOST", ",", []string{"demo1.localhost"})) != 1 {
-		t.Fatalf("demo1.localhost expected 1 match")
+	tests := templateTestList{
+		{`{{whereAll . "Env.VIRTUAL_HOST" "," (split "demo1.localhost" ",") | len}}`, containers, `1`},
+		{`{{whereAll . "Env.VIRTUAL_HOST" "," (split "demo2.localhost,lala" ",") | len}}`, containers, `0`},
+		{`{{whereAll . "Env.VIRTUAL_HOST" "," (split "demo3.localhost" ",") | len}}`, containers, `1`},
+		{`{{whereAll . "Env.NOEXIST" "," (split "demo3.localhost" ",") | len}}`, containers, `0`},
 	}
 
-	if len(whereAll(containers, "Env.VIRTUAL_HOST", ",", []string{"demo2.localhost", "lala"})) != 0 {
-		t.Fatalf("demo2.localhost,lala expected 0 matches")
-	}
-
-	if len(whereAll(containers, "Env.VIRTUAL_HOST", ",", []string{"demo3.localhost"})) != 1 {
-		t.Fatalf("demo3.localhost expected 1 match")
-	}
-
-	if len(whereAll(containers, "Env.NOEXIST", ",", []string{"demo3.localhost"})) != 0 {
-		t.Fatalf("NOEXIST demo3.localhost expected 0 match")
-	}
+	tests.run(t, "whereAll")
 }
 
 func TestHasPrefix(t *testing.T) {
@@ -520,11 +526,7 @@ func TestJson(t *testing.T) {
 }
 
 func TestParseJson(t *testing.T) {
-	tests := []struct {
-		tmpl     string
-		context  interface{}
-		expected string
-	}{
+	tests := templateTestList{
 		{`{{parseJson .}}`, `null`, `<no value>`},
 		{`{{parseJson .}}`, `true`, `true`},
 		{`{{parseJson .}}`, `1`, `1`},
@@ -533,50 +535,18 @@ func TestParseJson(t *testing.T) {
 		{`{{index (parseJson . | first) "enabled"}}`, `[{"enabled":true}]`, `true`},
 	}
 
-	for n, test := range tests {
-		tmplName := fmt.Sprintf("parseJson-test-%d", n)
-		tmpl := template.Must(newTemplate(tmplName).Parse(test.tmpl))
-
-		var b bytes.Buffer
-		err := tmpl.ExecuteTemplate(&b, tmplName, test.context)
-		if err != nil {
-			t.Fatalf("Error executing template: %v", err)
-		}
-
-		got := b.String()
-		if test.expected != got {
-			t.Fatalf("Incorrect output found; expected %s, got %s", test.expected, got)
-		}
-	}
+	tests.run(t, "parseJson")
 }
 
 func TestQueryEscape(t *testing.T) {
-	tests := []struct {
-		tmpl     string
-		context  interface{}
-		expected string
-	}{
+	tests := templateTestList{
 		{`{{queryEscape .}}`, `example.com`, `example.com`},
 		{`{{queryEscape .}}`, `.example.com`, `.example.com`},
 		{`{{queryEscape .}}`, `*.example.com`, `%2A.example.com`},
 		{`{{queryEscape .}}`, `~^example\.com(\..*\.xip\.io)?$`, `~%5Eexample%5C.com%28%5C..%2A%5C.xip%5C.io%29%3F%24`},
 	}
 
-	for n, test := range tests {
-		tmplName := fmt.Sprintf("queryEscape-test-%d", n)
-		tmpl := template.Must(newTemplate(tmplName).Parse(test.tmpl))
-
-		var b bytes.Buffer
-		err := tmpl.ExecuteTemplate(&b, tmplName, test.context)
-		if err != nil {
-			t.Fatalf("Error executing template: %v", err)
-		}
-
-		got := b.String()
-		if test.expected != got {
-			t.Fatalf("Incorrect output found; expected %s, got %s", test.expected, got)
-		}
-	}
+	tests.run(t, "queryEscape")
 }
 
 func TestArrayClosestExact(t *testing.T) {

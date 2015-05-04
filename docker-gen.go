@@ -15,6 +15,8 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 )
 
+type stringslice []string
+
 var (
 	buildVersion            string
 	version                 bool
@@ -23,7 +25,7 @@ var (
 	notifySigHUPContainerID string
 	onlyExposed             bool
 	onlyPublished           bool
-	configFile              string
+	configFiles             stringslice
 	configs                 ConfigFile
 	interval                int
 	endpoint                string
@@ -75,6 +77,16 @@ type SwarmNode struct {
 	ID      string
 	Name    string
 	Address Address
+}
+
+func (strings *stringslice) String() string {
+	return "[]"
+}
+
+func (strings *stringslice) Set(value string) error {
+	// TODO: Throw an error for duplicate `dest`
+	*strings = append(*strings, value)
+	return nil
 }
 
 func (i *DockerImage) String() string {
@@ -338,7 +350,7 @@ func initFlags() {
 	flag.BoolVar(&onlyPublished, "only-published", false, "only include containers with published ports (implies -only-exposed)")
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated")
 	flag.StringVar(&notifySigHUPContainerID, "notify-sighup", "", "send HUP signal to container.  Equivalent to `docker kill -s HUP container-ID`")
-	flag.StringVar(&configFile, "config", "", "config file with template directives")
+	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (s)")
 	flag.StringVar(&endpoint, "endpoint", "", "docker api endpoint")
 	flag.StringVar(&tlsCert, "tlscert", "", "path to TLS client certificate file")
@@ -356,15 +368,17 @@ func main() {
 		return
 	}
 
-	if flag.NArg() < 1 && configFile == "" {
+	if flag.NArg() < 1 && len(configFiles) == 0 {
 		usage()
 		os.Exit(1)
 	}
 
-	if configFile != "" {
-		err := loadConfig(configFile)
-		if err != nil {
-			log.Fatalf("error loading config %s: %s\n", configFile, err)
+	if len(configFiles) > 0 {
+		for _, configFile := range configFiles {
+			err := loadConfig(configFile)
+			if err != nil {
+				log.Fatalf("error loading config %s: %s\n", configFile, err)
+			}
 		}
 	} else {
 		config := Config{

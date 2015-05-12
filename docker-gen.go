@@ -47,6 +47,7 @@ type Address struct {
 	Port     string
 	HostPort string
 	Proto    string
+	HostIP   string
 }
 
 type Volume struct {
@@ -65,6 +66,7 @@ type RuntimeContainer struct {
 	Volumes   map[string]Volume
 	Node      SwarmNode
 	Labels    map[string]string
+	IP        string
 }
 
 type DockerImage struct {

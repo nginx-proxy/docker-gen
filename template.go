@@ -336,22 +336,10 @@ func generateFile(config Config, containers Context) bool {
 		log.Fatalf("unable to parse template: %s", err)
 	}
 
-	filteredContainers := Context{}
-	if config.OnlyPublished {
-		for _, container := range containers {
-			if len(container.PublishedAddresses()) > 0 {
-				filteredContainers = append(filteredContainers, container)
-			}
-		}
-	} else if config.OnlyExposed {
-		for _, container := range containers {
-			if len(container.Addresses) > 0 {
-				filteredContainers = append(filteredContainers, container)
-			}
-		}
-	} else {
-		filteredContainers = containers
-	}
+	// Pass containers through our filters
+	filteredContainers := containers
+	filterOnlyPublished(&config, &filteredContainers)
+	filterOnlyExposed(&config, &filteredContainers)
 
 	dest := os.Stdout
 	if config.Dest != "" {
@@ -393,10 +381,52 @@ func generateFile(config Config, containers Context) bool {
 			if err != nil {
 				log.Fatalf("unable to create dest file %s: %s\n", config.Dest, err)
 			}
-			log.Printf("Generated '%s' from %d containers", config.Dest, len(filteredContainers))
+			log.Printf("Generated '%s' from %d out of %d containers.", config.Dest, len(filteredContainers), len(containers))
 			return true
 		}
 		return false
 	}
 	return true
+}
+
+/*
+The idea behind this function is to easily remove a RuntimeContainer pointer
+from the Context slice.
+
+This is intended to be used with a for loop and to pass the "index" as a pointer
+so that after we remove the particular RuntimeContainer pointer, we can bump
+back the index so we don't skip over any of the RuntimeContainer pointers.
+*/
+func removeFilteredContainer(containers *Context, index *int) {
+	/*
+	   ## This comment is the multi-line version of what we're doing below.
+	   c := *containers
+	   c = append(c[:*index], c[*index+1:]...)
+	   *containers = c
+
+	   *index--
+	*/
+
+	*containers = append((*containers)[:*index], (*containers)[*index+1:]...)
+	*index--
+}
+
+func filterOnlyPublished(config *Config, containers *Context) {
+	if config.OnlyPublished {
+		for i := 0; i < len(*containers); i++ {
+			if len((*containers)[i].PublishedAddresses()) == 0 {
+				removeFilteredContainer(containers, &i)
+			}
+		}
+	}
+}
+
+func filterOnlyExposed(config *Config, containers *Context) {
+	if config.OnlyExposed {
+		for i := 0; i < len(*containers); i++ {
+			if len((*containers)[i].Addresses) == 0 {
+				removeFilteredContainer(containers, &i)
+			}
+		}
+	}
 }

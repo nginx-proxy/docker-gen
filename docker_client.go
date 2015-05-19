@@ -121,6 +121,7 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 				Tag:        tag,
 			},
 			Name:      strings.TrimLeft(container.Name, "/"),
+			Hostname:  container.Config.Hostname,
 			Gateway:   container.NetworkSettings.Gateway,
 			Addresses: []Address{},
 			Env:       make(map[string]string),

@@ -389,6 +389,14 @@ func generateFile(config Config, containers Context) bool {
 	return true
 }
 
+/*
+The idea behind this function is to easily remove a RuntimeContainer pointer
+from the Context slice.
+
+This is intended to be used with a for loop and to pass the "index" as a pointer
+so that after we remove the particular RuntimeContainer pointer, we can bump
+back the index so we don't skip over any of the RuntimeContainer pointers.
+*/
 func removeFilteredContainer(containers *Context, index *int) {
 	/*
 	   ## This comment is the multi-line version of what we're doing below.

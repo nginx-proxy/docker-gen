@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -356,10 +357,22 @@ func initFlags() {
 	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (s)")
 	flag.StringVar(&endpoint, "endpoint", "", "docker api endpoint")
-	flag.StringVar(&tlsCert, "tlscert", "", "path to TLS client certificate file")
-	flag.StringVar(&tlsKey, "tlskey", "", "path to TLS client key file")
-	flag.StringVar(&tlsCaCert, "tlscacert", "", "path to TLS CA certificate file")
-	flag.BoolVar(&tlsVerify, "tlsverify", false, "verify docker daemon's TLS certicate")
+
+	defaultTlsCert := ""
+	defaultTlsKey := ""
+	defaultTlsCaCert := ""
+
+	if certDir := os.Getenv("DOCKER_CERT_PATH"); certDir != "" {
+		defaultTlsCert = filepath.Join(certDir, "cert.pem")
+		defaultTlsKey = filepath.Join(certDir, "key.pem")
+		defaultTlsCaCert = filepath.Join(certDir, "ca.pem")
+	}
+
+	flag.StringVar(&tlsCert, "tlscert", defaultTlsCert, "path to TLS client certificate file")
+	flag.StringVar(&tlsKey, "tlskey", defaultTlsKey, "path to TLS client key file")
+	flag.StringVar(&tlsCaCert, "tlscacert", defaultTlsCaCert, "path to TLS CA certificate file")
+
+	flag.BoolVar(&tlsVerify, "tlsverify", os.Getenv("DOCKER_TLS_VERIFY") != "", "verify docker daemon's TLS certicate")
 	flag.Parse()
 }
 

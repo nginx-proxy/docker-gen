@@ -11,12 +11,18 @@ upstream {{ $host }} {
 
 {{ range $index, $value := $containers }}
 
+	{{ if $value.Env.VIRTUAL_WEIGHT }}
+		{{ $weight := $value.Env.VIRTUAL_WEIGHT }}
+	{{ else }}
+		{{ $weight := 1 }}
+	{{end }}
+
 	{{ $addrLen := len $value.Addresses }}
 	{{/* If only 1 port exposed, use that */}}
 	{{ if eq $addrLen 1 }}
 		{{ with $address := index $value.Addresses 0 }}
 		   # {{$value.Name}}
-		   server {{ $address.IP }}:{{ $address.Port }};
+		   server {{ $address.IP }}:{{ $address.Port }} weight={{ $weight }};
 		{{ end }}
 
 	{{/* If more than one port exposed, use the one matching VIRTUAL_PORT env var */}}
@@ -24,7 +30,7 @@ upstream {{ $host }} {
 		{{ range $i, $address := $value.Addresses }}
 		   {{ if eq $address.Port $value.Env.VIRTUAL_PORT }}
 		   # {{$value.Name}}
-		   server {{ $address.IP }}:{{ $address.Port }};
+		   server {{ $address.IP }}:{{ $address.Port }} weight={{ $weight }};
 		   {{ end }}
 		{{ end }}
 
@@ -33,7 +39,7 @@ upstream {{ $host }} {
 		{{ range $i, $address := $value.Addresses }}
 			{{ if eq $address.Port "80" }}
 			# {{$value.Name}}
-			server {{ $address.IP }}:{{ $address.Port }};
+			server {{ $address.IP }}:{{ $address.Port }} weight={{ $weight }};
 			{{ end }}
 		{{ end }}
 	{{ end }}

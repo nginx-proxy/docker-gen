@@ -113,11 +113,11 @@ Within those templates, the object emitted by docker-gen will have [this structu
 
 #### Functions
 
-* *`closest $array $value`: Returns the longest matching substring in `$array` that matches `$value`
+* *`closest $array $value`*: Returns the longest matching substring in `$array` that matches `$value`
 * *`coalesce ...`*: Returns the first non-nil argument.
 * *`contains $map $key`*: Returns `true` if `$map` contains `$key`. Takes maps from `string` to `string`.
 * *`dict $key $value ...`*: Creates a map from a list of pairs. Each `$key` value must be a `string`, but the `$value` can be any type (or `nil`). Useful for passing more than one value as a pipeline context to subtemplates.
-* *`dir $path`: Returns an array of filenames in the specified `$path`.
+* *`dir $path`*: Returns an array of filenames in the specified `$path`.
 * *`exists $path`*: Returns `true` if `$path` refers to an existing file or directory. Takes a string.
 * *`first $array`*: Returns the first value of an array or nil if the arry is nil or empty.
 * *`groupBy $containers $fieldPath`*: Groups an array of `RuntimeContainer` instances based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value, which must be a string. Returns a map from the value of the field path expression to an array of containers having that value. Containers that do not have a value for the field path in question are omitted.

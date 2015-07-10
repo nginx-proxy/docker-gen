@@ -119,9 +119,13 @@ type RuntimeContainer struct {
     Addresses []Address
     Gateway   string
     Name      string
+    Hostname  string
     Image     DockerImage
     Env       map[string]string
     Volumes   map[string]Volume
+    Node      SwarmNode
+    Labels    map[string]string
+    IP        string
 }
 
 type Address struct {
@@ -129,6 +133,7 @@ type Address struct {
     Port     string
     HostPort string
     Proto    string
+    HostIP   string
 }
 
 type DockerImage struct {
@@ -142,6 +147,12 @@ type Volume struct {
     HostPath  string
     ReadWrite bool
 }
+
+type SwarmNode struct {
+    ID      string
+    Name    string
+    Address Address
+}
 ```
 
 For example, this is a JSON version of an emitted RuntimeContainer struct:
@@ -152,11 +163,28 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
    "Addresses":[
       {
          "IP":"172.17.0.4",
-         "Port":"22"
+         "Port":"22",
+         "Proto":"tcp",
+         "HostIP":"192.168.10.24",
+         "HostPort":"2222"
       }
    ],
    "Gateway":"172.17.42.1",
+   "Node": {
+       "ID":"I2VY:P7PF:TZD5:PGWB:QTI7:QDSP:C5UD:DYKR:XKKK:TRG2:M2BL:DFUN",
+       "Name":"docker-test",
+       "Address": {
+           "IP":"192.168.10.24"
+       }
+   },
+   "Labels": {
+       "operatingsystem":"Ubuntu 14.04.2 LTS",
+       "storagedriver":"devicemapper",
+       "anything_foo":"something_bar"
+   },
+   "IP":"172.17.0.4",
    "Name":"docker_register",
+   "Hostname":"71e976807583",
    "Image":{
       "Registry":"jwilder",
       "Repository":"docker-register"

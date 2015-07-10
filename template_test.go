@@ -126,7 +126,7 @@ func TestGroupByExistingKey(t *testing.T) {
 		},
 	}
 
-	groups := groupBy(containers, "Env.VIRTUAL_HOST")
+	groups, _ := groupBy(containers, "Env.VIRTUAL_HOST")
 	if len(groups) != 2 {
 		t.Fail()
 	}
@@ -136,9 +136,52 @@ func TestGroupByExistingKey(t *testing.T) {
 	}
 
 	if len(groups["demo2.localhost"]) != 1 {
+		t.FailNow()
+	}
+	if groups["demo2.localhost"][0].(RuntimeContainer).ID != "3" {
 		t.Fail()
 	}
-	if groups["demo2.localhost"][0].ID != "3" {
+}
+
+func TestGroupByAfterWhere(t *testing.T) {
+	containers := []*RuntimeContainer{
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost",
+				"EXTERNAL":     "true",
+			},
+			ID: "1",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost",
+			},
+			ID: "2",
+		},
+		&RuntimeContainer{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost",
+				"EXTERNAL":     "true",
+			},
+			ID: "3",
+		},
+	}
+
+	filtered, _ := where(containers, "Env.EXTERNAL", "true")
+	groups, _ := groupBy(filtered, "Env.VIRTUAL_HOST")
+
+	if len(groups) != 2 {
+		t.Fail()
+	}
+
+	if len(groups["demo1.localhost"]) != 1 {
+		t.Fail()
+	}
+
+	if len(groups["demo2.localhost"]) != 1 {
+		t.FailNow()
+	}
+	if groups["demo2.localhost"][0].(RuntimeContainer).ID != "3" {
 		t.Fail()
 	}
 }
@@ -165,7 +208,7 @@ func TestGroupByMulti(t *testing.T) {
 		},
 	}
 
-	groups := groupByMulti(containers, "Env.VIRTUAL_HOST", ",")
+	groups, _ := groupByMulti(containers, "Env.VIRTUAL_HOST", ",")
 	if len(groups) != 3 {
 		t.Fatalf("expected 3 got %d", len(groups))
 	}
@@ -177,14 +220,14 @@ func TestGroupByMulti(t *testing.T) {
 	if len(groups["demo2.localhost"]) != 1 {
 		t.Fatalf("expected 1 got %s", len(groups["demo2.localhost"]))
 	}
-	if groups["demo2.localhost"][0].ID != "3" {
-		t.Fatalf("expected 2 got %s", groups["demo2.localhost"][0].ID)
+	if groups["demo2.localhost"][0].(RuntimeContainer).ID != "3" {
+		t.Fatalf("expected 2 got %s", groups["demo2.localhost"][0].(RuntimeContainer).ID)
 	}
 	if len(groups["demo3.localhost"]) != 1 {
 		t.Fatalf("expect 1 got %d", len(groups["demo3.localhost"]))
 	}
-	if groups["demo3.localhost"][0].ID != "2" {
-		t.Fatalf("expected 2 got %s", groups["demo3.localhost"][0].ID)
+	if groups["demo3.localhost"][0].(RuntimeContainer).ID != "2" {
+		t.Fatalf("expected 2 got %s", groups["demo3.localhost"][0].(RuntimeContainer).ID)
 	}
 }
 

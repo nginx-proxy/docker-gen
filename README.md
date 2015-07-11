@@ -109,7 +109,101 @@ If no `<dest>` file is specified, the output is sent to stdout.  Mainly useful f
 
 The templates used by docker-gen are written using the Go [text/template](http://golang.org/pkg/text/template/) language. In addition to the [built-in functions](http://golang.org/pkg/text/template/#hdr-Functions) supplied by Go, docker-gen provides a number of additional functions to make it simpler (or possible) to generate your desired output.
 
-Within those templates, the object emitted by docker-gen will have [this structure](https://github.com/jwilder/docker-gen/wiki/Docker-Gen-Emit-Structure).
+#### Emit Structure
+
+Within the templates, the object emitted by docker-gen will be a structure consisting of following Go structs:
+
+```go
+type RuntimeContainer struct {
+    ID        string
+    Addresses []Address
+    Gateway   string
+    Name      string
+    Hostname  string
+    Image     DockerImage
+    Env       map[string]string
+    Volumes   map[string]Volume
+    Node      SwarmNode
+    Labels    map[string]string
+    IP        string
+}
+
+type Address struct {
+    IP       string
+    Port     string
+    HostPort string
+    Proto    string
+    HostIP   string
+}
+
+type DockerImage struct {
+    Registry   string
+    Repository string
+    Tag        string
+}
+
+type Volume struct {
+    Path      string
+    HostPath  string
+    ReadWrite bool
+}
+
+type SwarmNode struct {
+    ID      string
+    Name    string
+    Address Address
+}
+```
+
+For example, this is a JSON version of an emitted RuntimeContainer struct:
+
+```json
+{
+   "ID":"71e9768075836eb38557adcfc71a207386a0c597dbeda240cf905df79b18cebf",
+   "Addresses":[
+      {
+         "IP":"172.17.0.4",
+         "Port":"22",
+         "Proto":"tcp",
+         "HostIP":"192.168.10.24",
+         "HostPort":"2222"
+      }
+   ],
+   "Gateway":"172.17.42.1",
+   "Node": {
+       "ID":"I2VY:P7PF:TZD5:PGWB:QTI7:QDSP:C5UD:DYKR:XKKK:TRG2:M2BL:DFUN",
+       "Name":"docker-test",
+       "Address": {
+           "IP":"192.168.10.24"
+       }
+   },
+   "Labels": {
+       "operatingsystem":"Ubuntu 14.04.2 LTS",
+       "storagedriver":"devicemapper",
+       "anything_foo":"something_bar"
+   },
+   "IP":"172.17.0.4",
+   "Name":"docker_register",
+   "Hostname":"71e976807583",
+   "Image":{
+      "Registry":"jwilder",
+      "Repository":"docker-register"
+   },
+   "Env":{
+      "ETCD_HOST":"172.17.42.1:4001",
+      "PATH":"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "DOCKER_HOST":"unix:///var/run/docker.sock",
+      "HOST_IP":"172.17.42.1"
+   },
+   "Volumes":{
+      "/mnt":{
+         "Path":"/mnt",
+         "HostPath":"/Users/joebob/tmp",
+         "ReadWrite":true
+      }
+   }
+}
+```
 
 #### Functions
 

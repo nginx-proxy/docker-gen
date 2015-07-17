@@ -73,6 +73,8 @@ func generalizedWhere(funcName string, entries interface{}, key string, test fun
 	switch entriesVal.Kind() {
 	case reflect.Array, reflect.Slice:
 		break
+	case reflect.Ptr:
+		return generalizedWhere(funcName, entriesVal.Elem().Interface(), key, test)
 	default:
 		return nil, fmt.Errorf("Must pass an array or slice to '%s'; received %v", funcName, entries)
 	}

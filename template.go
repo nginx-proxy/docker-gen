@@ -29,52 +29,84 @@ func exists(path string) (bool, error) {
 	return false, err
 }
 
-func groupByMulti(entries []*RuntimeContainer, key, sep string) map[string][]*RuntimeContainer {
-	groups := make(map[string][]*RuntimeContainer)
-	for _, v := range entries {
-		value := deepGet(*v, key)
-		if value != nil {
-			items := strings.Split(value.(string), sep)
-			for _, item := range items {
-				groups[item] = append(groups[item], v)
-			}
-
-		}
-	}
-	return groups
-}
-
-// groupBy groups a list of *RuntimeContainers by the path property key
-func groupBy(entries []*RuntimeContainer, key string) map[string][]*RuntimeContainer {
-	groups := make(map[string][]*RuntimeContainer)
-	for _, v := range entries {
-		value := deepGet(*v, key)
-		if value != nil {
-			groups[value.(string)] = append(groups[value.(string)], v)
-		}
-	}
-	return groups
-}
-
-// groupByKeys is the same as groupBy but only returns a list of keys
-func groupByKeys(entries []*RuntimeContainer, key string) []string {
-	groups := groupBy(entries, key)
-	ret := []string{}
-	for k, _ := range groups {
-		ret = append(ret, k)
-	}
-	return ret
-}
-
-// Generalized where function
-func generalizedWhere(funcName string, entries interface{}, key string, test func(interface{}) bool) (interface{}, error) {
+func getArrayValues(funcName string, entries interface{}) (reflect.Value, error) {
 	entriesVal := reflect.ValueOf(entries)
+
+	kind := entriesVal.Kind()
+
+	if kind == reflect.Ptr {
+		entriesVal = reflect.Indirect(entriesVal)
+		kind = entriesVal.Kind()
+	}
 
 	switch entriesVal.Kind() {
 	case reflect.Array, reflect.Slice:
 		break
 	default:
-		return nil, fmt.Errorf("Must pass an array or slice to '%s'; received %v", funcName, entries)
+		return entriesVal, fmt.Errorf("Must pass an array or slice to '%v'; received %v; kind %v", funcName, entries, kind)
+	}
+	return entriesVal, nil
+}
+
+// Generalized groupBy function
+func generalizedGroupBy(funcName string, entries interface{}, key string, addEntry func(map[string][]interface{}, interface{}, interface{})) (map[string][]interface{}, error) {
+	entriesVal, err := getArrayValues(funcName, entries)
+
+	if err != nil {
+		return nil, err
+	}
+
+	groups := make(map[string][]interface{})
+	for i := 0; i < entriesVal.Len(); i++ {
+		v := reflect.Indirect(entriesVal.Index(i)).Interface()
+		value := deepGet(v, key)
+		if value != nil {
+			addEntry(groups, value, v)
+		}
+	}
+	return groups, nil
+}
+
+func groupByMulti(entries interface{}, key, sep string) (map[string][]interface{}, error) {
+	return generalizedGroupBy("groupByMulti", entries, key, func(groups map[string][]interface{}, value interface{}, v interface{}) {
+		items := strings.Split(value.(string), sep)
+		for _, item := range items {
+			groups[item] = append(groups[item], v)
+		}
+	})
+}
+
+// groupBy groups a generic array or slice by the path property key
+func groupBy(entries interface{}, key string) (map[string][]interface{}, error) {
+	return generalizedGroupBy("groupBy", entries, key, func(groups map[string][]interface{}, value interface{}, v interface{}) {
+		groups[value.(string)] = append(groups[value.(string)], v)
+	})
+}
+
+// groupByKeys is the same as groupBy but only returns a list of keys
+func groupByKeys(entries interface{}, key string) ([]string, error) {
+	keys, err := generalizedGroupBy("groupByKeys", entries, key, func(groups map[string][]interface{}, value interface{}, v interface{}) {
+		groups[value.(string)] = append(groups[value.(string)], v)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	ret := []string{}
+	for k := range keys {
+		ret = append(ret, k)
+	}
+	return ret, nil
+}
+
+// Generalized where function
+func generalizedWhere(funcName string, entries interface{}, key string, test func(interface{}) bool) (interface{}, error) {
+
+	entriesVal, err := getArrayValues(funcName, entries)
+
+	if err != nil {
+		return nil, err
 	}
 
 	selection := make([]interface{}, 0)

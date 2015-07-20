@@ -29,7 +29,7 @@ func exists(path string) (bool, error) {
 	return false, err
 }
 
-func getArrayValues(funcName string, entries interface{}) (reflect.Value, error) {
+func getArrayValues(funcName string, entries interface{}) (*reflect.Value, error) {
 	entriesVal := reflect.ValueOf(entries)
 
 	kind := entriesVal.Kind()
@@ -39,13 +39,13 @@ func getArrayValues(funcName string, entries interface{}) (reflect.Value, error)
 		kind = entriesVal.Kind()
 	}
 
-	switch entriesVal.Kind() {
+	switch kind {
 	case reflect.Array, reflect.Slice:
 		break
 	default:
-		return entriesVal, fmt.Errorf("Must pass an array or slice to '%v'; received %v; kind %v", funcName, entries, kind)
+		return nil, fmt.Errorf("Must pass an array or slice to '%v'; received %v; kind %v", funcName, entries, kind)
 	}
-	return entriesVal, nil
+	return &entriesVal, nil
 }
 
 // Generalized groupBy function

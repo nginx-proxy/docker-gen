@@ -29,6 +29,7 @@ var (
 	configFiles             stringslice
 	configs                 ConfigFile
 	interval                int
+	skipBlankLines          bool
 	endpoint                string
 	tlsCert                 string
 	tlsKey                  string
@@ -114,6 +115,7 @@ type Config struct {
 	OnlyExposed      bool
 	OnlyPublished    bool
 	Interval         int
+	SkipBlankLines   bool
 }
 
 type ConfigFile struct {
@@ -391,6 +393,7 @@ func initFlags() {
 		"send HUP signal to container.  Equivalent to `docker kill -s HUP container-ID`")
 	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (secs)")
+	flag.BoolVar(&skipBlankLines, "skip-blank-lines", false, "skip blank lines in output file")
 	flag.StringVar(&endpoint, "endpoint", "", "docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock")
 	flag.StringVar(&tlsCert, "tlscert", filepath.Join(certPath, "cert.pem"), "path to TLS client certificate file")
 	flag.StringVar(&tlsKey, "tlskey", filepath.Join(certPath, "key.pem"), "path to TLS client key file")
@@ -431,6 +434,7 @@ func main() {
 			OnlyExposed:      onlyExposed,
 			OnlyPublished:    onlyPublished,
 			Interval:         interval,
+			SkipBlankLines:   skipBlankLines,
 		}
 		if notifySigHUPContainerID != "" {
 			config.NotifyContainers[notifySigHUPContainerID] = docker.SIGHUP

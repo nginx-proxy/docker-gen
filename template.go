@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/sha1"
 	"encoding/json"
@@ -398,10 +399,23 @@ func generateFile(config Config, containers Context) bool {
 	}
 
 	var buf bytes.Buffer
-	multiwriter := io.MultiWriter(dest, &buf)
-	err = tmpl.ExecuteTemplate(multiwriter, filepath.Base(templatePath), &filteredContainers)
+	bw := bufio.NewWriter(&buf)
+	err = tmpl.ExecuteTemplate(bw, filepath.Base(templatePath), &filteredContainers)
 	if err != nil {
 		log.Fatalf("template error: %s\n", err)
+	}
+	bw.Flush()
+
+	if config.SkipBlankLines {
+		scanner := bufio.NewScanner(bufio.NewReader(&buf))
+		for scanner.Scan() {
+			line := scanner.Text()
+			if len(line) > 0 {
+				fmt.Fprintln(dest, line)
+			}
+		}
+	} else {
+		buf.WriteTo(dest)
 	}
 
 	if config.Dest != "" {

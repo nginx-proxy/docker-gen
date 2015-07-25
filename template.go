@@ -410,7 +410,7 @@ func generateFile(config Config, containers Context) bool {
 		scanner := bufio.NewScanner(bufio.NewReader(&buf))
 		for scanner.Scan() {
 			line := scanner.Text()
-			if len(line) > 0 {
+			if !isBlank(line) {
 				fmt.Fprintln(dest, line)
 			}
 		}

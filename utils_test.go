@@ -87,3 +87,29 @@ func TestSplitKeyValueSlice(t *testing.T) {
 
 	}
 }
+
+func TestIsBlank(t *testing.T) {
+
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{"", true},
+		{" ", true},
+		{"   ", true},
+		{"\t", true},
+		{"\t\n\v\f\r\u0085\u00A0", true},
+		{"a", false},
+		{" a ", false},
+		{"a ", false},
+		{" a", false},
+		{"日本語", false},
+	}
+
+	for _, i := range tests {
+		v := isBlank(i.input)
+		if v != i.expected {
+			t.Fatalf("expected '%v'. got '%v'", i.expected, v)
+		}
+	}
+}

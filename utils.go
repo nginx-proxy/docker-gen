@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"strings"
+	"unicode"
 )
 
 func getEndpoint() (string, error) {
@@ -49,4 +50,13 @@ func pathExists(path string) (bool, error) {
 		return false, nil
 	}
 	return false, err
+}
+
+func isBlank(str string) bool {
+	for _, r := range str {
+		if !unicode.IsSpace(r) {
+			return false
+		}
+	}
+	return true
 }

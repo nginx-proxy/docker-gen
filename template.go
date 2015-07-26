@@ -382,7 +382,7 @@ func generateFile(config Config, containers Context) bool {
 
 	contents := executeTemplate(config.Template, filteredContainers)
 
-	if config.SkipBlankLines {
+	if !config.KeepBlankLines {
 		contents = removeBlankLines(contents)
 	}
 

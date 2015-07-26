@@ -77,7 +77,7 @@ $ docker run -d --name nginx-gen --volumes-from nginx \
 ### Usage
 ```
 $ docker-gen
-Usage: docker-gen [-config file] [-watch=false] [-notify="restart xyz"] [-notify-sighup="nginx-proxy"] [-interval=0] [-endpoint tcp|unix://..] [-tlsverify] [-tlscert file] [-tlskey file] [-tlscacert file] [-skip-blank-lines] <template> [<dest>]
+Usage: docker-gen [-config file] [-watch=false] [-notify="restart xyz"] [-notify-sighup="nginx-proxy"] [-interval=0] [-endpoint tcp|unix://..] [-tlsverify] [-tlscert file] [-tlskey file] [-tlscacert file] [-keep-blank-lines] <template> [<dest>]
 ```
 
 *Options:*
@@ -92,7 +92,7 @@ Usage: docker-gen [-config file] [-watch=false] [-notify="restart xyz"] [-notify
   -notify-sighup="": send HUP signal to container.  Equivalent to `docker kill -s HUP container-ID`
   -only-exposed=false: only include containers with exposed ports
   -only-published=false: only include containers with published ports (implies -only-exposed)
-  -skip-blank-lines=false: skip blank lines in output file
+  -keep-blank-lines=false: keep blank lines in the output file
   -tlscacert="": path to TLS CA certificate file
   -tlscert="": path to TLS client certificate file
   -tlskey="": path to TLS client key file

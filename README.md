@@ -69,7 +69,7 @@ $ curl -o nginx.tmpl https://raw.githubusercontent.com/jwilder/docker-gen/master
 $ docker run -d --name nginx-gen --volumes-from nginx \
    -v /var/run/docker.sock:/tmp/docker.sock \
    -v /tmp/templates:/etc/docker-gen/templates \
-   -t jwilder/docker-gen:0.3.4 -notify-sighup nginx -watch --only-published /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
+   -t jwilder/docker-gen:0.4.0 -notify-sighup nginx -watch --only-published /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
 ```
 
 ===

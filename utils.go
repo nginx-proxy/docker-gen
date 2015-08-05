@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"io"
 	"os"
 	"strings"
 	"unicode"
@@ -59,4 +61,23 @@ func isBlank(str string) bool {
 		}
 	}
 	return true
+}
+
+func removeBlankLines(reader io.Reader, writer io.Writer) {
+	breader := bufio.NewReader(reader)
+	bwriter := bufio.NewWriter(writer)
+
+	for {
+		line, err := breader.ReadString('\n')
+
+		if !isBlank(line) {
+			bwriter.WriteString(line)
+		}
+
+		if err != nil {
+			break
+		}
+	}
+
+	bwriter.Flush()
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/sha1"
 	"encoding/json"
@@ -383,7 +382,9 @@ func generateFile(config Config, containers Context) bool {
 	contents := executeTemplate(config.Template, filteredContainers)
 
 	if !config.KeepBlankLines {
-		contents = removeBlankLines(contents)
+		buf := new(bytes.Buffer)
+		removeBlankLines(bytes.NewReader(contents), buf)
+		contents = buf.Bytes()
 	}
 
 	if config.Dest != "" {
@@ -433,22 +434,10 @@ func executeTemplate(templatePath string, containers Context) []byte {
 		log.Fatalf("unable to parse template: %s", err)
 	}
 
-	var buf bytes.Buffer
-	err = tmpl.ExecuteTemplate(&buf, filepath.Base(templatePath), &containers)
+	buf := new(bytes.Buffer)
+	err = tmpl.ExecuteTemplate(buf, filepath.Base(templatePath), &containers)
 	if err != nil {
 		log.Fatalf("template error: %s\n", err)
 	}
 	return buf.Bytes()
-}
-
-func removeBlankLines(buf []byte) []byte {
-	filtered := new(bytes.Buffer)
-	scanner := bufio.NewScanner(bytes.NewReader(buf))
-	for scanner.Scan() {
-		line := scanner.Text()
-		if !isBlank(line) {
-			fmt.Fprintln(filtered, line)
-		}
-	}
-	return filtered.Bytes()
 }

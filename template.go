@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"syscall"
 	"text/template"
@@ -171,6 +172,10 @@ func whereAll(entries interface{}, key, sep string, cmp []string) (interface{}, 
 // hasPrefix returns whether a given string is a prefix of another string
 func hasPrefix(prefix, s string) bool {
 	return strings.HasPrefix(s, prefix)
+}
+
+func parseBool(s string) (bool, error) {
+	return strconv.ParseBool(s)
 }
 
 // hasSuffix returns whether a given string is a suffix of another string
@@ -346,6 +351,7 @@ func newTemplate(name string) *template.Template {
 		"keys":          keys,
 		"last":          arrayLast,
 		"replace":       strings.Replace,
+		"parseBool":     parseBool,
 		"parseJson":     unmarshalJson,
 		"queryEscape":   url.QueryEscape,
 		"sha1":          hashSha1,

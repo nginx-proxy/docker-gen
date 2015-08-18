@@ -174,10 +174,6 @@ func hasPrefix(prefix, s string) bool {
 	return strings.HasPrefix(s, prefix)
 }
 
-func parseBool(s string) (bool, error) {
-	return strconv.ParseBool(s)
-}
-
 // hasSuffix returns whether a given string is a suffix of another string
 func hasSuffix(suffix, s string) bool {
 	return strings.HasSuffix(s, suffix)
@@ -351,7 +347,7 @@ func newTemplate(name string) *template.Template {
 		"keys":          keys,
 		"last":          arrayLast,
 		"replace":       strings.Replace,
-		"parseBool":     parseBool,
+		"parseBool":     strconv.ParseBool,
 		"parseJson":     unmarshalJson,
 		"queryEscape":   url.QueryEscape,
 		"sha1":          hashSha1,

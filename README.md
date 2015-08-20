@@ -40,7 +40,7 @@ $ ./docker-gen
 
 #### Bundled Container Install
 
-Docker-gen can be bundled inside of a container along-side and applications.
+Docker-gen can be bundled inside of a container along-side applications.
 
 [jwilder/nginx-proxy](https://index.docker.io/u/jwilder/nginx-proxy/) trusted build is an example of
 running docker-gen within a container along-side nginx.

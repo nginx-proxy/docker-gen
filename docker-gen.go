@@ -58,6 +58,13 @@ type Volume struct {
 	ReadWrite bool
 }
 
+type Mount struct {
+	Source      string
+	Destination string
+	Mode        string
+	RW          bool
+}
+
 type RuntimeContainer struct {
 	ID        string
 	Addresses []Address
@@ -67,6 +74,7 @@ type RuntimeContainer struct {
 	Image     DockerImage
 	Env       map[string]string
 	Volumes   map[string]Volume
+	Mounts    map[string]Mount
 	Node      SwarmNode
 	Labels    map[string]string
 	IP        string

@@ -151,6 +151,13 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 				ReadWrite: container.VolumesRW[k],
 			}
 		}
+		for _, v := range container.Mounts {
+			runtimeContainer.Volumes[v.Destination] = Volume{
+				HostPath:  v.Source,
+				Path:      v.Destination,
+				ReadWrite: v.RW,
+			}
+		}
 		if container.Node != nil {
 			runtimeContainer.Node.ID = container.Node.ID
 			runtimeContainer.Node.Name = container.Node.Name

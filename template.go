@@ -397,7 +397,9 @@ func generateFile(config Config, containers Context) bool {
 			log.Fatalf("unable to create temp file: %s\n", err)
 		}
 
-		dest.Write(contents)
+		if n, err := dest.Write(contents); n != len(contents) || err != nil {
+			log.Fatalf("failed to write to temp file: wrote %d, exp %d, err=%v", n, len(contents), err)
+		}
 
 		oldContents := []byte{}
 		if fi, err := os.Stat(config.Dest); err == nil {

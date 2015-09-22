@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -85,5 +87,60 @@ func TestSplitKeyValueSlice(t *testing.T) {
 			t.Fatalf("expected K='%s'. got '%s'", i.expected, v["K"])
 		}
 
+	}
+}
+
+func TestIsBlank(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{"", true},
+		{" ", true},
+		{"   ", true},
+		{"\t", true},
+		{"\t\n\v\f\r\u0085\u00A0", true},
+		{"a", false},
+		{" a ", false},
+		{"a ", false},
+		{" a", false},
+		{"日本語", false},
+	}
+
+	for _, i := range tests {
+		v := isBlank(i.input)
+		if v != i.expected {
+			t.Fatalf("expected '%v'. got '%v'", i.expected, v)
+		}
+	}
+}
+
+func TestRemoveBlankLines(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"", ""},
+		{"\r\n\r\n", ""},
+		{"line1\nline2", "line1\nline2"},
+		{"line1\n\nline2", "line1\nline2"},
+		{"\n\n\n\nline1\n\nline2", "line1\nline2"},
+		{"\n\n\n\n\n  \n \n \n", ""},
+
+		// windows line endings \r\n
+		{"line1\r\nline2", "line1\r\nline2"},
+		{"line1\r\n\r\nline2", "line1\r\nline2"},
+
+		// keep last new line
+		{"line1\n", "line1\n"},
+		{"line1\r\n", "line1\r\n"},
+	}
+
+	for _, i := range tests {
+		output := new(bytes.Buffer)
+		removeBlankLines(strings.NewReader(i.input), output)
+		if output.String() != i.expected {
+			t.Fatalf("expected '%v'. got '%v'", i.expected, output)
+		}
 	}
 }

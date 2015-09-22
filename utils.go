@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bufio"
+	"io"
 	"os"
 	"strings"
+	"unicode"
 )
 
 func getEndpoint() (string, error) {
@@ -49,4 +52,32 @@ func pathExists(path string) (bool, error) {
 		return false, nil
 	}
 	return false, err
+}
+
+func isBlank(str string) bool {
+	for _, r := range str {
+		if !unicode.IsSpace(r) {
+			return false
+		}
+	}
+	return true
+}
+
+func removeBlankLines(reader io.Reader, writer io.Writer) {
+	breader := bufio.NewReader(reader)
+	bwriter := bufio.NewWriter(writer)
+
+	for {
+		line, err := breader.ReadString('\n')
+
+		if !isBlank(line) {
+			bwriter.WriteString(line)
+		}
+
+		if err != nil {
+			break
+		}
+	}
+
+	bwriter.Flush()
 }

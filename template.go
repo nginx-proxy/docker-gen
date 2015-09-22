@@ -362,12 +362,6 @@ func newTemplate(name string) *template.Template {
 }
 
 func generateFile(config Config, containers Context) bool {
-	templatePath := config.Template
-	tmpl, err := newTemplate(filepath.Base(templatePath)).ParseFiles(templatePath)
-	if err != nil {
-		log.Fatalf("unable to parse template: %s", err)
-	}
-
 	filteredContainers := Context{}
 	if config.OnlyPublished {
 		for _, container := range containers {
@@ -385,9 +379,16 @@ func generateFile(config Config, containers Context) bool {
 		filteredContainers = containers
 	}
 
-	dest := os.Stdout
+	contents := executeTemplate(config.Template, filteredContainers)
+
+	if !config.KeepBlankLines {
+		buf := new(bytes.Buffer)
+		removeBlankLines(bytes.NewReader(contents), buf)
+		contents = buf.Bytes()
+	}
+
 	if config.Dest != "" {
-		dest, err = ioutil.TempFile(filepath.Dir(config.Dest), "docker-gen")
+		dest, err := ioutil.TempFile(filepath.Dir(config.Dest), "docker-gen")
 		defer func() {
 			dest.Close()
 			os.Remove(dest.Name())
@@ -395,18 +396,10 @@ func generateFile(config Config, containers Context) bool {
 		if err != nil {
 			log.Fatalf("unable to create temp file: %s\n", err)
 		}
-	}
 
-	var buf bytes.Buffer
-	multiwriter := io.MultiWriter(dest, &buf)
-	err = tmpl.ExecuteTemplate(multiwriter, filepath.Base(templatePath), &filteredContainers)
-	if err != nil {
-		log.Fatalf("template error: %s\n", err)
-	}
+		dest.Write(contents)
 
-	if config.Dest != "" {
-
-		contents := []byte{}
+		oldContents := []byte{}
 		if fi, err := os.Stat(config.Dest); err == nil {
 			if err := dest.Chmod(fi.Mode()); err != nil {
 				log.Fatalf("unable to chmod temp file: %s\n", err)
@@ -414,13 +407,13 @@ func generateFile(config Config, containers Context) bool {
 			if err := dest.Chown(int(fi.Sys().(*syscall.Stat_t).Uid), int(fi.Sys().(*syscall.Stat_t).Gid)); err != nil {
 				log.Fatalf("unable to chown temp file: %s\n", err)
 			}
-			contents, err = ioutil.ReadFile(config.Dest)
+			oldContents, err = ioutil.ReadFile(config.Dest)
 			if err != nil {
 				log.Fatalf("unable to compare current file contents: %s: %s\n", config.Dest, err)
 			}
 		}
 
-		if bytes.Compare(contents, buf.Bytes()) != 0 {
+		if bytes.Compare(oldContents, contents) != 0 {
 			err = os.Rename(dest.Name(), config.Dest)
 			if err != nil {
 				log.Fatalf("unable to create dest file %s: %s\n", config.Dest, err)
@@ -429,6 +422,22 @@ func generateFile(config Config, containers Context) bool {
 			return true
 		}
 		return false
+	} else {
+		os.Stdout.Write(contents)
 	}
 	return true
+}
+
+func executeTemplate(templatePath string, containers Context) []byte {
+	tmpl, err := newTemplate(filepath.Base(templatePath)).ParseFiles(templatePath)
+	if err != nil {
+		log.Fatalf("unable to parse template: %s", err)
+	}
+
+	buf := new(bytes.Buffer)
+	err = tmpl.ExecuteTemplate(buf, filepath.Base(templatePath), &containers)
+	if err != nil {
+		log.Fatalf("template error: %s\n", err)
+	}
+	return buf.Bytes()
 }

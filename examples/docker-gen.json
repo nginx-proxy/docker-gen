@@ -1,0 +1,15 @@
+{
+  "config": [
+    {
+      "template": "/etc/nginx/nginx.conf.tmpl",
+      "dest": "/etc/nginx/sites-available/default",
+      "onlyexposed": true,
+      "notifycmd": "/etc/init.d/nginx reload"
+    },
+    {
+      "template": "/etc/logrotate.conf.tmpl",
+      "dest": "/etc/logrotate.d/docker",
+      "watch": true
+    }
+  ]
+}

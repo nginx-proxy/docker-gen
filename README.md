@@ -84,7 +84,7 @@ Usage: docker-gen [-config file] [-watch=false] [-notify="restart xyz"] [-notify
 
 ```
   -config="": Use the specified config file instead of command-line options.  Multiple templates can be defined and
-              they will be executed in the order that they appear in the config file.
+              they will be executed in the order that they appear in the config file. Supported formats are TOML, JSON and YAML.
   -endpoint="": docker api endpoint [tcp|unix://..]. This can also be set w/ a `DOCKER_HOST` environment.
   -interval=0:run notify command interval (s). Useful for service registration use cases.
   -notify="": run command after template is regenerated ["restart xyz"]. Useful for restarting nginx,
@@ -303,4 +303,3 @@ $ make
 ### License
 
 MIT
-

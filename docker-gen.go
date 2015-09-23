@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/BurntSushi/toml"
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/spf13/viper"
 )
 
 type stringslice []string
@@ -249,10 +249,18 @@ func sendSignalToContainer(client *docker.Client, config Config) {
 }
 
 func loadConfig(file string) error {
-	_, err := toml.DecodeFile(file, &configs)
+	viper.SetConfigFile(file)
+
+	err := viper.ReadInConfig()
 	if err != nil {
 		return err
 	}
+
+	err = viper.Marshal(&configs)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

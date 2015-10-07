@@ -1,4 +1,4 @@
 github.com/BurntSushi/toml f87ce853111478914f0bcffa34d43a93643e6eda
 github.com/Sirupsen/logrus 6ebb4e7b3c24b9fef150d7693e728cb1ebadf1f5
-github.com/docker/docker 95dcb2748442fc1f59e8c2e010679e0aea3cef1c
-github.com/fsouza/go-dockerclient 1e60afa8d58b91a0eca0a732927c8ecba696493f
+github.com/docker/docker 0a8c2e3717cb3a6fe4e8cb10243cb06473052541
+github.com/fsouza/go-dockerclient c9ad0ce23f68428421adfc6ced9e6123f54788a5

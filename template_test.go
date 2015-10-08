@@ -488,6 +488,15 @@ func TestTrimSuffix(t *testing.T) {
 	}
 }
 
+func TestTrim(t *testing.T) {
+	const str = "  myhost.local  "
+	const trimmed = "myhost.local"
+	got := trim(str)
+	if got != trimmed {
+		t.Fatalf("expected trim(%s) to be %s, got %s", str, trimmed, got)
+	}
+}
+
 func TestDict(t *testing.T) {
 	containers := []*RuntimeContainer{
 		&RuntimeContainer{

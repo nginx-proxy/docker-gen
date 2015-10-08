@@ -317,10 +317,6 @@ func coalesce(input ...interface{}) interface{} {
 	return nil
 }
 
-func trim(s string) string {
-    return strings.TrimSpace(s)
-}
-
 // trimPrefix returns a string without the prefix, if present
 func trimPrefix(prefix, s string) string {
 	return strings.TrimPrefix(s, prefix)
@@ -329,6 +325,11 @@ func trimPrefix(prefix, s string) string {
 // trimSuffix returns a string without the suffix, if present
 func trimSuffix(suffix, s string) string {
 	return strings.TrimSuffix(s, suffix)
+}
+
+// trim returns the string without leading or trailing whitespace
+func trim(s string) string {
+	return strings.TrimSpace(s)
 }
 
 func newTemplate(name string) *template.Template {
@@ -356,7 +357,7 @@ func newTemplate(name string) *template.Template {
 		"split":         strings.Split,
 		"trimPrefix":    trimPrefix,
 		"trimSuffix":    trimSuffix,
-        "trim":          trim,
+		"trim":          trim,
 		"where":         where,
 		"whereExist":    whereExist,
 		"whereNotExist": whereNotExist,

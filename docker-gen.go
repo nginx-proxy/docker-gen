@@ -47,8 +47,8 @@ type Event struct {
 
 type Address struct {
 	IP            string
-	IP6_LinkLocal string
-	IP6_Global    string
+	IP6LinkLocal  string
+	IP6Global     string
 	Port          string
 	HostPort      string
 	Proto         string
@@ -73,8 +73,8 @@ type RuntimeContainer struct {
 	Node          SwarmNode
 	Labels        map[string]string
 	IP            string
-	IP6_LinkLocal string
-	IP6_Global    string
+	IP6LinkLocal  string
+	IP6Global     string
 }
 
 type DockerImage struct {

@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"syscall"
 	"text/template"
@@ -360,6 +361,7 @@ func newTemplate(name string) *template.Template {
 		"keys":          keys,
 		"last":          arrayLast,
 		"replace":       strings.Replace,
+		"parseBool":     strconv.ParseBool,
 		"parseJson":     unmarshalJson,
 		"queryEscape":   url.QueryEscape,
 		"sha1":          hashSha1,

@@ -295,7 +295,8 @@ You'll need to install glock into your workspace before hacking on docker-gen.
 
 ```
 $ git clone <your fork>
-$ glock sync github.com/jwilder/docker-gen
+$ cd <your fork>
+$ make get-deps
 $ make
 ```
 

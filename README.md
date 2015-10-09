@@ -77,29 +77,48 @@ $ docker run -d --name nginx-gen --volumes-from nginx \
 ### Usage
 ```
 $ docker-gen
-Usage: docker-gen [-config file] [-watch=false] [-notify="restart xyz"] [-notify-sighup="nginx-proxy"] [-interval=0] [-endpoint tcp|unix://..] [-tlsverify] [-tlscert file] [-tlskey file] [-tlscacert file] [-keep-blank-lines] <template> [<dest>]
-```
+Usage: docker-gen [options] template [dest]
 
-*Options:*
+Generate files from docker container meta-data
 
-```
-  -config="": Use the specified config file instead of command-line options.  Multiple templates can be defined and
-              they will be executed in the order that they appear in the config file.
-  -endpoint="": docker api endpoint [tcp|unix://..]. This can also be set w/ a `DOCKER_HOST` environment.
-  -interval=0:run notify command interval (s). Useful for service registration use cases.
-  -notify="": run command after template is regenerated ["restart xyz"]. Useful for restarting nginx,
-              reloading haproxy, etc..
-  -notify-sighup="": send HUP signal to container.  Equivalent to `docker kill -s HUP container-ID`
-  -only-exposed=false: only include containers with exposed ports
-  -only-published=false: only include containers with published ports (implies -only-exposed)
-  -keep-blank-lines=false: keep blank lines in the output file
-  -tlscacert="": path to TLS CA certificate file
-  -tlscert="": path to TLS client certificate file
-  -tlskey="": path to TLS client key file
-  -tlsverify=false: verify docker daemon's TLS certicate
-  -version=false: show version
-  -watch=false: run continuously and monitors docker container events.  When containers are started
-                or stopped, the template is regenerated.
+Options:
+  -config value
+      config files with template directives. Config files will be merged if this option is specified multiple times. (default [])
+  -endpoint string
+      docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock
+  -interval int
+      notify command interval (secs)
+  -keep-blank-lines
+      keep blank lines in the output file
+  -notify restart xyz
+      run command after template is regenerated (e.g restart xyz)
+  -notify-sighup docker kill -s HUP container-ID
+      send HUP signal to container.  Equivalent to docker kill -s HUP container-ID
+  -only-exposed
+      only include containers with exposed ports
+  -only-published
+      only include containers with published ports (implies -only-exposed)
+  -tlscacert string
+      path to TLS CA certificate file (default "/Users/jason/.docker/machine/machines/default/ca.pem")
+  -tlscert string
+      path to TLS client certificate file (default "/Users/jason/.docker/machine/machines/default/cert.pem")
+  -tlskey string
+      path to TLS client key file (default "/Users/jason/.docker/machine/machines/default/key.pem")
+  -tlsverify
+      verify docker daemon's TLS certicate (default true)
+  -version
+      show version
+  -watch
+      watch for container changes
+
+Arguments:
+  template - path to a template to generate
+  dest - path to a write the template.  If not specfied, STDOUT is used
+
+Environment Variables:
+  DOCKER_HOST - default value for -endpoint
+  DOCKER_CERT_PATH - directory path containing key.pem, cert.pm and ca.pem
+  DOCKER_TLS_VERIFY - enable client TLS verification]
 ```
 
 If no `<dest>` file is specified, the output is sent to stdout.  Mainly useful for debugging.

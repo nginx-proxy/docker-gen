@@ -618,3 +618,36 @@ func TestArrayClosestNoMatch(t *testing.T) {
 		t.Fatal("Expected ''")
 	}
 }
+
+func TestWhen(t *testing.T) {
+	context := struct {
+		BoolValue   bool
+		StringValue string
+	}{
+		true,
+		"foo",
+	}
+
+	tests := templateTestList{
+		{`{{ print (when .BoolValue "first" "second") }}`, context, `first`},
+		{`{{ print (when (eq .StringValue "foo") "first" "second") }}`, context, `first`},
+
+		{`{{ when (not .BoolValue) "first" "second" | print }}`, context, `second`},
+		{`{{ when (not (eq .StringValue "foo")) "first" "second" | print }}`, context, `second`},
+	}
+
+	tests.run(t, "when")
+}
+
+func TestWhenTrue(t *testing.T) {
+	if when(true, "first", "second") != "first" {
+		t.Fatal("Expected first value")
+
+	}
+}
+
+func TestWhenFalse(t *testing.T) {
+	if when(false, "first", "second") != "second" {
+		t.Fatal("Expected second value")
+	}
+}

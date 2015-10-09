@@ -178,6 +178,7 @@ Environment Variables:
   DOCKER_CERT_PATH - directory path containing key.pem, cert.pm and ca.pem
   DOCKER_TLS_VERIFY - enable client TLS verification
 `)
+	println(`For more information, see https://github.com/jwilder/docker-gen`)
 }
 
 func tlsEnabled() bool {

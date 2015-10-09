@@ -46,11 +46,13 @@ type Event struct {
 }
 
 type Address struct {
-	IP       string
-	Port     string
-	HostPort string
-	Proto    string
-	HostIP   string
+	IP            string
+	IP6LinkLocal  string
+	IP6Global     string
+	Port          string
+	HostPort      string
+	Proto         string
+	HostIP        string
 }
 
 type Volume struct {
@@ -60,17 +62,19 @@ type Volume struct {
 }
 
 type RuntimeContainer struct {
-	ID        string
-	Addresses []Address
-	Gateway   string
-	Name      string
-	Hostname  string
-	Image     DockerImage
-	Env       map[string]string
-	Volumes   map[string]Volume
-	Node      SwarmNode
-	Labels    map[string]string
-	IP        string
+	ID            string
+	Addresses     []Address
+	Gateway       string
+	Name          string
+	Hostname      string
+	Image         DockerImage
+	Env           map[string]string
+	Volumes       map[string]Volume
+	Node          SwarmNode
+	Labels        map[string]string
+	IP            string
+	IP6LinkLocal  string
+	IP6Global     string
 }
 
 type DockerImage struct {

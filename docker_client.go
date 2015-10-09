@@ -129,10 +129,14 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 			Node:      SwarmNode{},
 			Labels:    make(map[string]string),
 			IP:        container.NetworkSettings.IPAddress,
+			IP6LinkLocal:        container.NetworkSettings.LinkLocalIPv6Address,
+			IP6Global:        container.NetworkSettings.GlobalIPv6Address,
 		}
 		for k, v := range container.NetworkSettings.Ports {
 			address := Address{
 				IP:    container.NetworkSettings.IPAddress,
+				IP6LinkLocal:        container.NetworkSettings.LinkLocalIPv6Address,
+				IP6Global:        container.NetworkSettings.GlobalIPv6Address,
 				Port:  k.Port(),
 				Proto: k.Proto(),
 			}

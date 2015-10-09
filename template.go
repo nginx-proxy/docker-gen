@@ -332,6 +332,15 @@ func trim(s string) string {
 	return strings.TrimSpace(s)
 }
 
+// when returns the trueValue when the condition is true and the falseValue otherwise
+func when(condition bool, trueValue, falseValue interface{}) interface{} {
+	if condition {
+		return trueValue
+	} else {
+		return falseValue
+	}
+}
+
 func newTemplate(name string) *template.Template {
 	tmpl := template.New(name).Funcs(template.FuncMap{
 		"closest":       arrayClosest,
@@ -363,6 +372,7 @@ func newTemplate(name string) *template.Template {
 		"whereNotExist": whereNotExist,
 		"whereAny":      whereAny,
 		"whereAll":      whereAll,
+		"when":          when,
 	})
 	return tmpl
 }

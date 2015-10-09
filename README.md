@@ -235,6 +235,7 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 * *`whereNotExist $items $fieldPath`*: Like `where`, but returns only items where `$fieldPath` does not exist (is nil).
 * *`whereAny $items $fieldPath $sep $values`*: Like `where`, but the string value specified by `$fieldPath` is first split by `$sep` into a list of strings. The comparison value is a string slice with possible matches. Returns items which OR intersect these values.
 * *`whereAll $items $fieldPath $sep $values`*: Like `whereAny`, except all `$values` must exist in the `$fieldPath`.
+* *`when $condition $trueValue $falseValue`*: Returns the `$trueValue` when the `$condition` is `true` and the `$falseValue` otherwise
 
 ===
 

@@ -366,6 +366,7 @@ func newTemplate(name string) *template.Template {
 		"queryEscape":   url.QueryEscape,
 		"sha1":          hashSha1,
 		"split":         strings.Split,
+		"splitN":        strings.SplitN,
 		"trimPrefix":    trimPrefix,
 		"trimSuffix":    trimSuffix,
 		"trim":          trim,

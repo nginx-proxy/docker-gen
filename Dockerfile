@@ -11,9 +11,7 @@ RUN deps=' \
 	set -x; \
 	apt-get update \
 	&& apt-get install -y --no-install-recommends $deps \
-	&& curl -o docker-gen.tar.gz -L $DOWNLOAD_URL \
-	&& tar -C /usr/local/bin -xvzf docker-gen.tar.gz \
-	&& rm docker-gen.tar.gz \
+	&& curl -L $DOWNLOAD_URL | tar -C /usr/local/bin -xvz \
 	&& apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false $deps \
 	&& apt-get clean -y \
 	&& rm -rf /var/lib/apt/lists/*

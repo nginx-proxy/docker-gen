@@ -468,6 +468,17 @@ func TestHasSuffix(t *testing.T) {
 	}
 }
 
+func TestSplitN(t *testing.T) {
+	tests := templateTestList{
+		{`{{index (splitN . "/" 2) 0}}`, "example.com/path", `example.com`},
+		{`{{index (splitN . "/" 2) 1}}`, "example.com/path", `path`},
+		{`{{index (splitN . "/" 2) 1}}`, "example.com/a/longer/path", `a/longer/path`},
+		{`{{len (splitN . "/" 2)}}`, "example.com", `1`},
+	}
+
+	tests.run(t, "splitN")
+}
+
 func TestTrimPrefix(t *testing.T) {
 	const prefix = "tcp://"
 	const str = "tcp://127.0.0.1:2375"

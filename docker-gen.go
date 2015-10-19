@@ -72,6 +72,7 @@ type RuntimeContainer struct {
 	Volumes      map[string]Volume
 	Node         SwarmNode
 	Labels       map[string]string
+	Server       ServerInfo
 	IP           string
 	IP6LinkLocal string
 	IP6Global    string
@@ -87,6 +88,21 @@ type SwarmNode struct {
 	ID      string
 	Name    string
 	Address Address
+}
+
+type ServerInfo struct {
+	Name          string
+	NumContainers int
+	NumImages     int
+	DockerInfo    DockerInfo
+}
+
+type DockerInfo struct {
+	Version         string
+	ApiVersion      string
+	GoVersion       string
+	OperatingSystem string
+	Architecture    string
 }
 
 func (strings *stringslice) String() string {

@@ -96,6 +96,16 @@ func splitDockerImage(img string) (string, string, string) {
 
 func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 
+	apiInfo, err := client.Info()
+	if err != nil {
+		log.Printf("error retrieving docker server info: %s\n", err)
+	}
+
+	apiVersion, err := client.Version()
+	if err != nil {
+		log.Printf("error retrieving docker server version info: %s\n", err)
+	}
+
 	apiContainers, err := client.ListContainers(docker.ListContainersOptions{
 		All:  false,
 		Size: false,
@@ -128,6 +138,7 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 			Volumes:      make(map[string]Volume),
 			Node:         SwarmNode{},
 			Labels:       make(map[string]string),
+			Server:       ServerInfo{},
 			IP:           container.NetworkSettings.IPAddress,
 			IP6LinkLocal: container.NetworkSettings.LinkLocalIPv6Address,
 			IP6Global:    container.NetworkSettings.GlobalIPv6Address,
@@ -153,6 +164,20 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 				Path:      k,
 				HostPath:  v,
 				ReadWrite: container.VolumesRW[k],
+			}
+		}
+		if apiInfo != nil {
+			runtimeContainer.Server.Name = apiInfo.Get("Name")
+			runtimeContainer.Server.NumContainers = apiInfo.GetInt("Containers")
+			runtimeContainer.Server.NumImages = apiInfo.GetInt("Images")
+			runtimeContainer.Server.DockerInfo = DockerInfo{}
+
+			if apiVersion != nil {
+				runtimeContainer.Server.DockerInfo.Version = apiVersion.Get("Version")
+				runtimeContainer.Server.DockerInfo.ApiVersion = apiVersion.Get("ApiVersion")
+				runtimeContainer.Server.DockerInfo.GoVersion = apiVersion.Get("GoVersion")
+				runtimeContainer.Server.DockerInfo.OperatingSystem = apiVersion.Get("Os")
+				runtimeContainer.Server.DockerInfo.Architecture = apiVersion.Get("Arch")
 			}
 		}
 		if container.Node != nil {

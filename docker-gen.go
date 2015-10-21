@@ -27,7 +27,7 @@ var (
 	onlyExposed             bool
 	onlyPublished           bool
 	configFiles             stringslice
-	configs                 ConfigFile
+	configs                 Configs
 	interval                int
 	keepBlankLines          bool
 	endpoint                string
@@ -115,14 +115,14 @@ type Config struct {
 	Dest             string
 	Watch            bool
 	NotifyCmd        string
-	NotifyContainers map[string]docker.Signal
+	NotifyContainers map[string]int
 	OnlyExposed      bool
 	OnlyPublished    bool
 	Interval         int
 	KeepBlankLines   bool
 }
 
-type ConfigFile struct {
+type Configs struct {
 	Config []Config
 }
 
@@ -132,7 +132,7 @@ func (c *Context) Env() map[string]string {
 	return splitKeyValueSlice(os.Environ())
 }
 
-func (c *ConfigFile) filterWatches() ConfigFile {
+func (c *Configs) filterWatches() Configs {
 	configWithWatches := []Config{}
 
 	for _, config := range c.Config {
@@ -140,7 +140,7 @@ func (c *ConfigFile) filterWatches() ConfigFile {
 			configWithWatches = append(configWithWatches, config)
 		}
 	}
-	return ConfigFile{
+	return Configs{
 		Config: configWithWatches,
 	}
 }
@@ -245,7 +245,7 @@ func sendSignalToContainer(client *docker.Client, config Config) {
 		log.Printf("Sending container '%s' signal '%v'", container, signal)
 		killOpts := docker.KillContainerOptions{
 			ID:     container,
-			Signal: signal,
+			Signal: docker.Signal(signal),
 		}
 		if err := client.KillContainer(killOpts); err != nil {
 			log.Printf("Error sending signal to container: %s", err)
@@ -261,7 +261,7 @@ func loadConfig(file string) error {
 	return nil
 }
 
-func generateAtInterval(client *docker.Client, configs ConfigFile) {
+func generateAtInterval(client *docker.Client, configs Configs) {
 	for _, config := range configs.Config {
 
 		if config.Interval == 0 {
@@ -296,7 +296,7 @@ func generateAtInterval(client *docker.Client, configs ConfigFile) {
 	}
 }
 
-func generateFromEvents(client *docker.Client, configs ConfigFile) {
+func generateFromEvents(client *docker.Client, configs Configs) {
 	configs = configs.filterWatches()
 	if len(configs.Config) == 0 {
 		return
@@ -435,16 +435,16 @@ func main() {
 			Dest:             flag.Arg(1),
 			Watch:            watch,
 			NotifyCmd:        notifyCmd,
-			NotifyContainers: make(map[string]docker.Signal),
+			NotifyContainers: make(map[string]int),
 			OnlyExposed:      onlyExposed,
 			OnlyPublished:    onlyPublished,
 			Interval:         interval,
 			KeepBlankLines:   keepBlankLines,
 		}
 		if notifySigHUPContainerID != "" {
-			config.NotifyContainers[notifySigHUPContainerID] = docker.SIGHUP
+			config.NotifyContainers[notifySigHUPContainerID] = 1 //docker.SIGHUP
 		}
-		configs = ConfigFile{
+		configs = Configs{
 			Config: []Config{config}}
 	}
 

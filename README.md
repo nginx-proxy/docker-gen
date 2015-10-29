@@ -101,6 +101,8 @@ Options:
       only include containers with exposed ports
   -only-published
       only include containers with published ports (implies -only-exposed)
+  -include-stopped
+      include stopped containers
   -tlscacert string
       path to TLS CA certificate file (default "/Users/jason/.docker/machine/machines/default/ca.pem")
   -tlscert string
@@ -213,6 +215,7 @@ type RuntimeContainer struct {
     IP6LinkLocal string
     IP6Global    string
     Mounts       []Mount
+    State        State
 }
 
 type Address struct {
@@ -262,6 +265,10 @@ type SwarmNode struct {
     ID      string
     Name    string
     Address Address
+}
+
+type State struct {
+  Running bool
 }
 
 // Accessible from the root in templates as .Docker

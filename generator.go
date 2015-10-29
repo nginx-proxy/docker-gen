@@ -20,6 +20,7 @@ type generator struct {
 	Endpoint                   string
 	TLSVerify                  bool
 	TLSCert, TLSCaCert, TLSKey string
+	All                        bool
 
 	wg sync.WaitGroup
 }
@@ -31,6 +32,7 @@ type GeneratorConfig struct {
 	TLSKey    string
 	TLSCACert string
 	TLSVerify bool
+	All       bool
 
 	ConfigFile ConfigFile
 }
@@ -61,6 +63,7 @@ func NewGenerator(gc GeneratorConfig) (*generator, error) {
 		TLSCert:   gc.TLSCert,
 		TLSCaCert: gc.TLSCACert,
 		TLSKey:    gc.TLSKey,
+		All:       gc.All,
 		Configs:   gc.ConfigFile,
 	}, nil
 }
@@ -280,7 +283,7 @@ func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 	SetServerInfo(apiInfo)
 
 	apiContainers, err := g.Client.ListContainers(docker.ListContainersOptions{
-		All:  false,
+		All:  g.All,
 		Size: false,
 	})
 	if err != nil {
@@ -302,6 +305,9 @@ func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 				Registry:   registry,
 				Repository: repository,
 				Tag:        tag,
+			},
+			State: State{
+				Running: container.State.Running,
 			},
 			Name:         strings.TrimLeft(container.Name, "/"),
 			Hostname:     container.Config.Hostname,

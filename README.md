@@ -77,51 +77,106 @@ $ docker run -d --name nginx-gen --volumes-from nginx \
 ### Usage
 ```
 $ docker-gen
-Usage: docker-gen [options] template [dest]
+```
+**Usage: docker-gen [options] template [dest]**
 
 Generate files from docker container meta-data
 
 Options:
-  -config value
-      config files with template directives. Config files will be merged if this option is specified multiple times. (default [])
-  -endpoint string
-      docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock
-  -interval int
-      notify command interval (secs)
-  -keep-blank-lines
-      keep blank lines in the output file
-  -notify restart xyz
-      run command after template is regenerated (e.g restart xyz)
-  -notify-sighup docker kill -s HUP container-ID
-      send HUP signal to container.  Equivalent to docker kill -s HUP container-ID
-  -only-exposed
-      only include containers with exposed ports
-  -only-published
-      only include containers with published ports (implies -only-exposed)
-  -tlscacert string
-      path to TLS CA certificate file (default "/Users/jason/.docker/machine/machines/default/ca.pem")
-  -tlscert string
-      path to TLS client certificate file (default "/Users/jason/.docker/machine/machines/default/cert.pem")
-  -tlskey string
-      path to TLS client key file (default "/Users/jason/.docker/machine/machines/default/key.pem")
-  -tlsverify
-      verify docker daemon's TLS certicate (default true)
-  -version
-      show version
-  -watch
-      watch for container changes
+&nbsp;&nbsp;  -config value
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;     config files with template directives. Config files will be merged if this option is specified multiple times. (default [])
+&nbsp;&nbsp;  -endpoint string
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock
+ &nbsp;&nbsp; -interval int
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      notify command interval (secs)
+&nbsp;&nbsp;  -keep-blank-lines
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;     keep blank lines in the output file
+&nbsp;&nbsp;  -notify restart xyz
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      run command after template is regenerated (e.g restart xyz)
+&nbsp;&nbsp;  -notify-sighup docker kill -s HUP container-ID
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      send HUP signal to container.  Equivalent to docker kill -s HUP container-ID
+ &nbsp;&nbsp; -only-exposed
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      only include containers with exposed ports
+&nbsp;&nbsp;  -only-published
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      only include containers with published ports (implies -only-exposed)
+&nbsp;&nbsp;  -tlscacert string
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      path to TLS CA certificate file (default "/Users/jason/.docker/machine/machines/default/ca.pem")
+&nbsp;&nbsp;  -tlscert string
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      path to TLS client certificate file (default "/Users/jason/.docker/machine/machines/default/cert.pem")
+ &nbsp;&nbsp; -tlskey string
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      path to TLS client key file (default "/Users/jason/.docker/machine/machines/default/key.pem")
+&nbsp;&nbsp;  -tlsverify
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      verify docker daemon's TLS certicate (default true)
+&nbsp;&nbsp;  -version
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      show version
+&nbsp;&nbsp;  -watch
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      watch for container changes
 
 Arguments:
-  template - path to a template to generate
-  dest - path to a write the template.  If not specfied, STDOUT is used
+&nbsp;&nbsp;  template - path to a template to generate
+&nbsp;&nbsp;  dest - path to a write the template.  If not specfied, STDOUT is used
 
 Environment Variables:
-  DOCKER_HOST - default value for -endpoint
-  DOCKER_CERT_PATH - directory path containing key.pem, cert.pm and ca.pem
-  DOCKER_TLS_VERIFY - enable client TLS verification]
-```
+&nbsp;&nbsp;  DOCKER_HOST - default value for -endpoint
+&nbsp;&nbsp;  DOCKER_CERT_PATH - directory path containing key.pem, cert.pm and ca.pem
+&nbsp;&nbsp;  DOCKER_TLS_VERIFY - enable client TLS verification]
+
 
 If no `<dest>` file is specified, the output is sent to stdout.  Mainly useful for debugging.
+
+### Configuration file
+
+Using the -config flag from above you can tell docker-gen to use the specified config file instead of command-line options.  Multiple templates can be defined and they will be executed in the order that they appear in the config file.
+
+An example configuration file, **docker-gen.cfg** can be found in the examples folder.
+
+#### Configuration File Syntax
+
+***[[config]]***
+&nbsp;&nbsp;&nbsp;&nbsp;Starts a configuration section
+
+**dest = "path/to/a/file"**
+&nbsp;&nbsp;&nbsp;&nbsp;path to a write the template. If not specfied, STDOUT is used
+**notifycmd = "/etc/init.d/foo reload"**
+&nbsp;&nbsp;&nbsp;&nbsp;run command after template is regenerated (e.g restart xyz)
+**onlyexposed = true**
+&nbsp;&nbsp;&nbsp;&nbsp;only include containers with exposed ports
+**template = "/path/to/a/template/file.tmpl"**
+&nbsp;&nbsp;&nbsp;&nbsp;path to a template to generate
+**watch = true**
+&nbsp;&nbsp;&nbsp;&nbsp;watch for container changes
+
+
+***[config.NotifyContainers]***
+&nbsp;&nbsp;&nbsp;&nbsp;Starts a notify container section
+
+**containername = 1**
+&nbsp;&nbsp;&nbsp;&nbsp;container name followed by the signal to send
+**container_id = 1**
+&nbsp;&nbsp;&nbsp;&nbsp;or the container id can be used followed by the signal to send
+
+Putting it all together here is an example configuration file.
+```
+[[config]]
+template = "/etc/nginx/nginx.conf.tmpl"
+dest = "/etc/nginx/sites-available/default"
+onlyexposed = true
+notifycmd = "/etc/init.d/nginx reload"
+
+[[config]]
+template = "/etc/logrotate.conf.tmpl"
+dest = "/etc/logrotate.d/docker"
+watch = true
+
+[[config]]
+template = "/etc/docker-gen/templates/nginx.tmpl"
+dest = "/etc/nginx/conf.d/default.conf"
+watch = true
+
+[config.NotifyContainers]
+nginx = 1  # 1 is a signal number to be sent; here SIGINT
+e75a60548dc9 = 1 # a key can be either container name (nginx) or ID
+```
 
 ===
 

@@ -132,28 +132,33 @@ An example configuration file, **docker-gen.cfg** can be found in the examples f
 
 #### Configuration File Syntax
 ```
-***[[config]]***
+[[config]]
 &nbsp;&nbsp;&nbsp;&nbsp;Starts a configuration section
 
-**dest = "path/to/a/file"**
+dest = "path/to/a/file"
 &nbsp;&nbsp;&nbsp;&nbsp;path to a write the template. If not specfied, STDOUT is used
-**notifycmd = "/etc/init.d/foo reload"**
+
+notifycmd = "/etc/init.d/foo reload"
 &nbsp;&nbsp;&nbsp;&nbsp;run command after template is regenerated (e.g restart xyz)
-**onlyexposed = true**
+
+onlyexposed = true
 &nbsp;&nbsp;&nbsp;&nbsp;only include containers with exposed ports
-**template = "/path/to/a/template/file.tmpl"**
+
+template = "/path/to/a/template/file.tmpl"
 &nbsp;&nbsp;&nbsp;&nbsp;path to a template to generate
-**watch = true**
+
+watch = true
 &nbsp;&nbsp;&nbsp;&nbsp;watch for container changes
 
 
 
-***[config.NotifyContainers]***
+[config.NotifyContainers]
 &nbsp;&nbsp;&nbsp;&nbsp;Starts a notify container section
 
-**containername = 1**
+containername = 1
 &nbsp;&nbsp;&nbsp;&nbsp;container name followed by the signal to send
-**container_id = 1**
+
+container_id = 1
 &nbsp;&nbsp;&nbsp;&nbsp;or the container id can be used followed by the signal to send
 ```
 Putting it all together here is an example configuration file.

@@ -123,6 +123,66 @@ Environment Variables:
 
 If no `<dest>` file is specified, the output is sent to stdout.  Mainly useful for debugging.
 
+
+### Configuration file
+
+Using the -config flag from above you can tell docker-gen to use the specified config file instead of command-line options.  Multiple templates can be defined and they will be executed in the order that they appear in the config file.
+
+An example configuration file, **docker-gen.cfg** can be found in the examples folder.
+
+#### Configuration File Syntax
+```
+[[config]]
+Starts a configuration section
+
+dest = "path/to/a/file"
+path to a write the template. If not specfied, STDOUT is used
+
+notifycmd = "/etc/init.d/foo reload"
+run command after template is regenerated (e.g restart xyz)
+
+onlyexposed = true
+only include containers with exposed ports
+
+template = "/path/to/a/template/file.tmpl"
+path to a template to generate
+
+watch = true
+watch for container changes
+
+
+[config.NotifyContainers]
+Starts a notify container section
+
+containername = 1
+container name followed by the signal to send
+
+container_id = 1
+or the container id can be used followed by the signal to send
+```
+Putting it all together here is an example configuration file.
+```
+[[config]]
+template = "/etc/nginx/nginx.conf.tmpl"
+dest = "/etc/nginx/sites-available/default"
+onlyexposed = true
+notifycmd = "/etc/init.d/nginx reload"
+
+[[config]]
+template = "/etc/logrotate.conf.tmpl"
+dest = "/etc/logrotate.d/docker"
+watch = true
+
+[[config]]
+template = "/etc/docker-gen/templates/nginx.tmpl"
+dest = "/etc/nginx/conf.d/default.conf"
+watch = true
+
+[config.NotifyContainers]
+nginx = 1  # 1 is a signal number to be sent; here SIGINT
+e75a60548dc9 = 1 # a key can be either container name (nginx) or ID
+```
+
 ===
 
 ### Templating

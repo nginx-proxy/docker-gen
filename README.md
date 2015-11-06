@@ -151,7 +151,6 @@ watch = true
 watch for container changes
 
 
-
 [config.NotifyContainers]
 Starts a notify container section
 

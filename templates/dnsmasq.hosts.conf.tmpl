@@ -1,0 +1,7 @@
+{{$domain := "docker.company.com"}}
+{{range $key, $value := .}}
+# {{ $value.Name }} ({{$value.ID}} from {{$value.Image.Repository}})
+{{$value.IP}}   {{ $value.Name }}.{{$domain}}
+{{$value.IP6Global}}    {{ $value.Name }}.{{$domain}}
+
+{{end}}

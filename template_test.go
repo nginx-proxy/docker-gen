@@ -452,6 +452,87 @@ func TestWhereRequires(t *testing.T) {
 	tests.run(t, "whereAll")
 }
 
+func TestWhereLabelExists(t *testing.T) {
+	containers := []*RuntimeContainer{
+		&RuntimeContainer{
+			Labels: map[string]string{
+				"com.example.foo": "foo",
+				"com.example.bar": "bar",
+			},
+			ID: "1",
+		},
+		&RuntimeContainer{
+			Labels: map[string]string{
+				"com.example.bar": "bar",
+			},
+			ID: "2",
+		},
+	}
+
+	tests := templateTestList{
+		{`{{whereLabelExists . "com.example.foo" | len}}`, containers, `1`},
+		{`{{whereLabelExists . "com.example.bar" | len}}`, containers, `2`},
+		{`{{whereLabelExists . "com.example.baz" | len}}`, containers, `0`},
+	}
+
+	tests.run(t, "whereLabelExists")
+}
+
+func TestWhereLabelDoesNotExist(t *testing.T) {
+	containers := []*RuntimeContainer{
+		&RuntimeContainer{
+			Labels: map[string]string{
+				"com.example.foo": "foo",
+				"com.example.bar": "bar",
+			},
+			ID: "1",
+		},
+		&RuntimeContainer{
+			Labels: map[string]string{
+				"com.example.bar": "bar",
+			},
+			ID: "2",
+		},
+	}
+
+	tests := templateTestList{
+		{`{{whereLabelDoesNotExist . "com.example.foo" | len}}`, containers, `1`},
+		{`{{whereLabelDoesNotExist . "com.example.bar" | len}}`, containers, `0`},
+		{`{{whereLabelDoesNotExist . "com.example.baz" | len}}`, containers, `2`},
+	}
+
+	tests.run(t, "whereLabelDoesNotExist")
+}
+
+func TestWhereLabelValueMatches(t *testing.T) {
+	containers := []*RuntimeContainer{
+		&RuntimeContainer{
+			Labels: map[string]string{
+				"com.example.foo": "foo",
+				"com.example.bar": "bar",
+			},
+			ID: "1",
+		},
+		&RuntimeContainer{
+			Labels: map[string]string{
+				"com.example.bar": "BAR",
+			},
+			ID: "2",
+		},
+	}
+
+	tests := templateTestList{
+		{`{{whereLabelValueMatches . "com.example.foo" "^foo$" | len}}`, containers, `1`},
+		{`{{whereLabelValueMatches . "com.example.foo" "\\d+" | len}}`, containers, `0`},
+		{`{{whereLabelValueMatches . "com.example.bar" "^bar$" | len}}`, containers, `1`},
+		{`{{whereLabelValueMatches . "com.example.bar" "^(?i)bar$" | len}}`, containers, `2`},
+		{`{{whereLabelValueMatches . "com.example.bar" ".*" | len}}`, containers, `2`},
+		{`{{whereLabelValueMatches . "com.example.baz" ".*" | len}}`, containers, `0`},
+	}
+
+	tests.run(t, "whereLabelValueMatches")
+}
+
 func TestHasPrefix(t *testing.T) {
 	const prefix = "tcp://"
 	const str = "tcp://127.0.0.1:2375"

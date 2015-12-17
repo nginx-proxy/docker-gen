@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -103,7 +104,6 @@ func groupByKeys(entries interface{}, key string) ([]string, error) {
 
 // Generalized where function
 func generalizedWhere(funcName string, entries interface{}, key string, test func(interface{}) bool) (interface{}, error) {
-
 	entriesVal, err := getArrayValues(funcName, entries)
 
 	if err != nil {
@@ -166,6 +166,48 @@ func whereAll(entries interface{}, key, sep string, cmp []string) (interface{}, 
 			items := strings.Split(value.(string), sep)
 			return len(intersect(cmp, items)) == req_count
 		}
+	})
+}
+
+// generalized whereLabel function
+func generalizedWhereLabel(funcName string, containers Context, label string, test func(string, bool) bool) (Context, error) {
+	selection := make([]*RuntimeContainer, 0)
+
+	for i := 0; i < len(containers); i++ {
+		container := containers[i]
+
+		value, ok := container.Labels[label]
+		if test(value, ok) {
+			selection = append(selection, container)
+		}
+	}
+
+	return selection, nil
+}
+
+// selects containers that have a particular label
+func whereLabelExists(containers Context, label string) (Context, error) {
+	return generalizedWhereLabel("whereLabelExists", containers, label, func(_ string, ok bool) bool {
+		return ok
+	})
+}
+
+// selects containers that have don't have a particular label
+func whereLabelDoesNotExist(containers Context, label string) (Context, error) {
+	return generalizedWhereLabel("whereLabelDoesNotExist", containers, label, func(_ string, ok bool) bool {
+		return !ok
+	})
+}
+
+// selects containers with a particular label whose value matches a regular expression
+func whereLabelValueMatches(containers Context, label, pattern string) (Context, error) {
+	rx, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, err
+	}
+
+	return generalizedWhereLabel("whereLabelValueMatches", containers, label, func(value string, ok bool) bool {
+		return ok && rx.MatchString(value)
 	})
 }
 
@@ -344,38 +386,41 @@ func when(condition bool, trueValue, falseValue interface{}) interface{} {
 
 func newTemplate(name string) *template.Template {
 	tmpl := template.New(name).Funcs(template.FuncMap{
-		"closest":       arrayClosest,
-		"coalesce":      coalesce,
-		"contains":      contains,
-		"dict":          dict,
-		"dir":           dirList,
-		"exists":        exists,
-		"first":         arrayFirst,
-		"groupBy":       groupBy,
-		"groupByKeys":   groupByKeys,
-		"groupByMulti":  groupByMulti,
-		"hasPrefix":     hasPrefix,
-		"hasSuffix":     hasSuffix,
-		"json":          marshalJson,
-		"intersect":     intersect,
-		"keys":          keys,
-		"last":          arrayLast,
-		"replace":       strings.Replace,
-		"parseBool":     strconv.ParseBool,
-		"parseJson":     unmarshalJson,
-		"queryEscape":   url.QueryEscape,
-		"sha1":          hashSha1,
-		"split":         strings.Split,
-		"splitN":        strings.SplitN,
-		"trimPrefix":    trimPrefix,
-		"trimSuffix":    trimSuffix,
-		"trim":          trim,
-		"where":         where,
-		"whereExist":    whereExist,
-		"whereNotExist": whereNotExist,
-		"whereAny":      whereAny,
-		"whereAll":      whereAll,
-		"when":          when,
+		"closest":                arrayClosest,
+		"coalesce":               coalesce,
+		"contains":               contains,
+		"dict":                   dict,
+		"dir":                    dirList,
+		"exists":                 exists,
+		"first":                  arrayFirst,
+		"groupBy":                groupBy,
+		"groupByKeys":            groupByKeys,
+		"groupByMulti":           groupByMulti,
+		"hasPrefix":              hasPrefix,
+		"hasSuffix":              hasSuffix,
+		"json":                   marshalJson,
+		"intersect":              intersect,
+		"keys":                   keys,
+		"last":                   arrayLast,
+		"replace":                strings.Replace,
+		"parseBool":              strconv.ParseBool,
+		"parseJson":              unmarshalJson,
+		"queryEscape":            url.QueryEscape,
+		"sha1":                   hashSha1,
+		"split":                  strings.Split,
+		"splitN":                 strings.SplitN,
+		"trimPrefix":             trimPrefix,
+		"trimSuffix":             trimSuffix,
+		"trim":                   trim,
+		"when":                   when,
+		"where":                  where,
+		"whereExist":             whereExist,
+		"whereNotExist":          whereNotExist,
+		"whereAny":               whereAny,
+		"whereAll":               whereAll,
+		"whereLabelExists":       whereLabelExists,
+		"whereLabelDoesNotExist": whereLabelDoesNotExist,
+		"whereLabelValueMatches": whereLabelValueMatches,
 	})
 	return tmpl
 }

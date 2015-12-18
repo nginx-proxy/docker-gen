@@ -124,6 +124,7 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 			Hostname:     container.Config.Hostname,
 			Gateway:      container.NetworkSettings.Gateway,
 			Addresses:    []Address{},
+			Networks:     []Network{},
 			Env:          make(map[string]string),
 			Volumes:      make(map[string]Volume),
 			Node:         SwarmNode{},
@@ -147,6 +148,19 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 			runtimeContainer.Addresses = append(runtimeContainer.Addresses,
 				address)
 
+		}
+		for k, v := range container.NetworkSettings.Networks {
+			network := Network{
+				IP:                v.IPAddress,
+				Name:              k,
+				Gateway:           v.Gateway,
+				EndpointID:        v.EndpointID,
+				IPv6Gateway:       v.IPv6Gateway,
+				GlobalIPv6Address: v.GlobalIPv6Address,
+			}
+
+			runtimeContainer.Networks = append(runtimeContainer.Networks,
+				network)
 		}
 		for k, v := range container.Volumes {
 			runtimeContainer.Volumes[k] = Volume{

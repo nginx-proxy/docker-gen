@@ -56,12 +56,15 @@ type Address struct {
 }
 
 type Network struct {
-	IP                string
-	Name              string
-	Gateway           string
-	EndpointID        string
-	IPv6Gateway       string
-	GlobalIPv6Address string
+	IP                  string
+	Name                string
+	Gateway             string
+	EndpointID          string
+	IPv6Gateway         string
+	GlobalIPv6Address   string
+	MacAddress          string
+	GlobalIPv6PrefixLen int
+	IPPrefixLen         int
 }
 
 type Volume struct {

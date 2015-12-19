@@ -151,12 +151,15 @@ func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 		}
 		for k, v := range container.NetworkSettings.Networks {
 			network := Network{
-				IP:                v.IPAddress,
-				Name:              k,
-				Gateway:           v.Gateway,
-				EndpointID:        v.EndpointID,
-				IPv6Gateway:       v.IPv6Gateway,
-				GlobalIPv6Address: v.GlobalIPv6Address,
+				IP:                  v.IPAddress,
+				Name:                k,
+				Gateway:             v.Gateway,
+				EndpointID:          v.EndpointID,
+				IPv6Gateway:         v.IPv6Gateway,
+				GlobalIPv6Address:   v.GlobalIPv6Address,
+				MacAddress:          v.MacAddress,
+				GlobalIPv6PrefixLen: v.GlobalIPv6PrefixLen,
+				IPPrefixLen:         v.IPPrefixLen,
 			}
 
 			runtimeContainer.Networks = append(runtimeContainer.Networks,

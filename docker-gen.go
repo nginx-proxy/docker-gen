@@ -55,6 +55,18 @@ type Address struct {
 	HostIP       string
 }
 
+type Network struct {
+	IP                  string
+	Name                string
+	Gateway             string
+	EndpointID          string
+	IPv6Gateway         string
+	GlobalIPv6Address   string
+	MacAddress          string
+	GlobalIPv6PrefixLen int
+	IPPrefixLen         int
+}
+
 type Volume struct {
 	Path      string
 	HostPath  string
@@ -64,6 +76,7 @@ type Volume struct {
 type RuntimeContainer struct {
 	ID           string
 	Addresses    []Address
+	Networks     []Network
 	Gateway      string
 	Name         string
 	Hostname     string

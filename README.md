@@ -195,25 +195,42 @@ Within the templates, the object emitted by docker-gen will be a structure consi
 
 ```go
 type RuntimeContainer struct {
-    ID        string
-    Addresses []Address
-    Gateway   string
-    Name      string
-    Hostname  string
-    Image     DockerImage
-    Env       map[string]string
-    Volumes   map[string]Volume
-    Node      SwarmNode
-    Labels    map[string]string
-    IP        string
+    ID           string
+    Addresses    []Address
+    Networks     []Network
+    Gateway      string
+    Name         string
+    Hostname     string
+    Image        DockerImage
+    Env          map[string]string
+    Volumes      map[string]Volume
+    Node         SwarmNode
+    Labels       map[string]string
+    IP           string
+    IP6LinkLocal string
+    IP6Global    string
 }
 
 type Address struct {
-    IP       string
-    Port     string
-    HostPort string
-    Proto    string
-    HostIP   string
+    IP           string
+    IP6LinkLocal string
+    IP6Global    string
+    Port         string
+    HostPort     string
+    Proto        string
+    HostIP       string
+}
+
+type Network struct {
+    IP                  string
+    Name                string
+    Gateway             string
+    EndpointID          string
+    IPv6Gateway         string
+    GlobalIPv6Address   string
+    MacAddress          string
+    GlobalIPv6PrefixLen int
+    IPPrefixLen         int
 }
 
 type DockerImage struct {

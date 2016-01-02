@@ -1,4 +1,4 @@
-package main
+package dockergen
 
 import (
 	"fmt"
@@ -94,7 +94,7 @@ func splitDockerImage(img string) (string, string, string) {
 	return registry, repository, tag
 }
 
-func getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
+func GetContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 
 	apiContainers, err := client.ListContainers(docker.ListContainersOptions{
 		All:  false,

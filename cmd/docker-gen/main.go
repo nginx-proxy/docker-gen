@@ -14,6 +14,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/jwilder/docker-gen"
 )
 
 type stringslice []string
@@ -28,7 +29,7 @@ var (
 	onlyExposed             bool
 	onlyPublished           bool
 	configFiles             stringslice
-	configs                 ConfigFile
+	configs                 dockergen.ConfigFile
 	interval                int
 	keepBlankLines          bool
 	endpoint                string
@@ -46,63 +47,6 @@ type Event struct {
 	Image       string `json:"from"`
 }
 
-type Address struct {
-	IP           string
-	IP6LinkLocal string
-	IP6Global    string
-	Port         string
-	HostPort     string
-	Proto        string
-	HostIP       string
-}
-
-type Network struct {
-	IP                  string
-	Name                string
-	Gateway             string
-	EndpointID          string
-	IPv6Gateway         string
-	GlobalIPv6Address   string
-	MacAddress          string
-	GlobalIPv6PrefixLen int
-	IPPrefixLen         int
-}
-
-type Volume struct {
-	Path      string
-	HostPath  string
-	ReadWrite bool
-}
-
-type RuntimeContainer struct {
-	ID           string
-	Addresses    []Address
-	Networks     []Network
-	Gateway      string
-	Name         string
-	Hostname     string
-	Image        DockerImage
-	Env          map[string]string
-	Volumes      map[string]Volume
-	Node         SwarmNode
-	Labels       map[string]string
-	IP           string
-	IP6LinkLocal string
-	IP6Global    string
-}
-
-type DockerImage struct {
-	Registry   string
-	Repository string
-	Tag        string
-}
-
-type SwarmNode struct {
-	ID      string
-	Name    string
-	Address Address
-}
-
 func (strings *stringslice) String() string {
 	return "[]"
 }
@@ -111,67 +55,6 @@ func (strings *stringslice) Set(value string) error {
 	// TODO: Throw an error for duplicate `dest`
 	*strings = append(*strings, value)
 	return nil
-}
-
-func (i *DockerImage) String() string {
-	ret := i.Repository
-	if i.Registry != "" {
-		ret = i.Registry + "/" + i.Repository
-	}
-	if i.Tag != "" {
-		ret = ret + ":" + i.Tag
-	}
-	return ret
-}
-
-type Config struct {
-	Template         string
-	Dest             string
-	Watch            bool
-	NotifyCmd        string
-	NotifyOutput     bool
-	NotifyContainers map[string]docker.Signal
-	OnlyExposed      bool
-	OnlyPublished    bool
-	Interval         int
-	KeepBlankLines   bool
-}
-
-type ConfigFile struct {
-	Config []Config
-}
-
-type Context []*RuntimeContainer
-
-func (c *Context) Env() map[string]string {
-	return splitKeyValueSlice(os.Environ())
-}
-
-func (c *ConfigFile) filterWatches() ConfigFile {
-	configWithWatches := []Config{}
-
-	for _, config := range c.Config {
-		if config.Watch {
-			configWithWatches = append(configWithWatches, config)
-		}
-	}
-	return ConfigFile{
-		Config: configWithWatches,
-	}
-}
-
-func (r *RuntimeContainer) Equals(o RuntimeContainer) bool {
-	return r.ID == o.ID && r.Image == o.Image
-}
-
-func (r *RuntimeContainer) PublishedAddresses() []Address {
-	mapped := []Address{}
-	for _, address := range r.Addresses {
-		if address.HostPort != "" {
-			mapped = append(mapped, address)
-		}
-	}
-	return mapped
 }
 
 func usage() {
@@ -221,13 +104,13 @@ func NewDockerClient(endpoint string) (*docker.Client, error) {
 }
 
 func generateFromContainers(client *docker.Client) {
-	containers, err := getContainers(client)
+	containers, err := dockergen.GetContainers(client)
 	if err != nil {
 		log.Printf("error listing containers: %s\n", err)
 		return
 	}
 	for _, config := range configs.Config {
-		changed := generateFile(config, containers)
+		changed := dockergen.GenerateFile(config, containers)
 		if !changed {
 			log.Printf("Contents of %s did not change. Skipping notification '%s'", config.Dest, config.NotifyCmd)
 			continue
@@ -237,7 +120,7 @@ func generateFromContainers(client *docker.Client) {
 	}
 }
 
-func runNotifyCmd(config Config) {
+func runNotifyCmd(config dockergen.Config) {
 	if config.NotifyCmd == "" {
 		return
 	}
@@ -257,7 +140,7 @@ func runNotifyCmd(config Config) {
 	}
 }
 
-func sendSignalToContainer(client *docker.Client, config Config) {
+func sendSignalToContainer(client *docker.Client, config dockergen.Config) {
 	if len(config.NotifyContainers) < 1 {
 		return
 	}
@@ -282,7 +165,7 @@ func loadConfig(file string) error {
 	return nil
 }
 
-func generateAtInterval(client *docker.Client, configs ConfigFile) {
+func generateAtInterval(client *docker.Client, configs dockergen.ConfigFile) {
 	for _, config := range configs.Config {
 
 		if config.Interval == 0 {
@@ -299,13 +182,13 @@ func generateAtInterval(client *docker.Client, configs ConfigFile) {
 			for {
 				select {
 				case <-ticker.C:
-					containers, err := getContainers(client)
+					containers, err := dockergen.GetContainers(client)
 					if err != nil {
 						log.Printf("Error listing containers: %s\n", err)
 						continue
 					}
 					// ignore changed return value. always run notify command
-					generateFile(configCopy, containers)
+					dockergen.GenerateFile(configCopy, containers)
 					runNotifyCmd(configCopy)
 					sendSignalToContainer(client, configCopy)
 				case <-quit:
@@ -317,8 +200,8 @@ func generateAtInterval(client *docker.Client, configs ConfigFile) {
 	}
 }
 
-func generateFromEvents(client *docker.Client, configs ConfigFile) {
-	configs = configs.filterWatches()
+func generateFromEvents(client *docker.Client, configs dockergen.ConfigFile) {
+	configs = configs.FilterWatches()
 	if len(configs.Config) == 0 {
 		return
 	}
@@ -329,7 +212,7 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 	for {
 		if client == nil {
 			var err error
-			endpoint, err := getEndpoint()
+			endpoint, err := dockergen.GetEndpoint(endpoint)
 			if err != nil {
 				log.Printf("Bad endpoint: %s", err)
 				time.Sleep(10 * time.Second)
@@ -452,7 +335,7 @@ func main() {
 			}
 		}
 	} else {
-		config := Config{
+		config := dockergen.Config{
 			Template:         flag.Arg(0),
 			Dest:             flag.Arg(1),
 			Watch:            watch,
@@ -467,11 +350,11 @@ func main() {
 		if notifySigHUPContainerID != "" {
 			config.NotifyContainers[notifySigHUPContainerID] = docker.SIGHUP
 		}
-		configs = ConfigFile{
-			Config: []Config{config}}
+		configs = dockergen.ConfigFile{
+			Config: []dockergen.Config{config}}
 	}
 
-	endpoint, err := getEndpoint()
+	endpoint, err := dockergen.GetEndpoint(endpoint)
 	if err != nil {
 		log.Fatalf("Bad endpoint: %s", err)
 	}
@@ -485,4 +368,16 @@ func main() {
 	generateAtInterval(client, configs)
 	generateFromEvents(client, configs)
 	wg.Wait()
+}
+
+// pathExists returns whether the given file or directory exists or not
+func pathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
 }

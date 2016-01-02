@@ -3,9 +3,12 @@ package dockergen
 import (
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/fsouza/go-dockerclient"
@@ -66,9 +69,32 @@ func (g *generator) Generate() error {
 	g.generateFromContainers(g.Client)
 	g.generateAtInterval(g.Client, g.Configs)
 	g.generateFromEvents(g.Client, g.Configs)
+	g.generateFromSignals()
 	g.wg.Wait()
 
 	return nil
+}
+
+func (g *generator) generateFromSignals() {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL)
+
+	g.wg.Add(1)
+	go func() {
+		defer g.wg.Done()
+
+		for {
+			sig := <-sigs
+			log.Printf("Received signal: %s\n", sig)
+			switch sig {
+			case syscall.SIGHUP:
+				g.generateFromContainers(g.Client)
+			case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
+				// exit when context is done
+				return
+			}
+		}
+	}()
 }
 
 func (g *generator) generateFromContainers(client *docker.Client) {

@@ -23,6 +23,7 @@ var (
 	version                 bool
 	watch                   bool
 	notifyCmd               string
+	notifyOutput            bool
 	notifySigHUPContainerID string
 	onlyExposed             bool
 	onlyPublished           bool
@@ -128,6 +129,7 @@ type Config struct {
 	Dest             string
 	Watch            bool
 	NotifyCmd        string
+	NotifyOutput     bool
 	NotifyContainers map[string]docker.Signal
 	OnlyExposed      bool
 	OnlyPublished    bool
@@ -245,7 +247,13 @@ func runNotifyCmd(config Config) {
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("Error running notify command: %s, %s\n", config.NotifyCmd, err)
-		log.Print(string(out))
+	}
+	if config.NotifyOutput {
+		for _, line := range strings.Split(string(out), "\n") {
+			if line != "" {
+				log.Printf("[%s]: %s", config.NotifyCmd, line)
+			}
+		}
 	}
 }
 
@@ -406,6 +414,7 @@ func initFlags() {
 
 	flag.BoolVar(&onlyPublished, "only-published", false,
 		"only include containers with published ports (implies -only-exposed)")
+	flag.BoolVar(&notifyOutput, "notify-output", false, "log the output(stdout/stderr) of notify command")
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated (e.g `restart xyz`)")
 	flag.StringVar(&notifySigHUPContainerID, "notify-sighup", "",
 		"send HUP signal to container.  Equivalent to `docker kill -s HUP container-ID`")
@@ -448,6 +457,7 @@ func main() {
 			Dest:             flag.Arg(1),
 			Watch:            watch,
 			NotifyCmd:        notifyCmd,
+			NotifyOutput:     notifyOutput,
 			NotifyContainers: make(map[string]docker.Signal),
 			OnlyExposed:      onlyExposed,
 			OnlyPublished:    onlyPublished,

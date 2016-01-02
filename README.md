@@ -92,6 +92,8 @@ Options:
       keep blank lines in the output file
   -notify restart xyz
       run command after template is regenerated (e.g restart xyz)
+  -notify-output
+      log the output(stdout/stderr) of notify command
   -notify-sighup docker kill -s HUP container-ID
       send HUP signal to container.  Equivalent to docker kill -s HUP container-ID
   -only-exposed

@@ -211,6 +211,7 @@ type RuntimeContainer struct {
     IP           string
     IP6LinkLocal string
     IP6Global    string
+    Mounts       []Mount
 }
 
 type Address struct {
@@ -239,6 +240,15 @@ type DockerImage struct {
     Registry   string
     Repository string
     Tag        string
+}
+
+type Mount struct {
+  Name        string
+  Source      string
+  Destination string
+  Driver      string
+  Mode        string
+  RW          bool
 }
 
 type Volume struct {

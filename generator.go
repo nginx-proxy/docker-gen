@@ -337,6 +337,17 @@ func (g *generator) getContainers(client *docker.Client) ([]*RuntimeContainer, e
 			}
 		}
 
+		for _, v := range container.Mounts {
+			runtimeContainer.Mounts = append(runtimeContainer.Mounts, Mount{
+				Name:        v.Name,
+				Source:      v.Source,
+				Destination: v.Destination,
+				Driver:      v.Driver,
+				Mode:        v.Mode,
+				RW:          v.RW,
+			})
+		}
+
 		runtimeContainer.Env = splitKeyValueSlice(container.Config.Env)
 		runtimeContainer.Labels = container.Config.Labels
 		containers = append(containers, runtimeContainer)

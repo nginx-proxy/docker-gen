@@ -89,6 +89,7 @@ type RuntimeContainer struct {
 	IP           string
 	IP6LinkLocal string
 	IP6Global    string
+	Mounts       []Mount
 }
 
 func (r *RuntimeContainer) Equals(o RuntimeContainer) bool {
@@ -126,6 +127,15 @@ type SwarmNode struct {
 	ID      string
 	Name    string
 	Address Address
+}
+
+type Mount struct {
+	Name        string
+	Source      string
+	Destination string
+	Driver      string
+	Mode        string
+	RW          bool
 }
 
 type Docker struct {

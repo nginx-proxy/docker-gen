@@ -326,6 +326,8 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 	wg.Add(1)
 	defer wg.Done()
 
+	shouldRescanContainters := false
+
 	for {
 		if client == nil {
 			var err error
@@ -342,7 +344,12 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 				time.Sleep(10 * time.Second)
 				continue
 			}
+			shouldRescanContainters = true
+		}
+
+		if shouldRescanContainters && client != nil {
 			generateFromContainers(client)
+			shouldRescanContainters = false
 		}
 
 		eventChan := make(chan *docker.APIEvents, 100)
@@ -362,6 +369,7 @@ func generateFromEvents(client *docker.Client, configs ConfigFile) {
 					watching = false
 					client = nil
 				}
+				shouldRescanContainters = true
 				time.Sleep(10 * time.Second)
 				break
 

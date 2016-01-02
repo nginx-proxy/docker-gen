@@ -3,9 +3,12 @@ package dockergen
 import (
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/fsouza/go-dockerclient"
@@ -63,16 +66,39 @@ func NewGenerator(gc GeneratorConfig) (*generator, error) {
 }
 
 func (g *generator) Generate() error {
-	g.generateFromContainers(g.Client)
-	g.generateAtInterval(g.Client, g.Configs)
-	g.generateFromEvents(g.Client, g.Configs)
+	g.generateFromContainers()
+	g.generateAtInterval()
+	g.generateFromEvents()
+	g.generateFromSignals()
 	g.wg.Wait()
 
 	return nil
 }
 
-func (g *generator) generateFromContainers(client *docker.Client) {
-	containers, err := g.getContainers(client)
+func (g *generator) generateFromSignals() {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL)
+
+	g.wg.Add(1)
+	go func() {
+		defer g.wg.Done()
+
+		for {
+			sig := <-sigs
+			log.Printf("Received signal: %s\n", sig)
+			switch sig {
+			case syscall.SIGHUP:
+				g.generateFromContainers()
+			case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
+				// exit when context is done
+				return
+			}
+		}
+	}()
+}
+
+func (g *generator) generateFromContainers() {
+	containers, err := g.getContainers()
 	if err != nil {
 		log.Printf("error listing containers: %s\n", err)
 		return
@@ -84,12 +110,12 @@ func (g *generator) generateFromContainers(client *docker.Client) {
 			continue
 		}
 		g.runNotifyCmd(config)
-		g.sendSignalToContainer(client, config)
+		g.sendSignalToContainer(config)
 	}
 }
 
-func (g *generator) generateAtInterval(client *docker.Client, configs ConfigFile) {
-	for _, config := range configs.Config {
+func (g *generator) generateAtInterval() {
+	for _, config := range g.Configs.Config {
 
 		if config.Interval == 0 {
 			continue
@@ -99,32 +125,31 @@ func (g *generator) generateAtInterval(client *docker.Client, configs ConfigFile
 		g.wg.Add(1)
 		ticker := time.NewTicker(time.Duration(config.Interval) * time.Second)
 		quit := make(chan struct{})
-		configCopy := config
-		go func() {
+		go func(config Config) {
 			defer g.wg.Done()
 			for {
 				select {
 				case <-ticker.C:
-					containers, err := g.getContainers(client)
+					containers, err := g.getContainers()
 					if err != nil {
 						log.Printf("Error listing containers: %s\n", err)
 						continue
 					}
 					// ignore changed return value. always run notify command
-					GenerateFile(configCopy, containers)
-					g.runNotifyCmd(configCopy)
-					g.sendSignalToContainer(client, configCopy)
+					GenerateFile(config, containers)
+					g.runNotifyCmd(config)
+					g.sendSignalToContainer(config)
 				case <-quit:
 					ticker.Stop()
 					return
 				}
 			}
-		}()
+		}(config)
 	}
 }
 
-func (g *generator) generateFromEvents(client *docker.Client, configs ConfigFile) {
-	configs = configs.FilterWatches()
+func (g *generator) generateFromEvents() {
+	configs := g.Configs.FilterWatches()
 	if len(configs.Config) == 0 {
 		return
 	}
@@ -132,6 +157,7 @@ func (g *generator) generateFromEvents(client *docker.Client, configs ConfigFile
 	g.wg.Add(1)
 	defer g.wg.Done()
 
+	client := g.Client
 	for {
 		if client == nil {
 			var err error
@@ -148,7 +174,7 @@ func (g *generator) generateFromEvents(client *docker.Client, configs ConfigFile
 				time.Sleep(10 * time.Second)
 				continue
 			}
-			g.generateFromContainers(client)
+			g.generateFromContainers()
 		}
 
 		eventChan := make(chan *docker.APIEvents, 100)
@@ -198,7 +224,7 @@ func (g *generator) generateFromEvents(client *docker.Client, configs ConfigFile
 
 				if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
 					log.Printf("Received event %s for container %s", event.Status, event.ID[:12])
-					g.generateFromContainers(client)
+					g.generateFromContainers()
 				}
 			case <-time.After(10 * time.Second):
 				// check for docker liveness
@@ -228,7 +254,7 @@ func (g *generator) runNotifyCmd(config Config) {
 	}
 }
 
-func (g *generator) sendSignalToContainer(client *docker.Client, config Config) {
+func (g *generator) sendSignalToContainer(config Config) {
 	if len(config.NotifyContainers) < 1 {
 		return
 	}
@@ -239,21 +265,21 @@ func (g *generator) sendSignalToContainer(client *docker.Client, config Config) 
 			ID:     container,
 			Signal: signal,
 		}
-		if err := client.KillContainer(killOpts); err != nil {
+		if err := g.Client.KillContainer(killOpts); err != nil {
 			log.Printf("Error sending signal to container: %s", err)
 		}
 	}
 }
 
-func (g *generator) getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
-	apiInfo, err := client.Info()
+func (g *generator) getContainers() ([]*RuntimeContainer, error) {
+	apiInfo, err := g.Client.Info()
 	if err != nil {
 		log.Printf("error retrieving docker server info: %s\n", err)
 	}
 
 	SetServerInfo(apiInfo)
 
-	apiContainers, err := client.ListContainers(docker.ListContainersOptions{
+	apiContainers, err := g.Client.ListContainers(docker.ListContainersOptions{
 		All:  false,
 		Size: false,
 	})
@@ -263,7 +289,7 @@ func (g *generator) getContainers(client *docker.Client) ([]*RuntimeContainer, e
 
 	containers := []*RuntimeContainer{}
 	for _, apiContainer := range apiContainers {
-		container, err := client.InspectContainer(apiContainer.ID)
+		container, err := g.Client.InspectContainer(apiContainer.ID)
 		if err != nil {
 			log.Printf("error inspecting container: %s: %s\n", apiContainer.ID, err)
 			continue

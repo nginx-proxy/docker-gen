@@ -211,6 +211,7 @@ type RuntimeContainer struct {
     IP           string
     IP6LinkLocal string
     IP6Global    string
+    Mounts       []Mount
 }
 
 type Address struct {
@@ -241,6 +242,15 @@ type DockerImage struct {
     Tag        string
 }
 
+type Mount struct {
+  Name        string
+  Source      string
+  Destination string
+  Driver      string
+  Mode        string
+  RW          bool
+}
+
 type Volume struct {
     Path      string
     HostPath  string
@@ -252,6 +262,21 @@ type SwarmNode struct {
     Name    string
     Address Address
 }
+
+// Accessible from the root in templates as .Docker
+type Docker struct {
+    Name            string
+    NumContainers   int
+    NumImages       int
+    Version         string
+    ApiVersion      string
+    GoVersion       string
+    OperatingSystem string
+    Architecture    string
+}
+
+// Host environment variables accessible from root in templates as .Env
+
 ```
 
 For example, this is a JSON version of an emitted RuntimeContainer struct:

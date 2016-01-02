@@ -1,4 +1,4 @@
-package main
+package dockergen
 
 import (
 	"bufio"
@@ -8,7 +8,7 @@ import (
 	"unicode"
 )
 
-func getEndpoint() (string, error) {
+func GetEndpoint(endpoint string) (string, error) {
 	defaultEndpoint := "unix:///var/run/docker.sock"
 	if os.Getenv("DOCKER_HOST") != "" {
 		defaultEndpoint = os.Getenv("DOCKER_HOST")
@@ -40,18 +40,6 @@ func splitKeyValueSlice(in []string) map[string]string {
 	}
 	return env
 
-}
-
-// pathExists returns whether the given file or directory exists or not
-func pathExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
 }
 
 func isBlank(str string) bool {

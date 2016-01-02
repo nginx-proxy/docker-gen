@@ -1,4 +1,4 @@
-package main
+package dockergen
 
 import (
 	"bytes"
@@ -425,7 +425,7 @@ func newTemplate(name string) *template.Template {
 	return tmpl
 }
 
-func generateFile(config Config, containers Context) bool {
+func GenerateFile(config Config, containers Context) bool {
 	filteredContainers := Context{}
 	if config.OnlyPublished {
 		for _, container := range containers {

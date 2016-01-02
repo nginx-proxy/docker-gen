@@ -1,13 +1,39 @@
 package dockergen
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
 )
+
+func NewDockerClient(endpoint string, tlsVerify bool, tlsCert, tlsCaCert, tlsKey string) (*docker.Client, error) {
+	if strings.HasPrefix(endpoint, "unix:") {
+		return docker.NewClient(endpoint)
+	} else if tlsVerify || tlsEnabled(tlsCert, tlsCaCert, tlsKey) {
+		if tlsVerify {
+			if e, err := pathExists(tlsCaCert); !e || err != nil {
+				return nil, errors.New("TLS verification was requested, but CA cert does not exist")
+			}
+		}
+
+		return docker.NewTLSClient(endpoint, tlsCert, tlsKey, tlsCaCert)
+	}
+	return docker.NewClient(endpoint)
+}
+
+func tlsEnabled(tlsCert, tlsCaCert, tlsKey string) bool {
+	for _, v := range []string{tlsCert, tlsCaCert, tlsKey} {
+		if e, err := pathExists(v); e && err == nil {
+			return true
+		}
+	}
+	return false
+}
 
 type DockerContainer struct {
 }
@@ -95,7 +121,6 @@ func splitDockerImage(img string) (string, string, string) {
 }
 
 func GetContainers(client *docker.Client) ([]*RuntimeContainer, error) {
-
 	apiContainers, err := client.ListContainers(docker.ListContainersOptions{
 		All:  false,
 		Size: false,
@@ -186,4 +211,16 @@ func GetContainers(client *docker.Client) ([]*RuntimeContainer, error) {
 	}
 	return containers, nil
 
+}
+
+// pathExists returns whether the given file or directory exists or not
+func pathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
 }

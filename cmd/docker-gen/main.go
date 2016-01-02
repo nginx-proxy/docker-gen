@@ -1,16 +1,12 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 	"sync"
-	"time"
 
 	"github.com/BurntSushi/toml"
 	docker "github.com/fsouza/go-dockerclient"
@@ -41,12 +37,6 @@ var (
 	wg                      sync.WaitGroup
 )
 
-type Event struct {
-	ContainerID string `json:"id"`
-	Status      string `json:"status"`
-	Image       string `json:"from"`
-}
-
 func (strings *stringslice) String() string {
 	return "[]"
 }
@@ -73,88 +63,10 @@ Arguments:
 	println(`
 Environment Variables:
   DOCKER_HOST - default value for -endpoint
-  DOCKER_CERT_PATH - directory path containing key.pem, cert.pm and ca.pem
+  DOCKER_CERT_PATH - directory path containing key.pem, cert.pem and ca.pem
   DOCKER_TLS_VERIFY - enable client TLS verification
 `)
 	println(`For more information, see https://github.com/jwilder/docker-gen`)
-}
-
-func tlsEnabled() bool {
-	for _, v := range []string{tlsCert, tlsCaCert, tlsKey} {
-		if e, err := pathExists(v); e && err == nil {
-			return true
-		}
-	}
-	return false
-}
-
-func NewDockerClient(endpoint string) (*docker.Client, error) {
-	if strings.HasPrefix(endpoint, "unix:") {
-		return docker.NewClient(endpoint)
-	} else if tlsVerify || tlsEnabled() {
-		if tlsVerify {
-			if e, err := pathExists(tlsCaCert); !e || err != nil {
-				return nil, errors.New("TLS verification was requested, but CA cert does not exist")
-			}
-		}
-
-		return docker.NewTLSClient(endpoint, tlsCert, tlsKey, tlsCaCert)
-	}
-	return docker.NewClient(endpoint)
-}
-
-func generateFromContainers(client *docker.Client) {
-	containers, err := dockergen.GetContainers(client)
-	if err != nil {
-		log.Printf("error listing containers: %s\n", err)
-		return
-	}
-	for _, config := range configs.Config {
-		changed := dockergen.GenerateFile(config, containers)
-		if !changed {
-			log.Printf("Contents of %s did not change. Skipping notification '%s'", config.Dest, config.NotifyCmd)
-			continue
-		}
-		runNotifyCmd(config)
-		sendSignalToContainer(client, config)
-	}
-}
-
-func runNotifyCmd(config dockergen.Config) {
-	if config.NotifyCmd == "" {
-		return
-	}
-
-	log.Printf("Running '%s'", config.NotifyCmd)
-	cmd := exec.Command("/bin/sh", "-c", config.NotifyCmd)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("Error running notify command: %s, %s\n", config.NotifyCmd, err)
-	}
-	if config.NotifyOutput {
-		for _, line := range strings.Split(string(out), "\n") {
-			if line != "" {
-				log.Printf("[%s]: %s", config.NotifyCmd, line)
-			}
-		}
-	}
-}
-
-func sendSignalToContainer(client *docker.Client, config dockergen.Config) {
-	if len(config.NotifyContainers) < 1 {
-		return
-	}
-
-	for container, signal := range config.NotifyContainers {
-		log.Printf("Sending container '%s' signal '%v'", container, signal)
-		killOpts := docker.KillContainerOptions{
-			ID:     container,
-			Signal: signal,
-		}
-		if err := client.KillContainer(killOpts); err != nil {
-			log.Printf("Error sending signal to container: %s", err)
-		}
-	}
 }
 
 func loadConfig(file string) error {
@@ -163,126 +75,6 @@ func loadConfig(file string) error {
 		return err
 	}
 	return nil
-}
-
-func generateAtInterval(client *docker.Client, configs dockergen.ConfigFile) {
-	for _, config := range configs.Config {
-
-		if config.Interval == 0 {
-			continue
-		}
-
-		log.Printf("Generating every %d seconds", config.Interval)
-		wg.Add(1)
-		ticker := time.NewTicker(time.Duration(config.Interval) * time.Second)
-		quit := make(chan struct{})
-		configCopy := config
-		go func() {
-			defer wg.Done()
-			for {
-				select {
-				case <-ticker.C:
-					containers, err := dockergen.GetContainers(client)
-					if err != nil {
-						log.Printf("Error listing containers: %s\n", err)
-						continue
-					}
-					// ignore changed return value. always run notify command
-					dockergen.GenerateFile(configCopy, containers)
-					runNotifyCmd(configCopy)
-					sendSignalToContainer(client, configCopy)
-				case <-quit:
-					ticker.Stop()
-					return
-				}
-			}
-		}()
-	}
-}
-
-func generateFromEvents(client *docker.Client, configs dockergen.ConfigFile) {
-	configs = configs.FilterWatches()
-	if len(configs.Config) == 0 {
-		return
-	}
-
-	wg.Add(1)
-	defer wg.Done()
-
-	for {
-		if client == nil {
-			var err error
-			endpoint, err := dockergen.GetEndpoint(endpoint)
-			if err != nil {
-				log.Printf("Bad endpoint: %s", err)
-				time.Sleep(10 * time.Second)
-				continue
-			}
-
-			client, err = NewDockerClient(endpoint)
-			if err != nil {
-				log.Printf("Unable to connect to docker daemon: %s", err)
-				time.Sleep(10 * time.Second)
-				continue
-			}
-			generateFromContainers(client)
-		}
-
-		eventChan := make(chan *docker.APIEvents, 100)
-		defer close(eventChan)
-
-		watching := false
-		for {
-
-			if client == nil {
-				break
-			}
-			err := client.Ping()
-			if err != nil {
-				log.Printf("Unable to ping docker daemon: %s", err)
-				if watching {
-					client.RemoveEventListener(eventChan)
-					watching = false
-					client = nil
-				}
-				time.Sleep(10 * time.Second)
-				break
-
-			}
-
-			if !watching {
-				err = client.AddEventListener(eventChan)
-				if err != nil && err != docker.ErrListenerAlreadyExists {
-					log.Printf("Error registering docker event listener: %s", err)
-					time.Sleep(10 * time.Second)
-					continue
-				}
-				watching = true
-				log.Println("Watching docker events")
-			}
-
-			select {
-
-			case event := <-eventChan:
-				if event == nil {
-					if watching {
-						client.RemoveEventListener(eventChan)
-						watching = false
-						client = nil
-					}
-					break
-				}
-
-				if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
-					log.Printf("Received event %s for container %s", event.Status, event.ID[:12])
-					generateFromContainers(client)
-				}
-			case <-time.After(10 * time.Second):
-				// check for docker liveness
-			}
-
-		}
-	}
 }
 
 func initFlags() {
@@ -354,30 +146,20 @@ func main() {
 			Config: []dockergen.Config{config}}
 	}
 
-	endpoint, err := dockergen.GetEndpoint(endpoint)
+	generator, err := dockergen.NewGenerator(dockergen.GeneratorConfig{
+		Endpoint:   endpoint,
+		TLSKey:     tlsKey,
+		TLSCert:    tlsCert,
+		TLSCACert:  tlsCaCert,
+		TLSVerify:  tlsVerify,
+		ConfigFile: configs,
+	})
+
 	if err != nil {
-		log.Fatalf("Bad endpoint: %s", err)
+		log.Fatalf("error creating generator: %v", err)
 	}
 
-	client, err := NewDockerClient(endpoint)
-	if err != nil {
-		log.Fatalf("Unable to create docker client: %s", err)
+	if err := generator.Generate(); err != nil {
+		log.Fatalf("error running generate: %v", err)
 	}
-
-	generateFromContainers(client)
-	generateAtInterval(client, configs)
-	generateFromEvents(client, configs)
-	wg.Wait()
-}
-
-// pathExists returns whether the given file or directory exists or not
-func pathExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
 }

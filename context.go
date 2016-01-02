@@ -1,11 +1,49 @@
 package dockergen
 
-import "os"
+import (
+	"os"
+	"sync"
+
+	"github.com/fsouza/go-dockerclient"
+)
+
+var (
+	mu         sync.RWMutex
+	dockerInfo Docker
+	dockerEnv  *docker.Env
+)
 
 type Context []*RuntimeContainer
 
 func (c *Context) Env() map[string]string {
 	return splitKeyValueSlice(os.Environ())
+}
+
+func (c *Context) Docker() Docker {
+	mu.RLock()
+	defer mu.RUnlock()
+	return dockerInfo
+}
+
+func SetServerInfo(d *docker.Env) {
+	mu.Lock()
+	defer mu.Unlock()
+	dockerInfo = Docker{
+		Name:            d.Get("Name"),
+		NumContainers:   d.GetInt("Containers"),
+		NumImages:       d.GetInt("Images"),
+		Version:         dockerEnv.Get("Version"),
+		ApiVersion:      dockerEnv.Get("ApiVersion"),
+		GoVersion:       dockerEnv.Get("GoVersion"),
+		OperatingSystem: dockerEnv.Get("Os"),
+		Architecture:    dockerEnv.Get("Arch"),
+	}
+}
+
+func SetDockerEnv(d *docker.Env) {
+	mu.Lock()
+	defer mu.Unlock()
+	dockerEnv = d
 }
 
 type Address struct {
@@ -51,7 +89,6 @@ type RuntimeContainer struct {
 	IP           string
 	IP6LinkLocal string
 	IP6Global    string
-	Server       Server
 }
 
 func (r *RuntimeContainer) Equals(o RuntimeContainer) bool {
@@ -91,14 +128,10 @@ type SwarmNode struct {
 	Address Address
 }
 
-type Server struct {
-	Name          string
-	NumContainers int
-	NumImages     int
-	Docker        Docker
-}
-
 type Docker struct {
+	Name            string
+	NumContainers   int
+	NumImages       int
 	Version         string
 	ApiVersion      string
 	GoVersion       string

@@ -18,8 +18,6 @@ type generator struct {
 	TLSVerify                  bool
 	TLSCert, TLSCaCert, TLSKey string
 
-	dockerInfo Server
-
 	wg sync.WaitGroup
 }
 
@@ -45,6 +43,14 @@ func NewGenerator(gc GeneratorConfig) (*generator, error) {
 		return nil, fmt.Errorf("Unable to create docker client: %s", err)
 	}
 
+	apiVersion, err := client.Version()
+	if err != nil {
+		log.Printf("error retrieving docker server version info: %s\n", err)
+	}
+
+	// Grab the docker daemon info once and hold onto it
+	SetDockerEnv(apiVersion)
+
 	return &generator{
 		Client:    client,
 		Endpoint:  gc.Endpoint,
@@ -66,7 +72,7 @@ func (g *generator) Generate() error {
 }
 
 func (g *generator) generateFromContainers(client *docker.Client) {
-	containers, err := GetContainers(client)
+	containers, err := g.getContainers(client)
 	if err != nil {
 		log.Printf("error listing containers: %s\n", err)
 		return
@@ -99,7 +105,7 @@ func (g *generator) generateAtInterval(client *docker.Client, configs ConfigFile
 			for {
 				select {
 				case <-ticker.C:
-					containers, err := GetContainers(client)
+					containers, err := g.getContainers(client)
 					if err != nil {
 						log.Printf("Error listing containers: %s\n", err)
 						continue
@@ -237,4 +243,104 @@ func (g *generator) sendSignalToContainer(client *docker.Client, config Config) 
 			log.Printf("Error sending signal to container: %s", err)
 		}
 	}
+}
+
+func (g *generator) getContainers(client *docker.Client) ([]*RuntimeContainer, error) {
+	apiInfo, err := client.Info()
+	if err != nil {
+		log.Printf("error retrieving docker server info: %s\n", err)
+	}
+
+	SetServerInfo(apiInfo)
+
+	apiContainers, err := client.ListContainers(docker.ListContainersOptions{
+		All:  false,
+		Size: false,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	containers := []*RuntimeContainer{}
+	for _, apiContainer := range apiContainers {
+		container, err := client.InspectContainer(apiContainer.ID)
+		if err != nil {
+			log.Printf("error inspecting container: %s: %s\n", apiContainer.ID, err)
+			continue
+		}
+
+		registry, repository, tag := splitDockerImage(container.Config.Image)
+		runtimeContainer := &RuntimeContainer{
+			ID: container.ID,
+			Image: DockerImage{
+				Registry:   registry,
+				Repository: repository,
+				Tag:        tag,
+			},
+			Name:         strings.TrimLeft(container.Name, "/"),
+			Hostname:     container.Config.Hostname,
+			Gateway:      container.NetworkSettings.Gateway,
+			Addresses:    []Address{},
+			Networks:     []Network{},
+			Env:          make(map[string]string),
+			Volumes:      make(map[string]Volume),
+			Node:         SwarmNode{},
+			Labels:       make(map[string]string),
+			IP:           container.NetworkSettings.IPAddress,
+			IP6LinkLocal: container.NetworkSettings.LinkLocalIPv6Address,
+			IP6Global:    container.NetworkSettings.GlobalIPv6Address,
+		}
+		for k, v := range container.NetworkSettings.Ports {
+			address := Address{
+				IP:           container.NetworkSettings.IPAddress,
+				IP6LinkLocal: container.NetworkSettings.LinkLocalIPv6Address,
+				IP6Global:    container.NetworkSettings.GlobalIPv6Address,
+				Port:         k.Port(),
+				Proto:        k.Proto(),
+			}
+			if len(v) > 0 {
+				address.HostPort = v[0].HostPort
+				address.HostIP = v[0].HostIP
+			}
+			runtimeContainer.Addresses = append(runtimeContainer.Addresses,
+				address)
+
+		}
+		for k, v := range container.NetworkSettings.Networks {
+			network := Network{
+				IP:                  v.IPAddress,
+				Name:                k,
+				Gateway:             v.Gateway,
+				EndpointID:          v.EndpointID,
+				IPv6Gateway:         v.IPv6Gateway,
+				GlobalIPv6Address:   v.GlobalIPv6Address,
+				MacAddress:          v.MacAddress,
+				GlobalIPv6PrefixLen: v.GlobalIPv6PrefixLen,
+				IPPrefixLen:         v.IPPrefixLen,
+			}
+
+			runtimeContainer.Networks = append(runtimeContainer.Networks,
+				network)
+		}
+		for k, v := range container.Volumes {
+			runtimeContainer.Volumes[k] = Volume{
+				Path:      k,
+				HostPath:  v,
+				ReadWrite: container.VolumesRW[k],
+			}
+		}
+		if container.Node != nil {
+			runtimeContainer.Node.ID = container.Node.ID
+			runtimeContainer.Node.Name = container.Node.Name
+			runtimeContainer.Node.Address = Address{
+				IP: container.Node.IP,
+			}
+		}
+
+		runtimeContainer.Env = splitKeyValueSlice(container.Config.Env)
+		runtimeContainer.Labels = container.Config.Labels
+		containers = append(containers, runtimeContainer)
+	}
+	return containers, nil
+
 }

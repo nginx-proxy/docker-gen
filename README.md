@@ -252,6 +252,21 @@ type SwarmNode struct {
     Name    string
     Address Address
 }
+
+// Accessible from the root in templates as .Docker
+type Docker struct {
+    Name            string
+    NumContainers   int
+    NumImages       int
+    Version         string
+    ApiVersion      string
+    GoVersion       string
+    OperatingSystem string
+    Architecture    string
+}
+
+// Host environment variables accessible from root in templates as .Env
+
 ```
 
 For example, this is a JSON version of an emitted RuntimeContainer struct:

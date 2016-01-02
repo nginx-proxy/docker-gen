@@ -2,6 +2,7 @@
 #!/bin/bash
 
 # Genenerated by {{ .Env.USER }}
+# Docker Version {{ .Docker.Version }}
 
 {{range $key, $value := .}}
 {{ $addrLen := len $value.Addresses }}

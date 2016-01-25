@@ -21,7 +21,8 @@ type generator struct {
 	TLSVerify                  bool
 	TLSCert, TLSCaCert, TLSKey string
 
-	wg sync.WaitGroup
+	wg    sync.WaitGroup
+	retry bool
 }
 
 type GeneratorConfig struct {
@@ -62,6 +63,7 @@ func NewGenerator(gc GeneratorConfig) (*generator, error) {
 		TLSCaCert: gc.TLSCACert,
 		TLSKey:    gc.TLSKey,
 		Configs:   gc.ConfigFile,
+		retry:     true,
 	}, nil
 }
 
@@ -76,15 +78,13 @@ func (g *generator) Generate() error {
 }
 
 func (g *generator) generateFromSignals() {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL)
-
 	g.wg.Add(1)
 	go func() {
 		defer g.wg.Done()
 
+		sigChan := newSignalChannel()
 		for {
-			sig := <-sigs
+			sig := <-sigChan
 			log.Printf("Received signal: %s\n", sig)
 			switch sig {
 			case syscall.SIGHUP:
@@ -124,9 +124,10 @@ func (g *generator) generateAtInterval() {
 		log.Printf("Generating every %d seconds", config.Interval)
 		g.wg.Add(1)
 		ticker := time.NewTicker(time.Duration(config.Interval) * time.Second)
-		quit := make(chan struct{})
 		go func(config Config) {
 			defer g.wg.Done()
+
+			sigChan := newSignalChannel()
 			for {
 				select {
 				case <-ticker.C:
@@ -139,9 +140,13 @@ func (g *generator) generateAtInterval() {
 					GenerateFile(config, containers)
 					g.runNotifyCmd(config)
 					g.sendSignalToContainer(config)
-				case <-quit:
-					ticker.Stop()
-					return
+				case sig := <-sigChan:
+					log.Printf("Received signal: %s\n", sig)
+					switch sig {
+					case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
+						ticker.Stop()
+						return
+					}
 				}
 			}
 		}(config)
@@ -154,84 +159,128 @@ func (g *generator) generateFromEvents() {
 		return
 	}
 
-	g.wg.Add(1)
-	defer g.wg.Done()
-
 	client := g.Client
-	for {
-		if client == nil {
-			var err error
-			endpoint, err := GetEndpoint(g.Endpoint)
-			if err != nil {
-				log.Printf("Bad endpoint: %s", err)
-				time.Sleep(10 * time.Second)
-				continue
-			}
+	var watchers []chan *docker.APIEvents
 
-			client, err = NewDockerClient(endpoint, g.TLSVerify, g.TLSCert, g.TLSCaCert, g.TLSKey)
-			if err != nil {
-				log.Printf("Unable to connect to docker daemon: %s", err)
-				time.Sleep(10 * time.Second)
-				continue
-			}
-			g.generateFromContainers()
-		}
+	for _, config := range configs.Config {
+		g.wg.Add(1)
 
+		go func(config Config, watcher chan *docker.APIEvents) {
+			defer g.wg.Done()
+			watchers = append(watchers, watcher)
+
+			debouncedChan := newDebounceChannel(watcher, config.Wait)
+			for _ = range debouncedChan {
+				containers, err := g.getContainers()
+				if err != nil {
+					log.Printf("Error listing containers: %s\n", err)
+					continue
+				}
+				changed := GenerateFile(config, containers)
+				if !changed {
+					log.Printf("Contents of %s did not change. Skipping notification '%s'", config.Dest, config.NotifyCmd)
+					continue
+				}
+				g.runNotifyCmd(config)
+				g.sendSignalToContainer(config)
+			}
+		}(config, make(chan *docker.APIEvents, 100))
+	}
+
+	// maintains docker client connection and passes events to watchers
+	go func() {
+		// channel will be closed by go-dockerclient
 		eventChan := make(chan *docker.APIEvents, 100)
-		defer close(eventChan)
+		sigChan := newSignalChannel()
 
-		watching := false
 		for {
+			watching := false
 
 			if client == nil {
-				break
-			}
-			err := client.Ping()
-			if err != nil {
-				log.Printf("Unable to ping docker daemon: %s", err)
-				if watching {
-					client.RemoveEventListener(eventChan)
-					watching = false
-					client = nil
-				}
-				time.Sleep(10 * time.Second)
-				break
-
-			}
-
-			if !watching {
-				err = client.AddEventListener(eventChan)
-				if err != nil && err != docker.ErrListenerAlreadyExists {
-					log.Printf("Error registering docker event listener: %s", err)
+				var err error
+				endpoint, err := GetEndpoint(g.Endpoint)
+				if err != nil {
+					log.Printf("Bad endpoint: %s", err)
 					time.Sleep(10 * time.Second)
 					continue
 				}
-				watching = true
-				log.Println("Watching docker events")
+				client, err = NewDockerClient(endpoint, g.TLSVerify, g.TLSCert, g.TLSCaCert, g.TLSKey)
+				if err != nil {
+					log.Printf("Unable to connect to docker daemon: %s", err)
+					time.Sleep(10 * time.Second)
+					continue
+				}
 			}
 
-			select {
-
-			case event := <-eventChan:
-				if event == nil {
-					if watching {
-						client.RemoveEventListener(eventChan)
-						watching = false
-						client = nil
-					}
+			for {
+				if client == nil {
 					break
 				}
-
-				if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
-					log.Printf("Received event %s for container %s", event.Status, event.ID[:12])
+				if !watching {
+					err := client.AddEventListener(eventChan)
+					if err != nil && err != docker.ErrListenerAlreadyExists {
+						log.Printf("Error registering docker event listener: %s", err)
+						time.Sleep(10 * time.Second)
+						continue
+					}
+					watching = true
+					log.Println("Watching docker events")
+					// sync all configs after resuming listener
 					g.generateFromContainers()
 				}
-			case <-time.After(10 * time.Second):
-				// check for docker liveness
+				select {
+				case event, ok := <-eventChan:
+					if !ok {
+						log.Printf("Docker daemon connection interrupted")
+						if watching {
+							client.RemoveEventListener(eventChan)
+							watching = false
+							client = nil
+						}
+						if !g.retry {
+							// close all watchers and exit
+							for _, watcher := range watchers {
+								close(watcher)
+							}
+							return
+						}
+						// recreate channel and attempt to resume
+						eventChan = make(chan *docker.APIEvents, 100)
+						time.Sleep(10 * time.Second)
+						break
+					}
+					if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
+						log.Printf("Received event %s for container %s", event.Status, event.ID[:12])
+						// fanout event to all watchers
+						for _, watcher := range watchers {
+							watcher <- event
+						}
+					}
+				case <-time.After(10 * time.Second):
+					// check for docker liveness
+					err := client.Ping()
+					if err != nil {
+						log.Printf("Unable to ping docker daemon: %s", err)
+						if watching {
+							client.RemoveEventListener(eventChan)
+							watching = false
+							client = nil
+						}
+					}
+				case sig := <-sigChan:
+					log.Printf("Received signal: %s\n", sig)
+					switch sig {
+					case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
+						// close all watchers and exit
+						for _, watcher := range watchers {
+							close(watcher)
+						}
+						return
+					}
+				}
 			}
-
 		}
-	}
+	}()
 }
 
 func (g *generator) runNotifyCmd(config Config) {
@@ -275,9 +324,9 @@ func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 	apiInfo, err := g.Client.Info()
 	if err != nil {
 		log.Printf("error retrieving docker server info: %s\n", err)
+	} else {
+		SetServerInfo(apiInfo)
 	}
-
-	SetServerInfo(apiInfo)
 
 	apiContainers, err := g.Client.ListContainers(docker.ListContainersOptions{
 		All:  false,
@@ -380,4 +429,56 @@ func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 	}
 	return containers, nil
 
+}
+
+func newSignalChannel() <-chan os.Signal {
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL)
+
+	return sig
+}
+
+func newDebounceChannel(input chan *docker.APIEvents, wait *Wait) chan *docker.APIEvents {
+	if wait == nil {
+		return input
+	}
+	if wait.Min == 0 {
+		return input
+	}
+
+	output := make(chan *docker.APIEvents, 100)
+
+	go func() {
+		var (
+			event    *docker.APIEvents
+			minTimer <-chan time.Time
+			maxTimer <-chan time.Time
+		)
+
+		defer close(output)
+
+		for {
+			select {
+			case buffer, ok := <-input:
+				if !ok {
+					return
+				}
+				event = buffer
+				minTimer = time.After(wait.Min)
+				if maxTimer == nil {
+					maxTimer = time.After(wait.Max)
+				}
+			case <-minTimer:
+				log.Println("Debounce minTimer fired")
+				minTimer, maxTimer = nil, nil
+				output <- event
+			case <-maxTimer:
+				log.Println("Debounce maxTimer fired")
+				minTimer, maxTimer = nil, nil
+				output <- event
+			}
+		}
+	}()
+
+	return output
 }

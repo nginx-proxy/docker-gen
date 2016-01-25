@@ -113,6 +113,8 @@ Options:
       show version
   -watch
       watch for container changes
+  -wait
+      minimum (and/or maximum) duration to wait after each container change before triggering
 
 Arguments:
   template - path to a template to generate
@@ -153,6 +155,9 @@ path to a template to generate
 watch = true
 watch for container changes
 
+wait = "500ms:2s"
+debounce changes with a min:max duration. Only applicable if watch = true
+
 
 [config.NotifyContainers]
 Starts a notify container section
@@ -180,6 +185,7 @@ watch = true
 template = "/etc/docker-gen/templates/nginx.tmpl"
 dest = "/etc/nginx/conf.d/default.conf"
 watch = true
+wait = "500ms:2s"
 
 [config.NotifyContainers]
 nginx = 1  # 1 is a signal number to be sent; here SIGINT

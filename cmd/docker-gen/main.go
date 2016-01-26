@@ -19,6 +19,7 @@ var (
 	buildVersion            string
 	version                 bool
 	watch                   bool
+	wait                    string
 	notifyCmd               string
 	notifyOutput            bool
 	notifySigHUPContainerID string
@@ -85,6 +86,7 @@ func initFlags() {
 	}
 	flag.BoolVar(&version, "version", false, "show version")
 	flag.BoolVar(&watch, "watch", false, "watch for container changes")
+	flag.StringVar(&wait, "wait", "", "minimum and maximum durations to wait (e.g. \"500ms:2s\") before triggering generate")
 	flag.BoolVar(&onlyExposed, "only-exposed", false, "only include containers with exposed ports")
 
 	flag.BoolVar(&onlyPublished, "only-published", false,
@@ -127,10 +129,15 @@ func main() {
 			}
 		}
 	} else {
+		w, err := dockergen.ParseWait(wait)
+		if err != nil {
+			log.Fatalf("error parsing wait interval: %s\n", err)
+		}
 		config := dockergen.Config{
 			Template:         flag.Arg(0),
 			Dest:             flag.Arg(1),
 			Watch:            watch,
+			Wait:             w,
 			NotifyCmd:        notifyCmd,
 			NotifyOutput:     notifyOutput,
 			NotifyContainers: make(map[string]docker.Signal),

@@ -272,14 +272,15 @@ type SwarmNode struct {
 
 // Accessible from the root in templates as .Docker
 type Docker struct {
-    Name            string
-    NumContainers   int
-    NumImages       int
-    Version         string
-    ApiVersion      string
-    GoVersion       string
-    OperatingSystem string
-    Architecture    string
+    Name                 string
+    NumContainers        int
+    NumImages            int
+    Version              string
+    ApiVersion           string
+    GoVersion            string
+    OperatingSystem      string
+    Architecture         string
+    CurrentContainerName string
 }
 
 // Host environment variables accessible from root in templates as .Env

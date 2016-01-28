@@ -1,7 +1,10 @@
 package dockergen
 
 import (
+	"io/ioutil"
 	"os"
+	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/fsouza/go-dockerclient"
@@ -29,14 +32,16 @@ func SetServerInfo(d *docker.Env) {
 	mu.Lock()
 	defer mu.Unlock()
 	dockerInfo = Docker{
-		Name:            d.Get("Name"),
-		NumContainers:   d.GetInt("Containers"),
-		NumImages:       d.GetInt("Images"),
-		Version:         dockerEnv.Get("Version"),
-		ApiVersion:      dockerEnv.Get("ApiVersion"),
-		GoVersion:       dockerEnv.Get("GoVersion"),
-		OperatingSystem: dockerEnv.Get("Os"),
-		Architecture:    dockerEnv.Get("Arch"),
+		Name:                 d.Get("Name"),
+		NumContainers:        d.GetInt("Containers"),
+		NumImages:            d.GetInt("Images"),
+		Version:              dockerEnv.Get("Version"),
+		ApiVersion:           dockerEnv.Get("ApiVersion"),
+		GoVersion:            dockerEnv.Get("GoVersion"),
+		OperatingSystem:      dockerEnv.Get("Os"),
+		Architecture:         dockerEnv.Get("Arch"),
+		CurrentContainerName: GetCurrentContainerName(),
+
 	}
 }
 
@@ -139,12 +144,35 @@ type Mount struct {
 }
 
 type Docker struct {
-	Name            string
-	NumContainers   int
-	NumImages       int
-	Version         string
-	ApiVersion      string
-	GoVersion       string
-	OperatingSystem string
-	Architecture    string
+	Name                 string
+	NumContainers        int
+	NumImages            int
+	Version              string
+	ApiVersion           string
+	GoVersion            string
+	OperatingSystem      string
+	Architecture         string
+	CurrentContainerName string
+}
+
+func GetCurrentContainerName() string {
+	contents, err := ioutil.ReadFile("/proc/self/cgroup")
+	if err != nil {	
+		println("No /proc/self/cgroup file. Fail to detect current container ID")
+		return ""
+	}
+
+	lines := strings.Split(string(contents), "\n")
+	re := regexp.MustCompilePOSIX("^1")
+
+	for _, line := range lines {
+		if re.MatchString(line) == true {
+			splited := strings.SplitN(line, "/docker-", 2)
+			splited = strings.SplitN(splited[len(splited) - 1], ".scope", 2)
+
+			return splited[0]
+		}
+	}
+
+	return ""
 }

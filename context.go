@@ -1,10 +1,10 @@
 package dockergen
 
 import (
-	"io/ioutil"
+	"bufio"
+	"log"
 	"os"
 	"regexp"
-	"strings"
 	"sync"
 
 	"github.com/fsouza/go-dockerclient"
@@ -40,8 +40,7 @@ func SetServerInfo(d *docker.Env) {
 		GoVersion:            dockerEnv.Get("GoVersion"),
 		OperatingSystem:      dockerEnv.Get("Os"),
 		Architecture:         dockerEnv.Get("Arch"),
-		CurrentContainerName: GetCurrentContainerName(),
-
+		CurrentContainerID:   GetCurrentContainerID(),
 	}
 }
 
@@ -152,27 +151,36 @@ type Docker struct {
 	GoVersion            string
 	OperatingSystem      string
 	Architecture         string
-	CurrentContainerName string
+	CurrentContainerID   string
 }
 
-func GetCurrentContainerName() string {
-	contents, err := ioutil.ReadFile("/proc/self/cgroup")
-	if err != nil {	
-		println("No /proc/self/cgroup file. Fail to detect current container ID")
+func GetCurrentContainerID() string {
+	file, err := os.Open("/proc/self/cgroup")
+
+	if os.IsNotExist(err) {
+		return ""
+	} else if err != nil {
+		log.Printf("Fail to open /proc/self/cgroup: %s\n", err)
 		return ""
 	}
+	
+	reader := bufio.NewReader(file)
+    scanner := bufio.NewScanner(reader)
+    scanner.Split(bufio.ScanLines)
 
-	lines := strings.Split(string(contents), "\n")
-	re := regexp.MustCompilePOSIX("^1")
 
-	for _, line := range lines {
-		if re.MatchString(line) == true {
-			splited := strings.SplitN(line, "/docker-", 2)
-			splited = strings.SplitN(splited[len(splited) - 1], ".scope", 2)
-
-			return splited[0]
+	for scanner.Scan() {
+		_, lines, err := bufio.ScanLines([]byte(scanner.Text()), true)
+		if err == nil {
+			re := regexp.MustCompilePOSIX("/docker-([[:alnum:]]{64}).scope$")
+			if re.MatchString(string(lines)) {
+				submatches := re.FindStringSubmatch(string(lines))
+				containerID := submatches[1]
+				
+				return containerID
+			}
 		}
-	}
+    }
 
 	return ""
 }

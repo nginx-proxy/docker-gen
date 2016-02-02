@@ -280,7 +280,7 @@ type Docker struct {
     GoVersion            string
     OperatingSystem      string
     Architecture         string
-    CurrentContainerName string
+    CurrentContainerID   string
 }
 
 // Host environment variables accessible from root in templates as .Env

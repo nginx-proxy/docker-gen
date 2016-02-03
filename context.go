@@ -32,15 +32,15 @@ func SetServerInfo(d *docker.Env) {
 	mu.Lock()
 	defer mu.Unlock()
 	dockerInfo = Docker{
-		Name:                 d.Get("Name"),
-		NumContainers:        d.GetInt("Containers"),
-		NumImages:            d.GetInt("Images"),
-		Version:              dockerEnv.Get("Version"),
-		ApiVersion:           dockerEnv.Get("ApiVersion"),
-		GoVersion:            dockerEnv.Get("GoVersion"),
-		OperatingSystem:      dockerEnv.Get("Os"),
-		Architecture:         dockerEnv.Get("Arch"),
-		CurrentContainerID:   GetCurrentContainerID(),
+		Name:               d.Get("Name"),
+		NumContainers:      d.GetInt("Containers"),
+		NumImages:          d.GetInt("Images"),
+		Version:            dockerEnv.Get("Version"),
+		ApiVersion:         dockerEnv.Get("ApiVersion"),
+		GoVersion:          dockerEnv.Get("GoVersion"),
+		OperatingSystem:    dockerEnv.Get("Os"),
+		Architecture:       dockerEnv.Get("Arch"),
+		CurrentContainerID: GetCurrentContainerID(),
 	}
 }
 
@@ -143,15 +143,15 @@ type Mount struct {
 }
 
 type Docker struct {
-	Name                 string
-	NumContainers        int
-	NumImages            int
-	Version              string
-	ApiVersion           string
-	GoVersion            string
-	OperatingSystem      string
-	Architecture         string
-	CurrentContainerID   string
+	Name               string
+	NumContainers      int
+	NumImages          int
+	Version            string
+	ApiVersion         string
+	GoVersion          string
+	OperatingSystem    string
+	Architecture       string
+	CurrentContainerID string
 }
 
 func GetCurrentContainerID() string {
@@ -163,11 +163,10 @@ func GetCurrentContainerID() string {
 		log.Printf("Fail to open /proc/self/cgroup: %s\n", err)
 		return ""
 	}
-	
-	reader := bufio.NewReader(file)
-    scanner := bufio.NewScanner(reader)
-    scanner.Split(bufio.ScanLines)
 
+	reader := bufio.NewReader(file)
+	scanner := bufio.NewScanner(reader)
+	scanner.Split(bufio.ScanLines)
 
 	for scanner.Scan() {
 		_, lines, err := bufio.ScanLines([]byte(scanner.Text()), true)
@@ -176,11 +175,11 @@ func GetCurrentContainerID() string {
 			if re.MatchString(string(lines)) {
 				submatches := re.FindStringSubmatch(string(lines))
 				containerID := submatches[1]
-				
+
 				return containerID
 			}
 		}
-    }
+	}
 
 	return ""
 }

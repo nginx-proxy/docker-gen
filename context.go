@@ -168,10 +168,12 @@ func GetCurrentContainerID() string {
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(bufio.ScanLines)
 
+	regex := "/docker/([[:alnum:]]{64})$"
+	re := regexp.MustCompilePOSIX(regex)
+
 	for scanner.Scan() {
 		_, lines, err := bufio.ScanLines([]byte(scanner.Text()), true)
 		if err == nil {
-			re := regexp.MustCompilePOSIX("/docker/([[:alnum:]]{64})$")
 			if re.MatchString(string(lines)) {
 				submatches := re.FindStringSubmatch(string(lines))
 				containerID := submatches[1]

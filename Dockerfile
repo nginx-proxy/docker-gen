@@ -1,7 +1,7 @@
 FROM debian:wheezy
 MAINTAINER Jason Wilder <jason@influxdb.com>
 
-ENV VERSION 0.5.0
+ENV VERSION 0.6.0
 ENV DOWNLOAD_URL https://github.com/jwilder/docker-gen/releases/download/$VERSION/docker-gen-linux-amd64-$VERSION.tar.gz
 ENV DOCKER_HOST unix:///tmp/docker.sock
 

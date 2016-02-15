@@ -78,6 +78,19 @@ func (g *generator) Generate() error {
 }
 
 func (g *generator) generateFromSignals() {
+	var hasWatcher bool
+	for _, config := range g.Configs.Config {
+		if config.Watch {
+			hasWatcher = true
+			break
+		}
+	}
+
+	// If none of the configs need to watch for events, don't watch for signals either
+	if !hasWatcher {
+		return
+	}
+
 	g.wg.Add(1)
 	go func() {
 		defer g.wg.Done()
@@ -163,6 +176,11 @@ func (g *generator) generateFromEvents() {
 	var watchers []chan *docker.APIEvents
 
 	for _, config := range configs.Config {
+
+		if !config.Watch {
+			continue
+		}
+
 		g.wg.Add(1)
 
 		go func(config Config, watcher chan *docker.APIEvents) {

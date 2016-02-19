@@ -209,6 +209,12 @@ func TestGroupByLabel(t *testing.T) {
 		&RuntimeContainer{
 			ID: "4",
 		},
+		&RuntimeContainer{
+			Labels: map[string]string{
+				"com.docker.compose.project": "",
+			},
+			ID: "5",
+		},
 	}
 
 	groups, err := groupByLabel(containers, "com.docker.compose.project")
@@ -216,11 +222,14 @@ func TestGroupByLabel(t *testing.T) {
 		t.FailNow()
 	}
 
-	if len(groups) != 2 {
+	if len(groups) != 3 {
 		t.Fail()
 	}
 
 	if len(groups["one"]) != 2 {
+		t.Fail()
+	}
+	if len(groups[""]) != 1 {
 		t.Fail()
 	}
 

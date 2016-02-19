@@ -116,10 +116,10 @@ func groupByKeys(entries interface{}, key string) ([]string, error) {
 func groupByLabel(entries interface{}, label string) (map[string][]interface{}, error) {
 	getLabel := func(v interface{}) (interface{}, error) {
 		if container, ok := v.(RuntimeContainer); ok {
-			if container.Labels[label] == "" {
-				return nil, nil
+			if value, ok := container.Labels[label]; ok {
+				return value, nil
 			}
-			return container.Labels[label], nil
+			return nil, nil
 		}
 		return nil, fmt.Errorf("Must pass an array or slice of RuntimeContainer to 'groupByLabel'; received %v", v)
 	}

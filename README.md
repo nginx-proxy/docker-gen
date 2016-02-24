@@ -349,6 +349,7 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 * *`groupBy $containers $fieldPath`*: Groups an array of `RuntimeContainer` instances based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value, which must be a string. Returns a map from the value of the field path expression to an array of containers having that value. Containers that do not have a value for the field path in question are omitted.
 * *`groupByKeys $containers $fieldPath`*: Returns the same as `groupBy` but only returns the keys of the map.
 * *`groupByMulti $containers $fieldPath $sep`*: Like `groupBy`, but the string value specified by `$fieldPath` is first split by `$sep` into a list of strings. A container whose `$fieldPath` value contains a list of strings will show up in the map output under each of those strings.
+* *`groupByLabel $containers $label`*: Returns the same as `groupBy` but grouping by the given label's value.
 * *`hasPrefix $prefix $string`*: Returns whether `$prefix` is a prefix of `$string`.
 * *`hasSuffix $suffix $string`*: Returns whether `$suffix` is a suffix of `$string`.
 * *`intersect $slice1 $slice2`*: Returns the strings that exist in both string slices.

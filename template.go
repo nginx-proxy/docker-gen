@@ -51,7 +51,7 @@ func getArrayValues(funcName string, entries interface{}) (*reflect.Value, error
 }
 
 // Generalized groupBy function
-func generalizedGroupBy(funcName string, entries interface{}, key string, addEntry func(map[string][]interface{}, interface{}, interface{})) (map[string][]interface{}, error) {
+func generalizedGroupBy(funcName string, entries interface{}, getValue func(interface{}) (interface{}, error), addEntry func(map[string][]interface{}, interface{}, interface{})) (map[string][]interface{}, error) {
 	entriesVal, err := getArrayValues(funcName, entries)
 
 	if err != nil {
@@ -61,7 +61,10 @@ func generalizedGroupBy(funcName string, entries interface{}, key string, addEnt
 	groups := make(map[string][]interface{})
 	for i := 0; i < entriesVal.Len(); i++ {
 		v := reflect.Indirect(entriesVal.Index(i)).Interface()
-		value := deepGet(v, key)
+		value, err := getValue(v)
+		if err != nil {
+			return nil, err
+		}
 		if value != nil {
 			addEntry(groups, value, v)
 		}
@@ -69,8 +72,15 @@ func generalizedGroupBy(funcName string, entries interface{}, key string, addEnt
 	return groups, nil
 }
 
+func generalizedGroupByKey(funcName string, entries interface{}, key string, addEntry func(map[string][]interface{}, interface{}, interface{})) (map[string][]interface{}, error) {
+	getKey := func(v interface{}) (interface{}, error) {
+		return deepGet(v, key), nil
+	}
+	return generalizedGroupBy(funcName, entries, getKey, addEntry)
+}
+
 func groupByMulti(entries interface{}, key, sep string) (map[string][]interface{}, error) {
-	return generalizedGroupBy("groupByMulti", entries, key, func(groups map[string][]interface{}, value interface{}, v interface{}) {
+	return generalizedGroupByKey("groupByMulti", entries, key, func(groups map[string][]interface{}, value interface{}, v interface{}) {
 		items := strings.Split(value.(string), sep)
 		for _, item := range items {
 			groups[item] = append(groups[item], v)
@@ -80,14 +90,14 @@ func groupByMulti(entries interface{}, key, sep string) (map[string][]interface{
 
 // groupBy groups a generic array or slice by the path property key
 func groupBy(entries interface{}, key string) (map[string][]interface{}, error) {
-	return generalizedGroupBy("groupBy", entries, key, func(groups map[string][]interface{}, value interface{}, v interface{}) {
+	return generalizedGroupByKey("groupBy", entries, key, func(groups map[string][]interface{}, value interface{}, v interface{}) {
 		groups[value.(string)] = append(groups[value.(string)], v)
 	})
 }
 
 // groupByKeys is the same as groupBy but only returns a list of keys
 func groupByKeys(entries interface{}, key string) ([]string, error) {
-	keys, err := generalizedGroupBy("groupByKeys", entries, key, func(groups map[string][]interface{}, value interface{}, v interface{}) {
+	keys, err := generalizedGroupByKey("groupByKeys", entries, key, func(groups map[string][]interface{}, value interface{}, v interface{}) {
 		groups[value.(string)] = append(groups[value.(string)], v)
 	})
 
@@ -100,6 +110,22 @@ func groupByKeys(entries interface{}, key string) ([]string, error) {
 		ret = append(ret, k)
 	}
 	return ret, nil
+}
+
+// groupByLabel is the same as groupBy but over a given label
+func groupByLabel(entries interface{}, label string) (map[string][]interface{}, error) {
+	getLabel := func(v interface{}) (interface{}, error) {
+		if container, ok := v.(RuntimeContainer); ok {
+			if value, ok := container.Labels[label]; ok {
+				return value, nil
+			}
+			return nil, nil
+		}
+		return nil, fmt.Errorf("Must pass an array or slice of RuntimeContainer to 'groupByLabel'; received %v", v)
+	}
+	return generalizedGroupBy("groupByLabel", entries, getLabel, func(groups map[string][]interface{}, value interface{}, v interface{}) {
+		groups[value.(string)] = append(groups[value.(string)], v)
+	})
 }
 
 // Generalized where function
@@ -396,6 +422,7 @@ func newTemplate(name string) *template.Template {
 		"groupBy":                groupBy,
 		"groupByKeys":            groupByKeys,
 		"groupByMulti":           groupByMulti,
+		"groupByLabel":           groupByLabel,
 		"hasPrefix":              hasPrefix,
 		"hasSuffix":              hasSuffix,
 		"json":                   marshalJson,

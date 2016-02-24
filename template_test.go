@@ -186,6 +186,61 @@ func TestGroupByAfterWhere(t *testing.T) {
 	}
 }
 
+func TestGroupByLabel(t *testing.T) {
+	containers := []*RuntimeContainer{
+		&RuntimeContainer{
+			Labels: map[string]string{
+				"com.docker.compose.project": "one",
+			},
+			ID: "1",
+		},
+		&RuntimeContainer{
+			Labels: map[string]string{
+				"com.docker.compose.project": "two",
+			},
+			ID: "2",
+		},
+		&RuntimeContainer{
+			Labels: map[string]string{
+				"com.docker.compose.project": "one",
+			},
+			ID: "3",
+		},
+		&RuntimeContainer{
+			ID: "4",
+		},
+		&RuntimeContainer{
+			Labels: map[string]string{
+				"com.docker.compose.project": "",
+			},
+			ID: "5",
+		},
+	}
+
+	groups, err := groupByLabel(containers, "com.docker.compose.project")
+	if err != nil {
+		t.FailNow()
+	}
+
+	if len(groups) != 3 {
+		t.Fail()
+	}
+
+	if len(groups["one"]) != 2 {
+		t.Fail()
+	}
+	if len(groups[""]) != 1 {
+		t.Fail()
+	}
+
+	if len(groups["two"]) != 1 {
+		t.FailNow()
+	}
+	if groups["two"][0].(RuntimeContainer).ID != "2" {
+		t.Fail()
+	}
+}
+
 func TestGroupByMulti(t *testing.T) {
 	containers := []*RuntimeContainer{
 		&RuntimeContainer{

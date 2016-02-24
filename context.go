@@ -158,10 +158,6 @@ func GetCurrentContainerID() string {
 	file, err := os.Open("/proc/self/cgroup")
 
 	if err != nil {
-		if os.IsExist(err) {
-			log.Printf("Fail to open /proc/self/cgroup: %s\n", err)
-		}
-
 		return ""
 	}
 

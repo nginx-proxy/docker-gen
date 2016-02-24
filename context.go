@@ -1,7 +1,9 @@
 package dockergen
 
 import (
+	"bufio"
 	"os"
+	"regexp"
 	"sync"
 
 	"github.com/fsouza/go-dockerclient"
@@ -29,14 +31,15 @@ func SetServerInfo(d *docker.Env) {
 	mu.Lock()
 	defer mu.Unlock()
 	dockerInfo = Docker{
-		Name:            d.Get("Name"),
-		NumContainers:   d.GetInt("Containers"),
-		NumImages:       d.GetInt("Images"),
-		Version:         dockerEnv.Get("Version"),
-		ApiVersion:      dockerEnv.Get("ApiVersion"),
-		GoVersion:       dockerEnv.Get("GoVersion"),
-		OperatingSystem: dockerEnv.Get("Os"),
-		Architecture:    dockerEnv.Get("Arch"),
+		Name:               d.Get("Name"),
+		NumContainers:      d.GetInt("Containers"),
+		NumImages:          d.GetInt("Images"),
+		Version:            dockerEnv.Get("Version"),
+		ApiVersion:         dockerEnv.Get("ApiVersion"),
+		GoVersion:          dockerEnv.Get("GoVersion"),
+		OperatingSystem:    dockerEnv.Get("Os"),
+		Architecture:       dockerEnv.Get("Arch"),
+		CurrentContainerID: GetCurrentContainerID(),
 	}
 }
 
@@ -139,12 +142,42 @@ type Mount struct {
 }
 
 type Docker struct {
-	Name            string
-	NumContainers   int
-	NumImages       int
-	Version         string
-	ApiVersion      string
-	GoVersion       string
-	OperatingSystem string
-	Architecture    string
+	Name               string
+	NumContainers      int
+	NumImages          int
+	Version            string
+	ApiVersion         string
+	GoVersion          string
+	OperatingSystem    string
+	Architecture       string
+	CurrentContainerID string
+}
+
+func GetCurrentContainerID() string {
+	file, err := os.Open("/proc/self/cgroup")
+
+	if err != nil {
+		return ""
+	}
+
+	reader := bufio.NewReader(file)
+	scanner := bufio.NewScanner(reader)
+	scanner.Split(bufio.ScanLines)
+
+	regex := "/docker/([[:alnum:]]{64})$"
+	re := regexp.MustCompilePOSIX(regex)
+
+	for scanner.Scan() {
+		_, lines, err := bufio.ScanLines([]byte(scanner.Text()), true)
+		if err == nil {
+			if re.MatchString(string(lines)) {
+				submatches := re.FindStringSubmatch(string(lines))
+				containerID := submatches[1]
+
+				return containerID
+			}
+		}
+	}
+
+	return ""
 }

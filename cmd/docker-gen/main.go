@@ -25,6 +25,7 @@ var (
 	notifySigHUPContainerID string
 	onlyExposed             bool
 	onlyPublished           bool
+	includeStopped          bool
 	configFiles             stringslice
 	configs                 dockergen.ConfigFile
 	interval                int
@@ -91,6 +92,7 @@ func initFlags() {
 
 	flag.BoolVar(&onlyPublished, "only-published", false,
 		"only include containers with published ports (implies -only-exposed)")
+	flag.BoolVar(&includeStopped, "include-stopped", false, "include stopped containers")
 	flag.BoolVar(&notifyOutput, "notify-output", false, "log the output(stdout/stderr) of notify command")
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated (e.g `restart xyz`)")
 	flag.StringVar(&notifySigHUPContainerID, "notify-sighup", "",
@@ -143,6 +145,7 @@ func main() {
 			NotifyContainers: make(map[string]docker.Signal),
 			OnlyExposed:      onlyExposed,
 			OnlyPublished:    onlyPublished,
+			IncludeStopped:   includeStopped,
 			Interval:         interval,
 			KeepBlankLines:   keepBlankLines,
 		}
@@ -153,12 +156,20 @@ func main() {
 			Config: []dockergen.Config{config}}
 	}
 
+	all := true
+	for _, config := range configs.Config {
+		if config.IncludeStopped {
+			all = true
+		}
+	}
+
 	generator, err := dockergen.NewGenerator(dockergen.GeneratorConfig{
 		Endpoint:   endpoint,
 		TLSKey:     tlsKey,
 		TLSCert:    tlsCert,
 		TLSCACert:  tlsCaCert,
 		TLSVerify:  tlsVerify,
+		All:        all,
 		ConfigFile: configs,
 	})
 

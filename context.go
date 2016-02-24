@@ -77,6 +77,10 @@ type Volume struct {
 	ReadWrite bool
 }
 
+type State struct {
+	Running bool
+}
+
 type RuntimeContainer struct {
 	ID           string
 	Addresses    []Address
@@ -93,6 +97,7 @@ type RuntimeContainer struct {
 	IP6LinkLocal string
 	IP6Global    string
 	Mounts       []Mount
+	State        State
 }
 
 func (r *RuntimeContainer) Equals(o RuntimeContainer) bool {

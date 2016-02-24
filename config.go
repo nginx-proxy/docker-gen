@@ -18,6 +18,7 @@ type Config struct {
 	NotifyContainers map[string]docker.Signal
 	OnlyExposed      bool
 	OnlyPublished    bool
+	IncludeStopped   bool
 	Interval         int
 	KeepBlankLines   bool
 }

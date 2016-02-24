@@ -259,7 +259,7 @@ func keys(input interface{}) (interface{}, error) {
 
 	vk := val.MapKeys()
 	k := make([]interface{}, val.Len())
-	for i, _ := range k {
+	for i := range k {
 		k[i] = vk[i].Interface()
 	}
 
@@ -452,22 +452,37 @@ func newTemplate(name string) *template.Template {
 	return tmpl
 }
 
+func filterRunning(config Config, containers Context) Context {
+	if config.IncludeStopped {
+		return containers
+	} else {
+		filteredContainers := Context{}
+		for _, container := range containers {
+			if container.State.Running {
+				filteredContainers = append(filteredContainers, container)
+			}
+		}
+		return filteredContainers
+	}
+}
+
 func GenerateFile(config Config, containers Context) bool {
+	filteredRunningContainers := filterRunning(config, containers)
 	filteredContainers := Context{}
 	if config.OnlyPublished {
-		for _, container := range containers {
+		for _, container := range filteredRunningContainers {
 			if len(container.PublishedAddresses()) > 0 {
 				filteredContainers = append(filteredContainers, container)
 			}
 		}
 	} else if config.OnlyExposed {
-		for _, container := range containers {
+		for _, container := range filteredRunningContainers {
 			if len(container.Addresses) > 0 {
 				filteredContainers = append(filteredContainers, container)
 			}
 		}
 	} else {
-		filteredContainers = containers
+		filteredContainers = filteredRunningContainers
 	}
 
 	contents := executeTemplate(config.Template, filteredContainers)

@@ -2,7 +2,6 @@ package dockergen
 
 import (
 	"bufio"
-	"log"
 	"os"
 	"regexp"
 	"sync"

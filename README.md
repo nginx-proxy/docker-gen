@@ -190,7 +190,7 @@ watch = true
 wait = "500ms:2s"
 
 [config.NotifyContainers]
-nginx = 1  # 1 is a signal number to be sent; here SIGINT
+nginx = 1  # 1 is a signal number to be sent; here SIGHUP
 e75a60548dc9 = 1 # a key can be either container name (nginx) or ID
 ```
 

@@ -169,7 +169,7 @@ func GetCurrentContainerID() string {
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(bufio.ScanLines)
 
-	regex := "/docker/([[:alnum:]]{64})$"
+	regex := "/docker[/-]([[:alnum:]]{64})(\\.scope)?$"
 	re := regexp.MustCompilePOSIX(regex)
 
 	for scanner.Scan() {

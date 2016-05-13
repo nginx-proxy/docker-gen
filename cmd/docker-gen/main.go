@@ -30,6 +30,8 @@ var (
 	configs                 dockergen.ConfigFile
 	interval                int
 	keepBlankLines          bool
+	useEnvVarTemplate       bool
+	destination             string
 	endpoint                string
 	tlsCert                 string
 	tlsKey                  string
@@ -50,7 +52,7 @@ func (strings *stringslice) Set(value string) error {
 }
 
 func usage() {
-	println(`Usage: docker-gen [options] template [dest]
+	println(`Usage: docker-gen [options] [template] [dest]
 
 Generate files from docker container meta-data
 
@@ -59,8 +61,10 @@ Options:`)
 
 	println(`
 Arguments:
-  template - path to a template to generate
-  dest - path to a write the template.  If not specfied, STDOUT is used`)
+  template - path to a template to generate.  If not specfied, it is possible to
+             set the template as a string directly using the
+             VIRTUAL_HOST_TEMPLATE variable on the containers.
+  dest - path to a write the template.  Also as "-destination" option.  If not specfied, STDOUT is used.`)
 
 	println(`
 Environment Variables:
@@ -100,6 +104,8 @@ func initFlags() {
 	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (secs)")
 	flag.BoolVar(&keepBlankLines, "keep-blank-lines", false, "keep blank lines in the output file")
+	flag.BoolVar(&useEnvVarTemplate, "use-environment-variable-template", false, "allow the client containers to set it's own NGINX template using the VIRTUAL_HOST_TEMPLATE environment variable.")
+	flag.StringVar(&destination, "destination", "", "destination file for the templates.")
 	flag.StringVar(&endpoint, "endpoint", "", "docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock")
 	flag.StringVar(&tlsCert, "tlscert", filepath.Join(certPath, "cert.pem"), "path to TLS client certificate file")
 	flag.StringVar(&tlsKey, "tlskey", filepath.Join(certPath, "key.pem"), "path to TLS client key file")
@@ -118,11 +124,6 @@ func main() {
 		return
 	}
 
-	if flag.NArg() < 1 && len(configFiles) == 0 {
-		usage()
-		os.Exit(1)
-	}
-
 	if len(configFiles) > 0 {
 		for _, configFile := range configFiles {
 			err := loadConfig(configFile)
@@ -135,19 +136,23 @@ func main() {
 		if err != nil {
 			log.Fatalf("Error parsing wait interval: %s\n", err)
 		}
+		if flag.Arg(1) != "" {
+			destination = flag.Arg(1)
+		}
 		config := dockergen.Config{
-			Template:         flag.Arg(0),
-			Dest:             flag.Arg(1),
-			Watch:            watch,
-			Wait:             w,
-			NotifyCmd:        notifyCmd,
-			NotifyOutput:     notifyOutput,
-			NotifyContainers: make(map[string]docker.Signal),
-			OnlyExposed:      onlyExposed,
-			OnlyPublished:    onlyPublished,
-			IncludeStopped:   includeStopped,
-			Interval:         interval,
-			KeepBlankLines:   keepBlankLines,
+			Template:          flag.Arg(0),
+			Dest:              destination,
+			Watch:             watch,
+			Wait:              w,
+			NotifyCmd:         notifyCmd,
+			NotifyOutput:      notifyOutput,
+			NotifyContainers:  make(map[string]docker.Signal),
+			OnlyExposed:       onlyExposed,
+			OnlyPublished:     onlyPublished,
+			IncludeStopped:    includeStopped,
+			Interval:          interval,
+			KeepBlankLines:    keepBlankLines,
+			UseEnvVarTemplate: useEnvVarTemplate,
 		}
 		if notifySigHUPContainerID != "" {
 			config.NotifyContainers[notifySigHUPContainerID] = docker.SIGHUP
@@ -160,6 +165,16 @@ func main() {
 	for _, config := range configs.Config {
 		if config.IncludeStopped {
 			all = true
+		}
+	}
+
+	if flag.NArg() < 1 {
+		for _, config := range configs.Config {
+			if !config.UseEnvVarTemplate {
+				log.Fatalf("Error: missing template file argument or the \"use environment variable template\" option parameter or configuration has not been set.\n")
+				usage()
+				os.Exit(1)
+			}
 		}
 	}
 

@@ -27,6 +27,10 @@ func (c *Context) Docker() Docker {
 	return dockerInfo
 }
 
+func (c Context) Swap(i, j int) {
+	c[i], c[j] = c[j], c[i]
+}
+
 func SetServerInfo(d *docker.Env) {
 	mu.Lock()
 	defer mu.Unlock()

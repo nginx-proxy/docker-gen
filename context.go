@@ -31,7 +31,7 @@ func (c Context) Swap(i, j int) {
 	c[i], c[j] = c[j], c[i]
 }
 
-func SetServerInfo(d *docker.Env) {
+func SetServerInfo(d *docker.Env, containers []*RuntimeContainer) {
 	mu.Lock()
 	defer mu.Unlock()
 	dockerInfo = Docker{
@@ -44,6 +44,7 @@ func SetServerInfo(d *docker.Env) {
 		OperatingSystem:    dockerEnv.Get("Os"),
 		Architecture:       dockerEnv.Get("Arch"),
 		CurrentContainerID: GetCurrentContainerID(),
+		Containers:         containers,
 	}
 }
 
@@ -160,6 +161,7 @@ type Docker struct {
 	OperatingSystem    string
 	Architecture       string
 	CurrentContainerID string
+	Containers         []*RuntimeContainer
 }
 
 func GetCurrentContainerID() string {

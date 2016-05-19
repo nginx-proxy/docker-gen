@@ -342,13 +342,6 @@ func (g *generator) sendSignalToContainer(config Config) {
 }
 
 func (g *generator) getContainers() ([]*RuntimeContainer, error) {
-	apiInfo, err := g.Client.Info()
-	if err != nil {
-		log.Printf("Error retrieving docker server info: %s\n", err)
-	} else {
-		SetServerInfo(apiInfo)
-	}
-
 	apiContainers, err := g.Client.ListContainers(docker.ListContainersOptions{
 		All:  g.All,
 		Size: false,
@@ -451,8 +444,15 @@ func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 		runtimeContainer.Labels = container.Config.Labels
 		containers = append(containers, runtimeContainer)
 	}
-	return containers, nil
 
+	apiInfo, err := g.Client.Info()
+	if err != nil {
+		log.Printf("Error retrieving docker server info: %s\n", err)
+	} else {
+		SetServerInfo(apiInfo, containers)
+	}
+
+	return containers, nil
 }
 
 func newSignalChannel() <-chan os.Signal {

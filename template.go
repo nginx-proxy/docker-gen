@@ -538,6 +538,14 @@ func GenerateFile(config Config, containers Context) bool {
 }
 
 func executeTemplate(templatePath string, containers Context) []byte {
+	// Put current container first, to maintain compatibility:
+	for index, container := range containers {
+		if container.ID == containers.Docker().CurrentContainerID {
+			containers.Swap(0, index)
+			break
+		}
+	}
+
 	tmpl, err := newTemplate(filepath.Base(templatePath)).ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalf("Unable to parse template: %s", err)

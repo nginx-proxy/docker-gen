@@ -51,7 +51,7 @@ func NewGenerator(gc GeneratorConfig) (*generator, error) {
 
 	apiVersion, err := client.Version()
 	if err != nil {
-		log.Printf("error retrieving docker server version info: %s\n", err)
+		log.Printf("Error retrieving docker server version info: %s\n", err)
 	}
 
 	// Grab the docker daemon info once and hold onto it
@@ -116,7 +116,7 @@ func (g *generator) generateFromSignals() {
 func (g *generator) generateFromContainers() {
 	containers, err := g.getContainers()
 	if err != nil {
-		log.Printf("error listing containers: %s\n", err)
+		log.Printf("Error listing containers: %s\n", err)
 		return
 	}
 	for _, config := range g.Configs.Config {
@@ -344,7 +344,7 @@ func (g *generator) sendSignalToContainer(config Config) {
 func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 	apiInfo, err := g.Client.Info()
 	if err != nil {
-		log.Printf("error retrieving docker server info: %s\n", err)
+		log.Printf("Error retrieving docker server info: %s\n", err)
 	} else {
 		SetServerInfo(apiInfo)
 	}
@@ -361,7 +361,7 @@ func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 	for _, apiContainer := range apiContainers {
 		container, err := g.Client.InspectContainer(apiContainer.ID)
 		if err != nil {
-			log.Printf("error inspecting container: %s: %s\n", apiContainer.ID, err)
+			log.Printf("Error inspecting container: %s: %s\n", apiContainer.ID, err)
 			continue
 		}
 

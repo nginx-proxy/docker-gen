@@ -500,31 +500,31 @@ func GenerateFile(config Config, containers Context) bool {
 			os.Remove(dest.Name())
 		}()
 		if err != nil {
-			log.Fatalf("unable to create temp file: %s\n", err)
+			log.Fatalf("Cnable to create temp file: %s\n", err)
 		}
 
 		if n, err := dest.Write(contents); n != len(contents) || err != nil {
-			log.Fatalf("failed to write to temp file: wrote %d, exp %d, err=%v", n, len(contents), err)
+			log.Fatalf("Failed to write to temp file: wrote %d, exp %d, err=%v", n, len(contents), err)
 		}
 
 		oldContents := []byte{}
 		if fi, err := os.Stat(config.Dest); err == nil {
 			if err := dest.Chmod(fi.Mode()); err != nil {
-				log.Fatalf("unable to chmod temp file: %s\n", err)
+				log.Fatalf("Unable to chmod temp file: %s\n", err)
 			}
 			if err := dest.Chown(int(fi.Sys().(*syscall.Stat_t).Uid), int(fi.Sys().(*syscall.Stat_t).Gid)); err != nil {
-				log.Fatalf("unable to chown temp file: %s\n", err)
+				log.Fatalf("Unable to chown temp file: %s\n", err)
 			}
 			oldContents, err = ioutil.ReadFile(config.Dest)
 			if err != nil {
-				log.Fatalf("unable to compare current file contents: %s: %s\n", config.Dest, err)
+				log.Fatalf("Unable to compare current file contents: %s: %s\n", config.Dest, err)
 			}
 		}
 
 		if bytes.Compare(oldContents, contents) != 0 {
 			err = os.Rename(dest.Name(), config.Dest)
 			if err != nil {
-				log.Fatalf("unable to create dest file %s: %s\n", config.Dest, err)
+				log.Fatalf("Unable to create dest file %s: %s\n", config.Dest, err)
 			}
 			log.Printf("Generated '%s' from %d containers", config.Dest, len(filteredContainers))
 			return true
@@ -539,13 +539,13 @@ func GenerateFile(config Config, containers Context) bool {
 func executeTemplate(templatePath string, containers Context) []byte {
 	tmpl, err := newTemplate(filepath.Base(templatePath)).ParseFiles(templatePath)
 	if err != nil {
-		log.Fatalf("unable to parse template: %s", err)
+		log.Fatalf("Unable to parse template: %s", err)
 	}
 
 	buf := new(bytes.Buffer)
 	err = tmpl.ExecuteTemplate(buf, filepath.Base(templatePath), &containers)
 	if err != nil {
-		log.Fatalf("template error: %s\n", err)
+		log.Fatalf("Template error: %s\n", err)
 	}
 	return buf.Bytes()
 }

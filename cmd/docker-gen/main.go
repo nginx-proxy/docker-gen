@@ -127,13 +127,13 @@ func main() {
 		for _, configFile := range configFiles {
 			err := loadConfig(configFile)
 			if err != nil {
-				log.Fatalf("error loading config %s: %s\n", configFile, err)
+				log.Fatalf("Error loading config %s: %s\n", configFile, err)
 			}
 		}
 	} else {
 		w, err := dockergen.ParseWait(wait)
 		if err != nil {
-			log.Fatalf("error parsing wait interval: %s\n", err)
+			log.Fatalf("Error parsing wait interval: %s\n", err)
 		}
 		config := dockergen.Config{
 			Template:         flag.Arg(0),
@@ -174,10 +174,10 @@ func main() {
 	})
 
 	if err != nil {
-		log.Fatalf("error creating generator: %v", err)
+		log.Fatalf("Error creating generator: %v", err)
 	}
 
 	if err := generator.Generate(); err != nil {
-		log.Fatalf("error running generate: %v", err)
+		log.Fatalf("Error running generate: %v", err)
 	}
 }

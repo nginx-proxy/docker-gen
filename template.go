@@ -368,7 +368,8 @@ func dirList(path string) ([]string, error) {
 	names := []string{}
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
-		return names, err
+		log.Printf("Template error: %v", err)
+		return names, nil
 	}
 	for _, f := range files {
 		names = append(names, f.Name())

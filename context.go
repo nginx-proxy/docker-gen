@@ -78,6 +78,7 @@ type Volume struct {
 }
 
 type State struct {
+	Killing bool
 	Running bool
 }
 

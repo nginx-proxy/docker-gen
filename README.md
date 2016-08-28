@@ -423,7 +423,7 @@ $ docker-gen -watch -notify "restart fluentd" templates/fluentd.tmpl /etc/fluent
 #### Service Discovery in Etcd
 
 
-This template is an example of generating a script that is then executed.  This tempalte generates
+This template is an example of generating a script that is then executed.  This template generates
 a python script that is then executed which register containers in Etcd using it's HTTP API.
 
 ```

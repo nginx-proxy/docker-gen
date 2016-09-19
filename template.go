@@ -247,6 +247,16 @@ func hasSuffix(suffix, s string) bool {
 	return strings.HasSuffix(s, suffix)
 }
 
+// minus subtracts 2 ints
+func minus(a, b int) int {
+	return a - b
+}
+
+// plus adds 2 ints
+func plus(a, b int) int {
+	return a + b
+}
+
 func keys(input interface{}) (interface{}, error) {
 	if input == nil {
 		return nil, nil
@@ -430,9 +440,11 @@ func newTemplate(name string) *template.Template {
 		"intersect":              intersect,
 		"keys":                   keys,
 		"last":                   arrayLast,
+		"minus":                  minus,
 		"replace":                strings.Replace,
 		"parseBool":              strconv.ParseBool,
 		"parseJson":              unmarshalJson,
+		"plus":                   plus,
 		"queryEscape":            url.QueryEscape,
 		"sha1":                   hashSha1,
 		"split":                  strings.Split,

@@ -588,6 +588,18 @@ func TestWhereLabelValueMatches(t *testing.T) {
 	tests.run(t, "whereLabelValueMatches")
 }
 
+func TestPlus(t *testing.T) {
+	if plus(23, 14) != 37 {
+		t.Fatalf("expected plus to work")
+	}
+}
+
+func TestMinus(t *testing.T) {
+	if minus(23, 14) != 9 {
+		t.Fatalf("expected minus to work")
+	}
+}
+
 func TestHasPrefix(t *testing.T) {
 	const prefix = "tcp://"
 	const str = "tcp://127.0.0.1:2375"

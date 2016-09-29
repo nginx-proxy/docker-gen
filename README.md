@@ -95,7 +95,7 @@ Options:
       run command after template is regenerated (e.g restart xyz)
   -notify-output
       log the output(stdout/stderr) of notify command
-  -notify-sighup docker kill -s HUP container-ID
+  -notify-sighup container-ID
       send HUP signal to container.  Equivalent to docker kill -s HUP container-ID
   -only-exposed
       only include containers with exposed ports

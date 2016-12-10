@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"unicode"
+	"log"
 )
 
 func GetEndpoint(endpoint string) (string, error) {
@@ -18,9 +19,14 @@ func GetEndpoint(endpoint string) (string, error) {
 		defaultEndpoint = endpoint
 	}
 
-	_, _, err := parseHost(defaultEndpoint)
-	if err != nil {
-		return "", err
+	for _, addr := range strings.Split(defaultEndpoint, ",") {
+		_, _, err := parseHost(defaultEndpoint)
+		if err != nil {
+			return "", err
+		}
+
+		log.Printf("Found endpoint: %s\n", addr)
+		return addr, nil
 	}
 
 	return defaultEndpoint, nil

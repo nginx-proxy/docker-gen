@@ -3,6 +3,10 @@ MAINTAINER Grant Millar <grant@cylo.io>
 
 RUN apk -U add openssl
 
-COPY dist/alpine-linux/amd64/docker-gen /usr/local/bin/
+ENV VERSION 0.7.3-7-gb4af6d8
+ENV DOWNLOAD_URL https://github.com/rid/docker-gen/releases/download/$VERSION/docker-gen-alpine-linux-amd64-$VERSION.tar.gz
+ENV DOCKER_HOST unix:///tmp/docker.sock
+
+RUN wget -qO- $DOWNLOAD_URL | tar xvz -C /usr/local/bin
 
 ENTRYPOINT ["/usr/local/bin/docker-gen"]

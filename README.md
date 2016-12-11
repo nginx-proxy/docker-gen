@@ -32,7 +32,7 @@ docker-gen within a container to do service registration with etcd.
 
 #### Separate Container Install
 
-It can also be run as two separate containers using the [riid/docker-gen](https://index.docker.io/u/riid/docker-gen/)
+It can also be run as two separate containers using the [riid/docker-gen-multi](https://index.docker.io/u/riid/docker-gen-multi/)
 image, together with virtually any other image.
 
 This is how you could run the official [nginx](https://registry.hub.docker.com/_/nginx/) image and

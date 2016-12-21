@@ -510,7 +510,7 @@ func GenerateFile(config Config, containers Context) bool {
 
 		oldContents := []byte{}
 		if fi, err := os.Stat(config.Dest); err == nil {
-			if err := dest.Chmod(fi.Mode()); err != nil {
+			if err := dest.Chmod(0644); err != nil {
 				log.Fatalf("Unable to chmod temp file: %s\n", err)
 			}
 			if err := dest.Chown(int(fi.Sys().(*syscall.Stat_t).Uid), int(fi.Sys().(*syscall.Stat_t).Gid)); err != nil {

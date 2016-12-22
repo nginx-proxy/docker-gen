@@ -501,7 +501,7 @@ func GenerateFile(config Config, containers Context) bool {
 			os.Remove(dest.Name())
 		}()
 		if err != nil {
-			log.Fatalf("Cnable to create temp file: %s\n", err)
+			log.Fatalf("Unable to create temp file: %s\n", err)
 		}
 
 		if n, err := dest.Write(contents); n != len(contents) || err != nil {
@@ -510,7 +510,7 @@ func GenerateFile(config Config, containers Context) bool {
 
 		oldContents := []byte{}
 		if fi, err := os.Stat(config.Dest); err == nil {
-			if err := dest.Chmod(0644); err != nil {
+			if err := dest.Chmod(fi.Mode()); err != nil {
 				log.Fatalf("Unable to chmod temp file: %s\n", err)
 			}
 			if err := dest.Chown(int(fi.Sys().(*syscall.Stat_t).Uid), int(fi.Sys().(*syscall.Stat_t).Gid)); err != nil {
@@ -526,6 +526,9 @@ func GenerateFile(config Config, containers Context) bool {
 			err = os.Rename(dest.Name(), config.Dest)
 			if err != nil {
 				log.Fatalf("Unable to create dest file %s: %s\n", config.Dest, err)
+			}
+			if err := os.Chmod(config.Dest, 0644); err != nil {
+				log.Fatalf("Unable to chmod dest file: %s\n", err)
 			}
 			log.Printf("Generated '%s' from %d containers", config.Dest, len(filteredContainers))
 			return true

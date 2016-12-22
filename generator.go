@@ -114,6 +114,7 @@ func (g *generator) generateFromSignals() {
 			switch sig {
 			case syscall.SIGHUP:
 				g.generateFromContainers()
+				g.sendSignalToContainer(g.Configs.Config[0])
 			case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
 				// exit when context is done
 				return

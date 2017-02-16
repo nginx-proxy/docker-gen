@@ -9,4 +9,5 @@ ENV DOCKER_HOST unix:///tmp/docker.sock
 
 RUN wget -qO- $DOWNLOAD_URL | tar xvz -C /usr/local/bin
 
-ENTRYPOINT ["/usr/local/bin/docker-gen"]
+COPY docker-entrypoint.sh /usr/local/bin/
+ENTRYPOINT ["docker-entrypoint.sh"]

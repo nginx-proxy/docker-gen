@@ -18,6 +18,20 @@ func stripPrefix(s, prefix string) string {
 	return path
 }
 
+func joinDots(parts []string) (string, []string) {
+	part := parts[0]
+	parts = parts[1:]
+	for {
+		if part[len(part)-1] == '\\' && len(parts) > 0 {
+			part = part[0:len(part)-1] + "." + parts[0]
+			parts = parts[1:]
+			continue
+		}
+		break
+	}
+	return part, parts
+}
+
 func deepGet(item interface{}, path string) interface{} {
 	if path == "" {
 		return item
@@ -28,16 +42,17 @@ func deepGet(item interface{}, path string) interface{} {
 	itemValue := reflect.ValueOf(item)
 
 	if len(parts) > 0 {
+		part, parts := joinDots(parts)
 		switch itemValue.Kind() {
 		case reflect.Struct:
-			fieldValue := itemValue.FieldByName(parts[0])
+			fieldValue := itemValue.FieldByName(part)
 			if fieldValue.IsValid() {
-				return deepGet(fieldValue.Interface(), strings.Join(parts[1:], "."))
+				return deepGet(fieldValue.Interface(), strings.Join(parts, "."))
 			}
 		case reflect.Map:
-			mapValue := itemValue.MapIndex(reflect.ValueOf(parts[0]))
+			mapValue := itemValue.MapIndex(reflect.ValueOf(part))
 			if mapValue.IsValid() {
-				return deepGet(mapValue.Interface(), strings.Join(parts[1:], "."))
+				return deepGet(mapValue.Interface(), strings.Join(parts, "."))
 			}
 		default:
 			log.Printf("Can't group by %s (value %v, kind %s)\n", path, itemValue, itemValue.Kind())

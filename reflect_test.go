@@ -59,3 +59,37 @@ func TestDeepGetMap(t *testing.T) {
 		t.Errorf("expected: %s. got: %s", "value", value)
 	}
 }
+
+func TestDeepGetMapWithDots(t *testing.T) {
+	item := RuntimeContainer{
+		Labels: map[string]string{
+			"some.dot.value": "value",
+		},
+	}
+	value := deepGet(item, "Labels.some\\.dot\\.value")
+	if _, ok := value.(string); !ok {
+		t.Errorf("expected: %#v. got: %#v", "value", value)
+	}
+
+	if value != "value" {
+		t.Errorf("expected: %s. got: %s", "value", value)
+	}
+}
+
+func TestDeepGetMapWithDotsThenMore(t *testing.T) {
+	item := RuntimeContainer{
+		Volumes: map[string]Volume{
+			"some.dot.value": Volume{
+				Path: "value",
+			},
+		},
+	}
+	value := deepGet(item, "Volumes.some\\.dot\\.value.Path")
+	if _, ok := value.(string); !ok {
+		t.Errorf("expected: %#v. got: %#v", "value", value)
+	}
+
+	if value != "value" {
+		t.Errorf("expected: %s. got: %s", "value", value)
+	}
+}

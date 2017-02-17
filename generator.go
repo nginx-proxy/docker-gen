@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fsouza/go-dockerclient"
 	"github.com/docker/docker/api/types/swarm"
+	"github.com/fsouza/go-dockerclient"
 	"strconv"
 )
 
@@ -385,7 +385,7 @@ type TextError struct {
 	msg string
 }
 
-func NewImagesCache(client *docker.Client) (*ImagesCache) {
+func NewImagesCache(client *docker.Client) *ImagesCache {
 	ret := &ImagesCache{
 		cache: make(map[string]*docker.Image),
 	}
@@ -502,7 +502,7 @@ func (g *generator) getContainersFromSwarm() ([]*RuntimeContainer, error) {
 				netLen, _ = strconv.Atoi(ip[strings.Index(ip, "/")+1:])
 				ip = ip[:strings.Index(ip, "/")]
 			}
-			var config swarm.IPAMConfig;
+			var config swarm.IPAMConfig
 			if len(net.Network.IPAMOptions.Configs) > 0 {
 				config = net.Network.IPAMOptions.Configs[0]
 			}

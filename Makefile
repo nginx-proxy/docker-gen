@@ -50,4 +50,5 @@ check-gofmt:
 	fi
 
 test:
+    go get -t
 	go test

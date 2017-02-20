@@ -117,6 +117,8 @@ Options:
       watch for container changes
   -wait
       minimum (and/or maximum) duration to wait after each container change before triggering
+  -swarm
+      extract container information from tasks not containers. When endpoint points to swarm manager it will list all containers in whole swarm, not only running on node pointed by endpoint
 
 Arguments:
   template - path to a template to generate

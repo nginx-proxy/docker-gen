@@ -11,7 +11,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/docker/docker/api/types/swarm"
 	"github.com/fsouza/go-dockerclient"
+	"strconv"
 )
 
 type generator struct {
@@ -24,6 +26,7 @@ type generator struct {
 
 	wg    sync.WaitGroup
 	retry bool
+	Swarm bool
 }
 
 type GeneratorConfig struct {
@@ -35,7 +38,14 @@ type GeneratorConfig struct {
 	TLSVerify bool
 	All       bool
 
+	Swarm      bool
 	ConfigFile ConfigFile
+}
+
+type SwarmInfo struct {
+	Name string
+	Body string
+	Time int64
 }
 
 func NewGenerator(gc GeneratorConfig) (*generator, error) {
@@ -67,6 +77,7 @@ func NewGenerator(gc GeneratorConfig) (*generator, error) {
 		All:       gc.All,
 		Configs:   gc.ConfigFile,
 		retry:     true,
+		Swarm:     gc.Swarm,
 	}, nil
 }
 
@@ -341,6 +352,14 @@ func (g *generator) sendSignalToContainer(config Config) {
 	}
 }
 
+type Cluster struct {
+	ID string
+}
+
+type Swarm struct {
+	Cluster Cluster
+}
+
 func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 	apiInfo, err := g.Client.Info()
 	if err != nil {
@@ -348,7 +367,215 @@ func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 	} else {
 		SetServerInfo(apiInfo)
 	}
+	if g.Swarm && apiInfo.Swarm.Cluster.ID != "" {
+		return g.getContainersFromSwarm()
+	} else {
+		return g.getContainersFromLocalDocker()
+	}
 
+}
+
+type ImagesCache struct {
+	cache map[string]*docker.Image
+}
+
+func (e TextError) Error() string { return e.msg }
+
+type TextError struct {
+	msg string
+}
+
+func NewImagesCache(client *docker.Client) *ImagesCache {
+	ret := &ImagesCache{
+		cache: make(map[string]*docker.Image),
+	}
+	images, error := client.ListImages(docker.ListImagesOptions{
+		Digests: true,
+	})
+	if error != nil {
+		log.Println("Error ListImages .")
+	} else {
+		for _, img := range images {
+			inspectedImage, err := client.InspectImage(img.ID)
+			if err == nil {
+				for _, dig := range inspectedImage.RepoDigests {
+					ID := dig[strings.Index(dig, "@")+1:]
+					ret.cache[ID] = inspectedImage
+				}
+			}
+		}
+	}
+	return ret
+}
+
+func (ic *ImagesCache) getImage(client *docker.Client, imageDigest string) (*docker.Image, error) {
+	ID := imageDigest[strings.Index(imageDigest, "@")+1:]
+	i := ic.cache[ID]
+	if i == nil {
+		return nil, TextError{"Unable to find image of given digest"}
+	} else {
+		return i, nil
+	}
+
+}
+
+func (g *generator) getContainersFromSwarm() ([]*RuntimeContainer, error) {
+	tasks, err := g.Client.ListTasks(docker.ListTasksOptions{})
+	imageCache := NewImagesCache(g.Client)
+	if err != nil {
+		return nil, err
+	}
+	containers := []*RuntimeContainer{}
+	for _, task := range tasks {
+		container, err := g.Client.InspectTask(task.ID)
+		if err != nil {
+			log.Printf("Error inspecting task: %s: %s\n", task.ID, err)
+			continue
+		}
+		service, err := g.Client.InspectService(container.ServiceID)
+		if err != nil {
+			log.Printf("Error inspecting service: %s: %s\n", container.ServiceID, err)
+			continue
+		}
+		node, err := g.Client.InspectNode(container.NodeID)
+		if err != nil {
+			log.Printf("Error inspecting Node: %s: %s\n", container.NodeID, err)
+			continue
+		}
+		registry, repository, tag := splitDockerImage(container.Spec.ContainerSpec.Image)
+		runtimeContainer := &RuntimeContainer{
+			ID: container.Status.ContainerStatus.ContainerID,
+			Image: DockerImage{
+				Registry:   registry,
+				Repository: repository,
+				Tag:        tag,
+			},
+			State: State{
+				Running: container.Status.State == swarm.TaskStateRunning,
+			},
+			Name:      strings.TrimLeft(container.Name, "/"),
+			Hostname:  container.Spec.ContainerSpec.Hostname,
+			Addresses: []Address{},
+			Networks:  []Network{},
+			Env:       make(map[string]string),
+			Volumes:   make(map[string]Volume),
+			Node: SwarmNode{
+				ID:   container.NodeID,
+				Name: node.Spec.Name,
+				Address: Address{
+					HostIP: node.Status.Addr,
+					IP:     node.Status.Addr,
+				},
+			},
+			Labels:       make(map[string]string),
+			Gateway:      "",
+			IP:           "",
+			IP6LinkLocal: "",
+			IP6Global:    "",
+		}
+		for _, net := range container.NetworksAttachments {
+			ingressNet := net.Network.Spec.Name == "ingres"
+			for _, addr := range net.Addresses {
+				addressNoNet := addr[:strings.Index(addr, "/")]
+				for _, port := range service.Spec.EndpointSpec.Ports {
+					var exposedPort string
+					if ingressNet {
+						exposedPort = fmt.Sprint(port.PublishedPort)
+					} else {
+						exposedPort = fmt.Sprint(port.TargetPort)
+					}
+					address := Address{
+						IP:       addressNoNet,
+						Port:     exposedPort,
+						HostPort: fmt.Sprint(port.TargetPort),
+						Proto:    string(port.Protocol),
+					}
+					runtimeContainer.Addresses = append(runtimeContainer.Addresses,
+						address)
+				}
+			}
+
+			ip := ""
+			netLen := 0
+			if len(net.Addresses) > 0 {
+				ip = net.Addresses[0]
+				netLen, _ = strconv.Atoi(ip[strings.Index(ip, "/")+1:])
+				ip = ip[:strings.Index(ip, "/")]
+			}
+			var config swarm.IPAMConfig
+			if len(net.Network.IPAMOptions.Configs) > 0 {
+				config = net.Network.IPAMOptions.Configs[0]
+			}
+
+			network := Network{
+				IP:                  ip,
+				Name:                net.Network.Spec.Name,
+				Gateway:             config.Gateway,
+				EndpointID:          "",
+				IPv6Gateway:         "",
+				GlobalIPv6Address:   "",
+				MacAddress:          "",
+				GlobalIPv6PrefixLen: 0,
+				IPPrefixLen:         netLen,
+			}
+
+			runtimeContainer.Networks = append(runtimeContainer.Networks,
+				network)
+		}
+		if len(runtimeContainer.Addresses) == 0 {
+			//we havent found any ports so we look them in image
+			image, err := imageCache.getImage(g.Client, container.Spec.ContainerSpec.Image)
+			if err == nil && len(image.Config.ExposedPorts) > 0 {
+				for _, net := range container.NetworksAttachments {
+					ingressNet := net.Network.Spec.Name == "ingres"
+					if ingressNet {
+						continue
+					}
+
+					for _, addr := range net.Addresses {
+						addressNoNet := addr[:strings.Index(addr, "/")]
+						for k := range image.Config.ExposedPorts {
+							address := Address{
+								IP:       addressNoNet,
+								Port:     k.Port(),
+								HostPort: k.Port(),
+								Proto:    k.Proto(),
+							}
+							runtimeContainer.Addresses = append(runtimeContainer.Addresses,
+								address)
+						}
+					}
+				}
+			}
+
+		}
+		for _, v := range container.Spec.ContainerSpec.Mounts {
+			mode := ""
+			if v.TmpfsOptions != nil {
+				mode = v.TmpfsOptions.Mode.String()
+			}
+			driver := ""
+			if v.VolumeOptions != nil && v.VolumeOptions.DriverConfig != nil {
+				driver = v.VolumeOptions.DriverConfig.Name
+			}
+			runtimeContainer.Mounts = append(runtimeContainer.Mounts, Mount{
+				Name:        "",
+				Source:      v.Source,
+				Destination: v.Target,
+				Driver:      driver,
+				Mode:        mode,
+				RW:          !v.ReadOnly,
+			})
+		}
+
+		runtimeContainer.Env = splitKeyValueSlice(container.Spec.ContainerSpec.Env)
+		runtimeContainer.Labels = container.Spec.ContainerSpec.Labels
+		containers = append(containers, runtimeContainer)
+	}
+	return containers, nil
+}
+
+func (g *generator) getContainersFromLocalDocker() ([]*RuntimeContainer, error) {
 	apiContainers, err := g.Client.ListContainers(docker.ListContainersOptions{
 		All:  g.All,
 		Size: false,
@@ -452,7 +679,6 @@ func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 		containers = append(containers, runtimeContainer)
 	}
 	return containers, nil
-
 }
 
 func newSignalChannel() <-chan os.Signal {

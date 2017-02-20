@@ -444,7 +444,7 @@ func (g *generator) getContainersFromSwarm() ([]*RuntimeContainer, error) {
 		}
 		registry, repository, tag := splitDockerImage(container.Spec.ContainerSpec.Image)
 		runtimeContainer := &RuntimeContainer{
-			ID: container.ID,
+			ID: container.Status.ContainerStatus.ContainerID,
 			Image: DockerImage{
 				Registry:   registry,
 				Repository: repository,

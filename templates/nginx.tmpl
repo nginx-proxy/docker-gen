@@ -42,6 +42,12 @@ upstream {{ $host }} {
 {{ end }}
 }
 
+# strip www from any host names which begin with it
+server {                                                                                                                                                
+    server_name www.{{ $host }};                                                                                                                        
+    return 301 $scheme://{{ $host }}$request_uri;                                                                                                       
+}
+
 server {
 	gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
 

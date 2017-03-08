@@ -373,6 +373,10 @@ func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 		apiInfo, err := client.Info()
 		if err != nil {
 			log.Printf("Error retrieving docker server info: %s\n", err)
+			// We should exit here as if docker is down the socket will be recreated when it comes back up
+			// therefore restart of docker-gen is needed
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+			os.Exit(1)
 		} else {
 			SetServerInfo(apiInfo)
 		}

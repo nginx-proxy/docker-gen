@@ -88,6 +88,7 @@ type RuntimeContainer struct {
 	Gateway      string
 	Name         string
 	Hostname     string
+	HostnameFull string
 	Image        DockerImage
 	Env          map[string]string
 	Volumes      map[string]Volume

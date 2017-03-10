@@ -378,6 +378,7 @@ func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 			},
 			Name:         strings.TrimLeft(container.Name, "/"),
 			Hostname:     container.Config.Hostname,
+			HostnameFull: container.Config.Hostname + "." + container.Config.Domainname,
 			Gateway:      container.NetworkSettings.Gateway,
 			Addresses:    []Address{},
 			Networks:     []Network{},

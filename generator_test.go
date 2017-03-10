@@ -73,6 +73,7 @@ func TestGenerateFromEvents(t *testing.T) {
 			Args:    []string{},
 			Config: &docker.Config{
 				Hostname:     "docker-gen",
+				Domainname:   "tld",
 				AttachStdout: true,
 				AttachStderr: true,
 				Env:          []string{fmt.Sprintf("COUNTER=%d", counter)},

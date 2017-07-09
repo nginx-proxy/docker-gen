@@ -127,6 +127,7 @@ func (g *generator) generateFromContainers() {
 		}
 		g.runNotifyCmd(config)
 		g.sendSignalToContainer(config)
+		g.sendSignalToService(config)
 	}
 }
 
@@ -156,6 +157,7 @@ func (g *generator) generateAtInterval() {
 					GenerateFile(config, containers)
 					g.runNotifyCmd(config)
 					g.sendSignalToContainer(config)
+					g.sendSignalToService(config)
 				case sig := <-sigChan:
 					log.Printf("Received signal: %s\n", sig)
 					switch sig {
@@ -204,6 +206,7 @@ func (g *generator) generateFromEvents() {
 				}
 				g.runNotifyCmd(config)
 				g.sendSignalToContainer(config)
+				g.sendSignalToService(config)
 			}
 		}(config, make(chan *docker.APIEvents, 100))
 	}
@@ -337,6 +340,37 @@ func (g *generator) sendSignalToContainer(config Config) {
 		}
 		if err := g.Client.KillContainer(killOpts); err != nil {
 			log.Printf("Error sending signal to container: %s", err)
+		}
+	}
+}
+
+func (g *generator) sendSignalToService(config Config) {
+	if len(config.NotifyServices) < 1 {
+		return
+	}
+
+	for service, signal := range config.NotifyServices {
+		log.Printf("Service '%s' needs notification", service)
+		taskOpts := docker.ListTasksOptions{
+			Filters: map[string][]string{
+				"service": []string{service},
+			},
+		}
+		tasks, err := g.Client.ListTasks(taskOpts)
+		if err != nil {
+			log.Printf("Error retrieving task list: %s", err)
+		}
+		for _, task := range tasks {
+			container := task.Status.ContainerStatus.ContainerID
+
+			log.Printf("Sending container '%s' signal '%v'", container, signal)
+			killOpts := docker.KillContainerOptions{
+				ID:     container,
+				Signal: signal,
+			}
+			if err := g.Client.KillContainer(killOpts); err != nil {
+				log.Printf("Error sending signal to container: %s", err)
+			}
 		}
 	}
 }

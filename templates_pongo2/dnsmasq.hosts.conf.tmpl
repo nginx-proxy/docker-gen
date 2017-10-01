@@ -1,0 +1,8 @@
+{% set domain = "docker.company.com" %}
+{% for container in containers %}
+# {{ container.Name }} ({{ container.ID }} from {{ container.Image.Repository }})
+{{ container.IP }}   {{ container.Name }}.{{ domain }}
+{% if container.IP6Global %}
+{{ container.IP6Global }}    {{ container.Name }}.{{ domain }}
+{% endif %}
+{% endfor %}

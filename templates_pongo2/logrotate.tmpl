@@ -1,0 +1,27 @@
+{% for container in containers %}
+{% set logs = container.Env.LOG_FILES %}
+{% if logs %}
+{% for logfile in split(logs, ",") %}
+/var/lib/docker/containers/{{ container.ID }}/root{{ logfile }}{% endfor %}
+{
+    daily
+    missingok
+    rotate 52
+    compress
+    delaycompress
+    notifempty
+    create 644 root root
+}
+{% endif %}
+/var/lib/docker/containers/{{ container.ID }}/{{ container.ID }}-json.log
+{
+    daily
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    create 644 root root
+}
+{% endfor %}
+

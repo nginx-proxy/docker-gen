@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Genenerated by {{ env.USER }}
+# Docker Version {{ docker.Version }}
+
+{% for container in containers %}
+{% if container.Addresses|length > 0 %}
+{% with address = container.Addresses.0 %}
+# {{ container.Name }}
+curl -XPUT -q -d value="{{ address.IP }}:{{ address.Port }}" -d ttl=15 http://127.0.0.1:4001/v2/keys/backends/{{ container.Image.Repository }}/{{ printf("%.*s", 12, container.ID) }}
+{% endwith %}
+{% endif %}
+{% endfor %}

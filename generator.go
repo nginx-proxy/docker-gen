@@ -343,15 +343,12 @@ func (g *generator) sendSignalToContainer(config Config) {
 }
 
 func (g *generator) sendRestartToContainer(config Config) {
-	if len(config.RestartContainers) < 1 {
+	if config.RestartContainers == "" {
 		return
 	}
-
-	for container := range config.RestartContainers {
-		log.Printf("Restarting container '%s'", container)
-		if err := g.Client.RestartContainer(container.ID, 10); err != nil {
-			log.Printf("Error sending restart to container: %s", err)
-		}
+	log.Printf("Restarting container '%s'", container)
+	if err := g.Client.RestartContainer(container, 10); err != nil {
+		log.Printf("Error sending restart to container: %s", err)
 	}
 }
 

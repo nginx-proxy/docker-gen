@@ -349,7 +349,7 @@ func (g *generator) sendRestartToContainer(config Config) {
 
 	for container := range config.RestartContainers {
 		log.Printf("Restarting container '%s'", container)
-		if err := g.Client.RestartContainer(container, 10); err != nil {
+		if err := g.Client.RestartContainer(container.ID, 10); err != nil {
 			log.Printf("Error sending restart to container: %s", err)
 		}
 	}

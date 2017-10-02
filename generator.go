@@ -347,12 +347,8 @@ func (g *generator) sendRestartToContainer(config Config) {
 		return
 	}
 
-	for container, signal := range config.RestartContainers {
+	for container := range config.RestartContainers {
 		log.Printf("Restarting container '%s'", container)
-		killOpts := docker.KillContainerOptions{
-			ID:     container,
-			Signal: signal,
-		}
 		if err := g.Client.RestartContainer(container, 10); err != nil {
 			log.Printf("Error sending restart to container: %s", err)
 		}

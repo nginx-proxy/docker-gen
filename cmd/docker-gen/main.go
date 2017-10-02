@@ -146,7 +146,7 @@ func main() {
 			NotifyCmd:        notifyCmd,
 			NotifyOutput:     notifyOutput,
 			NotifyContainers: make(map[string]docker.Signal),
-			RestartContainers: make([]string),
+			RestartContainers: notifyRestartContainerID,
 			OnlyExposed:      onlyExposed,
 			OnlyPublished:    onlyPublished,
 			IncludeStopped:   includeStopped,

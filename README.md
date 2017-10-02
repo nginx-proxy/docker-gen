@@ -97,6 +97,8 @@ Options:
       log the output(stdout/stderr) of notify command
   -notify-sighup docker kill -s HUP container-ID
       send HUP signal to container. Equivalent to docker kill -s HUP container-ID
+  -notify-restart docker restart container-ID
+      restart a container. Equivalent to docker restart container-ID
   -only-exposed
       only include containers with exposed ports
   -only-published

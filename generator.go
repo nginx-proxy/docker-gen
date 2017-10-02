@@ -325,6 +325,7 @@ func (g *generator) runNotifyCmd(config Config) {
 }
 
 func (g *generator) sendSignalToContainer(config Config) {
+	g.sendRestartToContainer(config)
 	if len(config.NotifyContainers) < 1 {
 		return
 	}
@@ -337,6 +338,23 @@ func (g *generator) sendSignalToContainer(config Config) {
 		}
 		if err := g.Client.KillContainer(killOpts); err != nil {
 			log.Printf("Error sending signal to container: %s", err)
+		}
+	}
+}
+
+func (g *generator) sendRestartToContainer(config Config) {
+	if len(config.RestartContainers) < 1 {
+		return
+	}
+
+	for container, signal := range config.RestartContainers {
+		log.Printf("Restarting container '%s'", container)
+		killOpts := docker.KillContainerOptions{
+			ID:     container,
+			Signal: signal,
+		}
+		if err := g.Client.RestartContainer(container, 10); err != nil {
+			log.Printf("Error sending restart to container: %s", err)
 		}
 	}
 }

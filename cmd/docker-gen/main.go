@@ -16,27 +16,28 @@ import (
 type stringslice []string
 
 var (
-	buildVersion            string
-	version                 bool
-	watch                   bool
-	wait                    string
-	notifyCmd               string
-	notifyOutput            bool
-	notifySigHUPContainerID string
-	onlyExposed             bool
-	onlyPublished           bool
-	includeStopped          bool
-	configFiles             stringslice
-	configs                 dockergen.ConfigFile
-	interval                int
-	keepBlankLines          bool
-	endpoint                string
-	tlsCert                 string
-	tlsKey                  string
-	tlsCaCert               string
-	tlsVerify               bool
-	tlsCertPath             string
-	wg                      sync.WaitGroup
+	buildVersion             string
+	version                  bool
+	watch                    bool
+	wait                     string
+	notifyCmd                string
+	notifyOutput             bool
+	notifySigHUPContainerID  string
+	notifyRestartContainerID string
+	onlyExposed              bool
+	onlyPublished            bool
+	includeStopped           bool
+	configFiles              stringslice
+	configs                  dockergen.ConfigFile
+	interval                 int
+	keepBlankLines           bool
+	endpoint                 string
+	tlsCert                  string
+	tlsKey                   string
+	tlsCaCert                string
+	tlsVerify                bool
+	tlsCertPath              string
+	wg                       sync.WaitGroup
 )
 
 func (strings *stringslice) String() string {
@@ -97,6 +98,8 @@ func initFlags() {
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated (e.g `restart xyz`)")
 	flag.StringVar(&notifySigHUPContainerID, "notify-sighup", "",
 		"send HUP signal to container.  Equivalent to `docker kill -s HUP container-ID`")
+	flag.StringVar(&notifyRestartContainerID, "notify-restart", "",
+		"send restart signal to a container.  Equivalent to `docker restart container-ID`")
 	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (secs)")
 	flag.BoolVar(&keepBlankLines, "keep-blank-lines", false, "keep blank lines in the output file")
@@ -143,6 +146,7 @@ func main() {
 			NotifyCmd:        notifyCmd,
 			NotifyOutput:     notifyOutput,
 			NotifyContainers: make(map[string]docker.Signal),
+			RestartContainers: make([]string),
 			OnlyExposed:      onlyExposed,
 			OnlyPublished:    onlyPublished,
 			IncludeStopped:   includeStopped,

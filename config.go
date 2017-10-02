@@ -9,19 +9,19 @@ import (
 )
 
 type Config struct {
-	Template         string
-	Dest             string
-	Watch            bool
-	Wait             *Wait
-	NotifyCmd        string
-	NotifyOutput     bool
-	NotifyContainers map[string]docker.Signal
-	RestartContainers []string
-	OnlyExposed      bool
-	OnlyPublished    bool
-	IncludeStopped   bool
-	Interval         int
-	KeepBlankLines   bool
+	Template          string
+	Dest              string
+	Watch             bool
+	Wait              *Wait
+	NotifyCmd         string
+	NotifyOutput      bool
+	NotifyContainers  map[string]docker.Signal
+	RestartContainers string
+	OnlyExposed       bool
+	OnlyPublished     bool
+	IncludeStopped    bool
+	Interval          int
+	KeepBlankLines    bool
 }
 
 type ConfigFile struct {

@@ -16,10 +16,19 @@ import (
 	dockertest "github.com/fsouza/go-dockerclient/testing"
 )
 
-func TestGenerateFromEvents(t *testing.T) {
+var (
+	client                 *docker.Client
+	server                 *dockertest.DockerServer
+	containerID, serverURL string
+	err                    error
+	counter                int
+	destFiles              []*os.File
+)
+
+func setup() {
 	log.SetOutput(ioutil.Discard)
-	containerID := "8dfafdbc3a40"
-	counter := 0
+	containerID = "8dfafdbc3a40"
+	counter = 0
 
 	eventsResponse := `
 {"status":"start","id":"8dfafdbc3a40","from":"base:latest","time":1374067924}
@@ -29,7 +38,7 @@ func TestGenerateFromEvents(t *testing.T) {
 	infoResponse := `{"Containers":1,"Images":1,"Debug":0,"NFd":11,"NGoroutines":21,"MemoryLimit":1,"SwapLimit":0}`
 	versionResponse := `{"Version":"1.8.0","Os":"Linux","KernelVersion":"3.18.5-tinycore64","GoVersion":"go1.4.1","GitCommit":"a8a31ef","Arch":"amd64","ApiVersion":"1.19"}`
 
-	server, _ := dockertest.NewServer("127.0.0.1:0", nil, nil)
+	server, _ = dockertest.NewServer("127.0.0.1:0", nil, nil)
 	server.CustomHandler("/events", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rsc := bufio.NewScanner(strings.NewReader(eventsResponse))
 		for rsc.Scan() {
@@ -63,8 +72,15 @@ func TestGenerateFromEvents(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(result)
 	}))
+	serverURL = fmt.Sprintf("tcp://%s", strings.TrimRight(strings.TrimPrefix(server.URL(), "http://"), "/"))
+}
+
+func setupContainerJsonResponse(envVars []string) {
 	server.CustomHandler(fmt.Sprintf("/containers/%s/json", containerID), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		counter++
+		var containerEnvVars []string
+		copy(containerEnvVars, envVars)
+		containerEnvVars = append([]string{fmt.Sprintf("COUNTER=%d", counter)}, envVars...)
 		container := docker.Container{
 			Name:    "docker-gen-test",
 			ID:      containerID,
@@ -75,7 +91,7 @@ func TestGenerateFromEvents(t *testing.T) {
 				Hostname:     "docker-gen",
 				AttachStdout: true,
 				AttachStderr: true,
-				Env:          []string{fmt.Sprintf("COUNTER=%d", counter)},
+				Env:          containerEnvVars,
 				Cmd:          []string{"/bin/sh"},
 				Image:        "base:latest",
 			},
@@ -100,9 +116,13 @@ func TestGenerateFromEvents(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(container)
 	}))
+}
 
-	serverURL := fmt.Sprintf("tcp://%s", strings.TrimRight(strings.TrimPrefix(server.URL(), "http://"), "/"))
-	client, err := NewDockerClient(serverURL, false, "", "", "")
+func TestGenerateFromEvents(t *testing.T) {
+	setup()
+	setupContainerJsonResponse([]string{})
+
+	client, err = NewDockerClient(serverURL, false, "", "", "")
 	if err != nil {
 		t.Errorf("Failed to create client: %s", err)
 	}
@@ -121,7 +141,6 @@ func TestGenerateFromEvents(t *testing.T) {
 		t.Errorf("Failed to write to temp file: %v\n", err)
 	}
 
-	var destFiles []*os.File
 	for i := 0; i < 4; i++ {
 		destFile, err := ioutil.TempFile(os.TempDir(), "docker-gen-out")
 		if err != nil {
@@ -194,6 +213,83 @@ func TestGenerateFromEvents(t *testing.T) {
 	//          ┌───╨───┐            ┌───╨──┐             ┌───╨───┐
 	//          │ start │            │ stop │             │ start │
 	//          └───────┘            └──────┘             └───────┘
+
+	expectedCounters := []int{1, 5, 6, 7}
+
+	for i, expectedCounter := range expectedCounters {
+		value, _ = ioutil.ReadFile(destFiles[i].Name())
+		expected = fmt.Sprintf("%s.%d", containerID, expectedCounter)
+		if string(value) != expected {
+			t.Errorf("expected: %s. got: %s", expected, value)
+		}
+	}
+}
+
+func TestGenerateFromEnvironmentVariableTemplate(t *testing.T) {
+	setup()
+	envVars := []string{"VIRTUAL_HOST_TEMPLATE={{range $key, $value := .}}{{$value.ID}}.{{$value.Env.COUNTER}}{{end}}"}
+	setupContainerJsonResponse(envVars)
+
+	client, err = NewDockerClient(serverURL, false, "", "", "")
+	if err != nil {
+		t.Errorf("Failed to create client: %s", err)
+	}
+	client.SkipServerVersionCheck = true
+
+	for i := 0; i < 4; i++ {
+		destFile, err := ioutil.TempFile(os.TempDir(), "docker-gen-out")
+		if err != nil {
+			t.Errorf("Failed to create temp file: %v\n", err)
+		}
+		defer func() {
+			destFile.Close()
+			os.Remove(destFile.Name())
+		}()
+		destFiles = append(destFiles, destFile)
+	}
+
+	apiVersion, err := client.Version()
+	if err != nil {
+		t.Errorf("Failed to retrieve docker server version info: %v\n", err)
+	}
+	SetDockerEnv(apiVersion) // prevents a panic
+
+	generator := &generator{
+		Client:   client,
+		Endpoint: serverURL,
+		Configs: ConfigFile{
+			[]Config{
+				Config{
+					Dest:  destFiles[0].Name(),
+					Watch: false,
+				},
+				Config{
+					Dest:  destFiles[1].Name(),
+					Watch: true,
+					Wait:  &Wait{0, 0},
+				},
+				Config{
+					Dest:  destFiles[2].Name(),
+					Watch: true,
+					Wait:  &Wait{20 * time.Millisecond, 25 * time.Millisecond},
+				},
+				Config{
+					Dest:  destFiles[3].Name(),
+					Watch: true,
+					Wait:  &Wait{25 * time.Millisecond, 100 * time.Millisecond},
+				},
+			},
+		},
+		retry: false,
+	}
+
+	generator.generateFromEvents()
+	generator.wg.Wait()
+
+	var (
+		value    []byte
+		expected string
+	)
 
 	expectedCounters := []int{1, 5, 6, 7}
 

@@ -488,6 +488,11 @@ func GenerateFile(config Config, containers Context) bool {
 
 	contents := executeTemplate(config.Template, filteredContainers)
 
+	if contents == nil {
+		// nothing to render
+		return true
+	}
+
 	if !config.KeepBlankLines {
 		buf := new(bytes.Buffer)
 		removeBlankLines(bytes.NewReader(contents), buf)
@@ -537,16 +542,83 @@ func GenerateFile(config Config, containers Context) bool {
 	return true
 }
 
-func executeTemplate(templatePath string, containers Context) []byte {
-	tmpl, err := newTemplate(filepath.Base(templatePath)).ParseFiles(templatePath)
-	if err != nil {
-		log.Fatalf("Unable to parse template: %s", err)
-	}
+func executeTemplate(fileTemplatePath string, containers Context) []byte {
+	var (
+		templateName                 string
+		tmpl                         *template.Template
+		err                          error
+		templates                    map[string]*template.Template
+		templatesContainers          map[string]Context
+		templatesNames               []string
+		currentContainerTemplateName string
+	)
 
 	buf := new(bytes.Buffer)
-	err = tmpl.ExecuteTemplate(buf, filepath.Base(templatePath), &containers)
-	if err != nil {
-		log.Fatalf("Template error: %s\n", err)
+
+	templates = make(map[string]*template.Template)
+	templatesContainers = make(map[string]Context)
+
+	// Process current container first, to maintain compatibility:
+	for index, container := range containers {
+		if container.ID == containers.Docker().CurrentContainerID {
+			containers.Swap(0, index)
+			break
+		}
+	}
+
+	for _, container := range containers {
+		enviromentVarTemplate := container.Env["VIRTUAL_HOST_TEMPLATE"]
+
+		if enviromentVarTemplate != "" {
+			templateName = hashSha1(enviromentVarTemplate)
+			log.Printf("Using template from environment variable for container %s", container.ID)
+		} else {
+			if fileTemplatePath == "" {
+				continue
+			}
+			templateName = filepath.Base(fileTemplatePath)
+		}
+
+		if _, ok := templates[templateName]; !ok {
+			if enviromentVarTemplate != "" {
+				tmpl, err = newTemplate(templateName).Parse(enviromentVarTemplate)
+			} else {
+				tmpl, err = newTemplate(templateName).ParseFiles(fileTemplatePath)
+			}
+			if err != nil {
+				log.Fatalf("Unable to parse template: %s", err)
+			}
+			templates[templateName] = tmpl
+			templateContainers := Context{}
+			templatesContainers[templateName] = templateContainers
+		}
+		templatesContainers[templateName] = append(templatesContainers[templateName], container)
+		if container.ID == containers.Docker().CurrentContainerID {
+			currentContainerTemplateName = templateName
+		}
+	}
+
+	for templateName, _ := range templates {
+		templatesNames = append(templatesNames, templateName)
+	}
+
+	// Process current container template first, to maintain compatibility:
+	for index, templateName := range templatesNames {
+		if currentContainerTemplateName == templateName {
+			templatesNames[0], templatesNames[index] = templatesNames[index], templatesNames[0]
+			break
+		}
+	}
+
+	for _, templateName := range templatesNames {
+		tmpl = templates[templateName]
+		templateContainers := templatesContainers[templateName]
+		containerBuffer := new(bytes.Buffer)
+		err = tmpl.ExecuteTemplate(containerBuffer, templateName, &templateContainers)
+		if err != nil {
+			log.Fatalf("Template error: %s\n", err)
+		}
+		buf.Write(containerBuffer.Bytes())
 	}
 	return buf.Bytes()
 }

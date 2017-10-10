@@ -1,8 +1,6 @@
-docker-gen
+docker-gen -- for multiple hosts
 =====
 
-![latest 0.7.3](https://img.shields.io/badge/latest-0.7.3-green.svg?style=flat)
-[![Build Status](https://travis-ci.org/jwilder/docker-gen.svg?branch=master)](https://travis-ci.org/jwilder/docker-gen)
 ![License MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)
 
 `docker-gen` is a file generator that renders templates using docker container meta-data.
@@ -23,22 +21,6 @@ There are three common ways to run docker-gen:
 * bundled in a container with another application
 * separate standalone containers
 
-#### Host Install
-
-Linux/OSX binaries for release [0.7.3](https://github.com/jwilder/docker-gen/releases)
-
-* [amd64](https://github.com/jwilder/docker-gen/releases/download/0.7.3/docker-gen-linux-amd64-0.7.3.tar.gz)
-* [i386](https://github.com/jwilder/docker-gen/releases/download/0.7.3/docker-gen-linux-i386-0.7.3.tar.gz)
-* [alpine-linux](https://github.com/jwilder/docker-gen/releases/download/0.7.3/docker-gen-alpine-linux-amd64-0.7.3.tar.gz)
-
-Download the version you need, untar, and install to your PATH.
-
-```
-$ wget https://github.com/jwilder/docker-gen/releases/download/0.7.3/docker-gen-linux-amd64-0.7.3.tar.gz
-$ tar xvzf docker-gen-linux-amd64-0.7.3.tar.gz
-$ ./docker-gen
-```
-
 #### Bundled Container Install
 
 Docker-gen can be bundled inside of a container along-side applications.
@@ -50,7 +32,7 @@ docker-gen within a container to do service registration with etcd.
 
 #### Separate Container Install
 
-It can also be run as two separate containers using the [jwilder/docker-gen](https://index.docker.io/u/jwilder/docker-gen/)
+It can also be run as two separate containers using the [riid/docker-gen-multi](https://index.docker.io/u/riid/docker-gen-multi/)
 image, together with virtually any other image.
 
 This is how you could run the official [nginx](https://registry.hub.docker.com/_/nginx/) image and
@@ -70,7 +52,7 @@ $ curl -o nginx.tmpl https://raw.githubusercontent.com/jwilder/docker-gen/master
 $ docker run -d --name nginx-gen --volumes-from nginx \
    -v /var/run/docker.sock:/tmp/docker.sock:ro \
    -v /tmp/templates:/etc/docker-gen/templates \
-   -t jwilder/docker-gen -notify-sighup nginx -watch -only-exposed /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
+   -t rid/docker-gen -notify-sighup nginx -watch -only-exposed /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
 ```
 
 ===
@@ -85,8 +67,8 @@ Generate files from docker container meta-data
 Options:
   -config value
       config files with template directives. Config files will be merged if this option is specified multiple times. (default [])
-  -endpoint string
-      docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock
+  -endpoints string
+      docker api endpoints comma separated (tcp|unix://..,tcp|unix://..). Default unix:///var/run/docker.sock
   -interval int
       notify command interval (secs)
   -keep-blank-lines
@@ -123,7 +105,7 @@ Arguments:
   dest - path to a write the template. If not specfied, STDOUT is used
 
 Environment Variables:
-  DOCKER_HOST - default value for -endpoint
+  DOCKER_HOST - default value for -endpoints
   DOCKER_CERT_PATH - directory path containing key.pem, cert.pm and ca.pem
   DOCKER_TLS_VERIFY - enable client TLS verification]
 ```

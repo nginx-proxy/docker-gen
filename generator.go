@@ -15,9 +15,9 @@ import (
 )
 
 type generator struct {
-	Client                     *docker.Client
+	Clients                     []*docker.Client
 	Configs                    ConfigFile
-	Endpoint                   string
+	Endpoints                   []string
 	TLSVerify                  bool
 	TLSCert, TLSCaCert, TLSKey string
 	All                        bool
@@ -27,7 +27,7 @@ type generator struct {
 }
 
 type GeneratorConfig struct {
-	Endpoint string
+	Endpoints string
 
 	TLSCert   string
 	TLSKey    string
@@ -39,27 +39,36 @@ type GeneratorConfig struct {
 }
 
 func NewGenerator(gc GeneratorConfig) (*generator, error) {
-	endpoint, err := GetEndpoint(gc.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("Bad endpoint: %s", err)
-	}
+	var apiVersion *docker.Env
+	var clients []*docker.Client
+	var endpoints []string
 
-	client, err := NewDockerClient(endpoint, gc.TLSVerify, gc.TLSCert, gc.TLSCACert, gc.TLSKey)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to create docker client: %s", err)
-	}
+	for _, oneEndpoint := range strings.Split(gc.Endpoints, ",") {
+		endpoint, err := GetEndpoint(oneEndpoint)
+		if err != nil {
+			return nil, fmt.Errorf("Bad endpoint: %s", err)
+		}
 
-	apiVersion, err := client.Version()
-	if err != nil {
-		log.Printf("Error retrieving docker server version info: %s\n", err)
+		client, err := NewDockerClient(endpoint, gc.TLSVerify, gc.TLSCert, gc.TLSCACert, gc.TLSKey)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to create docker client: %s", err)
+		}
+
+		clients = append(clients, client)
+		endpoints = append(endpoints, endpoint)
+
+		apiVersion, err = client.Version()
+		if err != nil {
+			log.Printf("Error retrieving docker server version info: %s\n", err)
+		}
 	}
 
 	// Grab the docker daemon info once and hold onto it
 	SetDockerEnv(apiVersion)
 
 	return &generator{
-		Client:    client,
-		Endpoint:  gc.Endpoint,
+		Clients:    clients,
+		Endpoints:  endpoints,
 		TLSVerify: gc.TLSVerify,
 		TLSCert:   gc.TLSCert,
 		TLSCaCert: gc.TLSCACert,
@@ -105,6 +114,7 @@ func (g *generator) generateFromSignals() {
 			switch sig {
 			case syscall.SIGHUP:
 				g.generateFromContainers()
+				g.sendSignalToContainer(g.Configs.Config[0])
 			case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
 				// exit when context is done
 				return
@@ -152,7 +162,7 @@ func (g *generator) generateAtInterval() {
 						log.Printf("Error listing containers: %s\n", err)
 						continue
 					}
-					// ignore changed return value. always run notify command
+				// ignore changed return value. always run notify command
 					GenerateFile(config, containers)
 					g.runNotifyCmd(config)
 					g.sendSignalToContainer(config)
@@ -175,7 +185,6 @@ func (g *generator) generateFromEvents() {
 		return
 	}
 
-	client := g.Client
 	var watchers []chan *docker.APIEvents
 
 	for _, config := range configs.Config {
@@ -208,96 +217,111 @@ func (g *generator) generateFromEvents() {
 		}(config, make(chan *docker.APIEvents, 100))
 	}
 
+	log.Printf("Watching %d endpoints", len(g.Clients))
+
 	// maintains docker client connection and passes events to watchers
 	go func() {
 		// channel will be closed by go-dockerclient
 		eventChan := make(chan *docker.APIEvents, 100)
 		sigChan := newSignalChannel()
 
+		// Ping each client, every 10 seconds
+		timeout := time.Duration(10 / len(g.Clients))
+
 		for {
-			watching := false
+			watching := make([]bool, len(g.Clients))
 
-			if client == nil {
-				var err error
-				endpoint, err := GetEndpoint(g.Endpoint)
-				if err != nil {
-					log.Printf("Bad endpoint: %s", err)
-					time.Sleep(10 * time.Second)
-					continue
-				}
-				client, err = NewDockerClient(endpoint, g.TLSVerify, g.TLSCert, g.TLSCaCert, g.TLSKey)
-				if err != nil {
-					log.Printf("Unable to connect to docker daemon: %s", err)
-					time.Sleep(10 * time.Second)
-					continue
-				}
-			}
-
-			for {
+			clientNum := 0
+			for _, client := range g.Clients {
+				watching[clientNum] = false
 				if client == nil {
-					break
-				}
-				if !watching {
-					err := client.AddEventListener(eventChan)
-					if err != nil && err != docker.ErrListenerAlreadyExists {
-						log.Printf("Error registering docker event listener: %s", err)
+					endpoint, err := GetEndpoint(g.Endpoints[clientNum])
+					if err != nil {
+						log.Printf("Bad endpoint: %s", err)
 						time.Sleep(10 * time.Second)
 						continue
 					}
-					watching = true
-					log.Println("Watching docker events")
-					// sync all configs after resuming listener
-					g.generateFromContainers()
+
+					client, err = NewDockerClient(endpoint, g.TLSVerify, g.TLSCert, g.TLSCaCert, g.TLSKey)
+					if err != nil {
+						log.Printf("Unable to connect to docker daemon: %s", err)
+						time.Sleep(10 * time.Second)
+						continue
+					}
 				}
-				select {
-				case event, ok := <-eventChan:
-					if !ok {
-						log.Printf("Docker daemon connection interrupted")
-						if watching {
-							client.RemoveEventListener(eventChan)
-							watching = false
-							client = nil
+				clientNum += 1
+			}
+
+			for {
+				clientNum := 0
+				for _, client := range g.Clients {
+					if client == nil {
+						break
+					}
+
+					if !watching[clientNum] {
+						err := client.AddEventListener(eventChan)
+						if err != nil && err != docker.ErrListenerAlreadyExists {
+							log.Printf("Error registering docker event listener: %s", err)
+							time.Sleep(10 * time.Second)
+							continue
 						}
-						if !g.retry {
+						watching[clientNum] = true
+						log.Println("Watching docker events")
+						// sync all configs after resuming listener
+						g.generateFromContainers()
+					}
+					select {
+					case event, ok := <-eventChan:
+						if !ok {
+							log.Printf("Docker daemon connection interrupted")
+							if watching[clientNum] {
+								client.RemoveEventListener(eventChan)
+								watching[clientNum] = false
+								client = nil
+							}
+							if !g.retry {
+								// close all watchers and exit
+								for _, watcher := range watchers {
+									close(watcher)
+								}
+								return
+							}
+							// recreate channel and attempt to resume
+							eventChan = make(chan *docker.APIEvents, 100)
+							time.Sleep(10 * time.Second)
+							break
+						}
+						if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
+							log.Printf("Received event %s for container %s", event.Status, event.ID[:12])
+							// fanout event to all watchers
+							for _, watcher := range watchers {
+								watcher <- event
+							}
+						}
+					case <-time.After(timeout * time.Second):
+					// check for docker liveness
+						err := client.Ping()
+						if err != nil {
+							log.Printf("Unable to ping docker daemon: %s", err)
+							if watching[clientNum] {
+								client.RemoveEventListener(eventChan)
+								watching[clientNum] = false
+								client = nil
+							}
+						}
+					case sig := <-sigChan:
+						log.Printf("Received signal: %s\n", sig)
+						switch sig {
+						case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
 							// close all watchers and exit
 							for _, watcher := range watchers {
 								close(watcher)
 							}
 							return
 						}
-						// recreate channel and attempt to resume
-						eventChan = make(chan *docker.APIEvents, 100)
-						time.Sleep(10 * time.Second)
-						break
 					}
-					if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
-						log.Printf("Received event %s for container %s", event.Status, event.ID[:12])
-						// fanout event to all watchers
-						for _, watcher := range watchers {
-							watcher <- event
-						}
-					}
-				case <-time.After(10 * time.Second):
-					// check for docker liveness
-					err := client.Ping()
-					if err != nil {
-						log.Printf("Unable to ping docker daemon: %s", err)
-						if watching {
-							client.RemoveEventListener(eventChan)
-							watching = false
-							client = nil
-						}
-					}
-				case sig := <-sigChan:
-					log.Printf("Received signal: %s\n", sig)
-					switch sig {
-					case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
-						// close all watchers and exit
-						for _, watcher := range watchers {
-							close(watcher)
-						}
-						return
-					}
+					clientNum += 1
 				}
 			}
 		}
@@ -335,121 +359,129 @@ func (g *generator) sendSignalToContainer(config Config) {
 			ID:     container,
 			Signal: signal,
 		}
-		if err := g.Client.KillContainer(killOpts); err != nil {
+		if err := g.Clients[0].KillContainer(killOpts); err != nil {
 			log.Printf("Error sending signal to container: %s", err)
 		}
 	}
 }
 
 func (g *generator) getContainers() ([]*RuntimeContainer, error) {
-	apiInfo, err := g.Client.Info()
-	if err != nil {
-		log.Printf("Error retrieving docker server info: %s\n", err)
-	} else {
-		SetServerInfo(apiInfo)
-	}
-
-	apiContainers, err := g.Client.ListContainers(docker.ListContainersOptions{
-		All:  g.All,
-		Size: false,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	containers := []*RuntimeContainer{}
-	for _, apiContainer := range apiContainers {
-		container, err := g.Client.InspectContainer(apiContainer.ID)
+
+	for _, client := range g.Clients {
+
+		apiInfo, err := client.Info()
 		if err != nil {
-			log.Printf("Error inspecting container: %s: %s\n", apiContainer.ID, err)
-			continue
+			log.Printf("Error retrieving docker server info: %s\n", err)
+			// We should exit here as if docker is down the socket will be recreated when it comes back up
+			// therefore restart of docker-gen is needed
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+			os.Exit(1)
+		} else {
+			SetServerInfo(apiInfo)
 		}
 
-		registry, repository, tag := splitDockerImage(container.Config.Image)
-		runtimeContainer := &RuntimeContainer{
-			ID: container.ID,
-			Image: DockerImage{
-				Registry:   registry,
-				Repository: repository,
-				Tag:        tag,
-			},
-			State: State{
-				Running: container.State.Running,
-			},
-			Name:         strings.TrimLeft(container.Name, "/"),
-			Hostname:     container.Config.Hostname,
-			Gateway:      container.NetworkSettings.Gateway,
-			Addresses:    []Address{},
-			Networks:     []Network{},
-			Env:          make(map[string]string),
-			Volumes:      make(map[string]Volume),
-			Node:         SwarmNode{},
-			Labels:       make(map[string]string),
-			IP:           container.NetworkSettings.IPAddress,
-			IP6LinkLocal: container.NetworkSettings.LinkLocalIPv6Address,
-			IP6Global:    container.NetworkSettings.GlobalIPv6Address,
+		apiContainers, err := client.ListContainers(docker.ListContainersOptions{
+			All:  g.All,
+			Size: false,
+		})
+		if err != nil {
+			return nil, err
 		}
-		for k, v := range container.NetworkSettings.Ports {
-			address := Address{
+
+		for _, apiContainer := range apiContainers {
+			container, err := client.InspectContainer(apiContainer.ID)
+			if err != nil {
+				log.Printf("Error inspecting container: %s: %s\n", apiContainer.ID, err)
+				continue
+			}
+
+			registry, repository, tag := splitDockerImage(container.Config.Image)
+			runtimeContainer := &RuntimeContainer{
+				ID: container.ID,
+				Image: DockerImage{
+					Registry:   registry,
+					Repository: repository,
+					Tag:        tag,
+				},
+				State: State{
+					Running: container.State.Running,
+				},
+				Name:         strings.TrimLeft(container.Name, "/"),
+				Hostname:     container.Config.Hostname,
+				Gateway:      container.NetworkSettings.Gateway,
+				Addresses:    []Address{},
+				Networks:     []Network{},
+				Env:          make(map[string]string),
+				Volumes:      make(map[string]Volume),
+				Node:         SwarmNode{},
+				Labels:       make(map[string]string),
 				IP:           container.NetworkSettings.IPAddress,
 				IP6LinkLocal: container.NetworkSettings.LinkLocalIPv6Address,
 				IP6Global:    container.NetworkSettings.GlobalIPv6Address,
-				Port:         k.Port(),
-				Proto:        k.Proto(),
 			}
-			if len(v) > 0 {
-				address.HostPort = v[0].HostPort
-				address.HostIP = v[0].HostIP
-			}
-			runtimeContainer.Addresses = append(runtimeContainer.Addresses,
-				address)
+			for k, v := range container.NetworkSettings.Ports {
+				address := Address{
+					IP:           container.NetworkSettings.IPAddress,
+					IP6LinkLocal: container.NetworkSettings.LinkLocalIPv6Address,
+					IP6Global:    container.NetworkSettings.GlobalIPv6Address,
+					Port:         k.Port(),
+					Proto:        k.Proto(),
+				}
+				if len(v) > 0 {
+					address.HostPort = v[0].HostPort
+					address.HostIP = v[0].HostIP
+				}
+				runtimeContainer.Addresses = append(runtimeContainer.Addresses,
+					address)
 
-		}
-		for k, v := range container.NetworkSettings.Networks {
-			network := Network{
-				IP:                  v.IPAddress,
-				Name:                k,
-				Gateway:             v.Gateway,
-				EndpointID:          v.EndpointID,
-				IPv6Gateway:         v.IPv6Gateway,
-				GlobalIPv6Address:   v.GlobalIPv6Address,
-				MacAddress:          v.MacAddress,
-				GlobalIPv6PrefixLen: v.GlobalIPv6PrefixLen,
-				IPPrefixLen:         v.IPPrefixLen,
+			}
+			for k, v := range container.NetworkSettings.Networks {
+				network := Network{
+					IP:                  v.IPAddress,
+					Name:                k,
+					Gateway:             v.Gateway,
+					EndpointID:          v.EndpointID,
+					IPv6Gateway:         v.IPv6Gateway,
+					GlobalIPv6Address:   v.GlobalIPv6Address,
+					MacAddress:          v.MacAddress,
+					GlobalIPv6PrefixLen: v.GlobalIPv6PrefixLen,
+					IPPrefixLen:         v.IPPrefixLen,
+				}
+
+				runtimeContainer.Networks = append(runtimeContainer.Networks,
+					network)
+			}
+			for k, v := range container.Volumes {
+				runtimeContainer.Volumes[k] = Volume{
+					Path:      k,
+					HostPath:  v,
+					ReadWrite: container.VolumesRW[k],
+				}
+			}
+			if container.Node != nil {
+				runtimeContainer.Node.ID = container.Node.ID
+				runtimeContainer.Node.Name = container.Node.Name
+				runtimeContainer.Node.Address = Address{
+					IP: container.Node.IP,
+				}
 			}
 
-			runtimeContainer.Networks = append(runtimeContainer.Networks,
-				network)
-		}
-		for k, v := range container.Volumes {
-			runtimeContainer.Volumes[k] = Volume{
-				Path:      k,
-				HostPath:  v,
-				ReadWrite: container.VolumesRW[k],
+			for _, v := range container.Mounts {
+				runtimeContainer.Mounts = append(runtimeContainer.Mounts, Mount{
+					Name:        v.Name,
+					Source:      v.Source,
+					Destination: v.Destination,
+					Driver:      v.Driver,
+					Mode:        v.Mode,
+					RW:          v.RW,
+				})
 			}
-		}
-		if container.Node != nil {
-			runtimeContainer.Node.ID = container.Node.ID
-			runtimeContainer.Node.Name = container.Node.Name
-			runtimeContainer.Node.Address = Address{
-				IP: container.Node.IP,
-			}
-		}
 
-		for _, v := range container.Mounts {
-			runtimeContainer.Mounts = append(runtimeContainer.Mounts, Mount{
-				Name:        v.Name,
-				Source:      v.Source,
-				Destination: v.Destination,
-				Driver:      v.Driver,
-				Mode:        v.Mode,
-				RW:          v.RW,
-			})
+			runtimeContainer.Env = splitKeyValueSlice(container.Config.Env)
+			runtimeContainer.Labels = container.Config.Labels
+			containers = append(containers, runtimeContainer)
 		}
-
-		runtimeContainer.Env = splitKeyValueSlice(container.Config.Env)
-		runtimeContainer.Labels = container.Config.Labels
-		containers = append(containers, runtimeContainer)
 	}
 	return containers, nil
 

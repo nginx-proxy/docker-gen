@@ -527,6 +527,9 @@ func GenerateFile(config Config, containers Context) bool {
 			if err != nil {
 				log.Fatalf("Unable to create dest file %s: %s\n", config.Dest, err)
 			}
+			if err := os.Chmod(config.Dest, 0644); err != nil {
+				log.Fatalf("Unable to chmod dest file: %s\n", err)
+			}
 			log.Printf("Generated '%s' from %d containers", config.Dest, len(filteredContainers))
 			return true
 		}

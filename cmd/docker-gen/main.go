@@ -10,7 +10,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	docker "github.com/fsouza/go-dockerclient"
-	"github.com/jwilder/docker-gen"
+	"github.com/rid/docker-gen"
 )
 
 type stringslice []string
@@ -30,7 +30,7 @@ var (
 	configs                 dockergen.ConfigFile
 	interval                int
 	keepBlankLines          bool
-	endpoint                string
+	endpoints                string
 	tlsCert                 string
 	tlsKey                  string
 	tlsCaCert               string
@@ -64,7 +64,7 @@ Arguments:
 
 	println(`
 Environment Variables:
-  DOCKER_HOST - default value for -endpoint
+  DOCKER_HOST - default value for -endpoints
   DOCKER_CERT_PATH - directory path containing key.pem, cert.pem and ca.pem
   DOCKER_TLS_VERIFY - enable client TLS verification
 `)
@@ -100,7 +100,7 @@ func initFlags() {
 	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (secs)")
 	flag.BoolVar(&keepBlankLines, "keep-blank-lines", false, "keep blank lines in the output file")
-	flag.StringVar(&endpoint, "endpoint", "", "docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock")
+	flag.StringVar(&endpoints, "endpoints", "", "docker api endpoints comma separated (tcp|unix://..,tcp|unix://..). Default unix:///var/run/docker.sock")
 	flag.StringVar(&tlsCert, "tlscert", filepath.Join(certPath, "cert.pem"), "path to TLS client certificate file")
 	flag.StringVar(&tlsKey, "tlskey", filepath.Join(certPath, "key.pem"), "path to TLS client key file")
 	flag.StringVar(&tlsCaCert, "tlscacert", filepath.Join(certPath, "ca.pem"), "path to TLS CA certificate file")
@@ -164,7 +164,7 @@ func main() {
 	}
 
 	generator, err := dockergen.NewGenerator(dockergen.GeneratorConfig{
-		Endpoint:   endpoint,
+		Endpoints:   endpoints,
 		TLSKey:     tlsKey,
 		TLSCert:    tlsCert,
 		TLSCACert:  tlsCaCert,

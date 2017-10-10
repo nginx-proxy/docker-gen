@@ -23,6 +23,7 @@ var (
 	notifyCmd               string
 	notifyOutput            bool
 	notifySigHUPContainerID string
+	notifySigHUPServiceID   string
 	onlyExposed             bool
 	onlyPublished           bool
 	includeStopped          bool
@@ -97,6 +98,7 @@ func initFlags() {
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated (e.g `restart xyz`)")
 	flag.StringVar(&notifySigHUPContainerID, "notify-sighup", "",
 		"send HUP signal to container.  Equivalent to `docker kill -s HUP container-ID`")
+	flag.StringVar(&notifySigHUPServiceID, "service-notify-sighup", "", "send HUP signal to all containers belong to a service.")
 	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (secs)")
 	flag.BoolVar(&keepBlankLines, "keep-blank-lines", false, "keep blank lines in the output file")
@@ -143,6 +145,7 @@ func main() {
 			NotifyCmd:        notifyCmd,
 			NotifyOutput:     notifyOutput,
 			NotifyContainers: make(map[string]docker.Signal),
+			NotifyServices:   make(map[string]docker.Signal),
 			OnlyExposed:      onlyExposed,
 			OnlyPublished:    onlyPublished,
 			IncludeStopped:   includeStopped,
@@ -151,6 +154,9 @@ func main() {
 		}
 		if notifySigHUPContainerID != "" {
 			config.NotifyContainers[notifySigHUPContainerID] = docker.SIGHUP
+		}
+		if notifySigHUPServiceID != "" {
+			config.NotifyServices[notifySigHUPServiceID] = docker.SIGHUP
 		}
 		configs = dockergen.ConfigFile{
 			Config: []dockergen.Config{config}}

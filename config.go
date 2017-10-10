@@ -16,6 +16,7 @@ type Config struct {
 	NotifyCmd        string
 	NotifyOutput     bool
 	NotifyContainers map[string]docker.Signal
+	NotifyServices   map[string]docker.Signal
 	OnlyExposed      bool
 	OnlyPublished    bool
 	IncludeStopped   bool

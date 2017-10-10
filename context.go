@@ -27,13 +27,13 @@ func (c *Context) Docker() Docker {
 	return dockerInfo
 }
 
-func SetServerInfo(d *docker.Env) {
+func SetServerInfo(d *docker.DockerInfo) {
 	mu.Lock()
 	defer mu.Unlock()
 	dockerInfo = Docker{
-		Name:               d.Get("Name"),
-		NumContainers:      d.GetInt("Containers"),
-		NumImages:          d.GetInt("Images"),
+		Name:               d.Name,
+		NumContainers:      d.Containers,
+		NumImages:          d.Images,
 		Version:            dockerEnv.Get("Version"),
 		ApiVersion:         dockerEnv.Get("ApiVersion"),
 		GoVersion:          dockerEnv.Get("GoVersion"),

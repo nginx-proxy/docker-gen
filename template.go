@@ -501,7 +501,7 @@ func GenerateFile(config Config, containers Context) bool {
 			os.Remove(dest.Name())
 		}()
 		if err != nil {
-			log.Fatalf("Cnable to create temp file: %s\n", err)
+			log.Fatalf("Unable to create temp file: %s\n", err)
 		}
 
 		if n, err := dest.Write(contents); n != len(contents) || err != nil {

@@ -51,11 +51,11 @@ docker-gen within a container to do service registration with etcd.
 #### Separate Container Install
 
 It can also be run as two separate containers using the [jwilder/docker-gen](https://index.docker.io/u/jwilder/docker-gen/)
-image virtually any other image.
+image, together with virtually any other image.
 
 This is how you could run the official [nginx](https://registry.hub.docker.com/_/nginx/) image and
-have dockgen-gen generate a reverse proxy config in the same way that `nginx-proxy` works.  You may want to do
-this to prevent having the docker socket bound to an publicly exposed container service.
+have docker-gen generate a reverse proxy config in the same way that `nginx-proxy` works. You may want to do
+this to prevent having the docker socket bound to a publicly exposed container service.
 
 Start nginx with a shared volume:
 
@@ -96,7 +96,7 @@ Options:
   -notify-output
       log the output(stdout/stderr) of notify command
   -notify-sighup container-ID
-      send HUP signal to container.  Equivalent to docker kill -s HUP container-ID
+      send HUP signal to container.  Equivalent to 'docker kill -s HUP container-ID'
   -only-exposed
       only include containers with exposed ports
   -only-published
@@ -120,7 +120,7 @@ Options:
 
 Arguments:
   template - path to a template to generate
-  dest - path to a write the template.  If not specfied, STDOUT is used
+  dest - path to a write the template. If not specfied, STDOUT is used
 
 Environment Variables:
   DOCKER_HOST - default value for -endpoint
@@ -128,12 +128,12 @@ Environment Variables:
   DOCKER_TLS_VERIFY - enable client TLS verification]
 ```
 
-If no `<dest>` file is specified, the output is sent to stdout.  Mainly useful for debugging.
+If no `<dest>` file is specified, the output is sent to stdout. Mainly useful for debugging.
 
 
 ### Configuration file
 
-Using the -config flag from above you can tell docker-gen to use the specified config file instead of command-line options.  Multiple templates can be defined and they will be executed in the order that they appear in the config file.
+Using the -config flag from above you can tell docker-gen to use the specified config file instead of command-line options. Multiple templates can be defined and they will be executed in the order that they appear in the config file.
 
 An example configuration file, **docker-gen.cfg** can be found in the examples folder.
 
@@ -191,7 +191,7 @@ wait = "500ms:2s"
 
 [config.NotifyContainers]
 nginx = 1  # 1 is a signal number to be sent; here SIGHUP
-e75a60548dc9 = 1 # a key can be either container name (nginx) or ID
+e75a60548dc9 = 1  # a key can be either container name (nginx) or ID
 ```
 
 ===
@@ -413,7 +413,7 @@ $ docker-gen -only-published -watch -notify "/etc/init.d/nginx reload" templates
 
 #### Fluentd Log Management
 
-This template generate a fluentd.conf file used by fluentd.  It would then ships log files off
+This template generate a fluentd.conf file used by fluentd. It would then ship log files off
 the host.
 
 ```
@@ -423,8 +423,8 @@ $ docker-gen -watch -notify "restart fluentd" templates/fluentd.tmpl /etc/fluent
 #### Service Discovery in Etcd
 
 
-This template is an example of generating a script that is then executed.  This template generates
-a python script that is then executed which register containers in Etcd using it's HTTP API.
+This template is an example of generating a script that is then executed. This template generates
+a python script that is then executed which register containers in Etcd using its HTTP API.
 
 ```
 $ docker-gen -notify "/bin/bash /tmp/etcd.sh" -interval 10 templates/etcd.tmpl /tmp/etcd.sh

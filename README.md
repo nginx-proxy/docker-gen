@@ -346,6 +346,8 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 
 #### Functions
 
+The exhaustive list of functions, among with their implemebtation, is available in the [`template.go`](./template.go) file.
+
 * *`closest $array $value`*: Returns the longest matching substring in `$array` that matches `$value`
 * *`coalesce ...`*: Returns the first non-nil argument.
 * *`contains $map $key`*: Returns `true` if `$map` contains `$key`. Takes maps from `string` to `string`.
@@ -363,8 +365,10 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 * *`json $value`*: Returns the JSON representation of `$value` as a `string`.
 * *`keys $map`*: Returns the keys from `$map`. If `$map` is `nil`, a `nil` is returned. If `$map` is not a `map`, an error will be thrown.
 * *`last $array`*: Returns the last value of an array.
-* *`parseBool $string`*: parseBool returns the boolean value represented by the string. It accepts 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False. Any other value returns an error. Alias for [`strconv.ParseBool`](http://golang.org/pkg/strconv/#ParseBool) 
 * *`replace $string $old $new $count`*: Replaces up to `$count` occurences of `$old` with `$new` in `$string`. Alias for [`strings.Replace`](http://golang.org/pkg/strings/#Replace)
+* *`parseBool $string`*: parseBool returns the boolean value represented by the string. It accepts 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False. Any other value returns an error. Alias for [`strconv.ParseBool`](http://golang.org/pkg/strconv/#ParseBool) 
+* *`parseJSON $string`*: parseJSON returns the JSON struct represented by the string. Wrapper around [`json.Unmarshal`](https://golang.org/pkg/encoding/json/#Unmarshal)
+* *`queryEscape $string`*: escapes the string so it can be safely placed inside a URL query. Alias for [`url.QueryEscape`](https://golang.org/pkg/net/url/#QueryEscape) 
 * *`sha1 $string`*: Returns the hexadecimal representation of the SHA1 hash of `$string`.
 * *`split $string $sep`*: Splits `$string` into a slice of substrings delimited by `$sep`. Alias for [`strings.Split`](http://golang.org/pkg/strings/#Split)
 * *`splitN $string $sep $count`*: Splits `$string` into a slice of substrings delimited by `$sep`, with number of substrings returned determined by `$count`. Alias for [`strings.SplitN`](https://golang.org/pkg/strings/#SplitN)

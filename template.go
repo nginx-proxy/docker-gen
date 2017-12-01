@@ -156,6 +156,13 @@ func where(entries interface{}, key string, cmp interface{}) (interface{}, error
 	})
 }
 
+// select entries where a key is not equal to a value
+func whereNot(entries interface{}, key string, cmp interface{}) (interface{}, error) {
+	return generalizedWhere("whereNot", entries, key, func(value interface{}) bool {
+		return !reflect.DeepEqual(value, cmp)
+	})
+}
+
 // selects entries where a key exists
 func whereExist(entries interface{}, key string) (interface{}, error) {
 	return generalizedWhere("whereExist", entries, key, func(value interface{}) bool {
@@ -442,6 +449,7 @@ func newTemplate(name string) *template.Template {
 		"trim":                   trim,
 		"when":                   when,
 		"where":                  where,
+		"whereNot":               whereNot,
 		"whereExist":             whereExist,
 		"whereNotExist":          whereNotExist,
 		"whereAny":               whereAny,

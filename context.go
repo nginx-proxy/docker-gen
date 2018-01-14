@@ -169,19 +169,43 @@ func GetCurrentContainerID() string {
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(bufio.ScanLines)
 
-	regex := "/docker[/-]([[:alnum:]]{64})(\\.scope)?$"
-	re := regexp.MustCompilePOSIX(regex)
-
 	for scanner.Scan() {
 		_, lines, err := bufio.ScanLines([]byte(scanner.Text()), true)
 		if err == nil {
-			if re.MatchString(string(lines)) {
-				submatches := re.FindStringSubmatch(string(lines))
-				containerID := submatches[1]
-
-				return containerID
+			strLines := string(lines)
+			if id := matchDockerCurrentContainerID(strLines); id != "" {
+				return id
+			} else if matchECSCurrentContainerID(strLines); id != "" {
+				return id
 			}
 		}
+	}
+
+	return ""
+}
+
+func matchDockerCurrentContainerID(lines string) string {
+	regex := "/docker[/-]([[:alnum:]]{64})(\\.scope)?$"
+	re := regexp.MustCompilePOSIX(regex)
+
+	if re.MatchString(lines) {
+		submatches := re.FindStringSubmatch(string(lines))
+		containerID := submatches[1]
+
+		return containerID
+	}
+	return ""
+}
+
+func matchECSCurrentContainerID(lines string) string {
+	regex := "/ecs\\/[^\\/]+\\/(.+)$"
+	re := regexp.MustCompilePOSIX(regex)
+
+	if re.MatchString(string(lines)) {
+		submatches := re.FindStringSubmatch(string(lines))
+		containerID := submatches[1]
+
+		return containerID
 	}
 
 	return ""

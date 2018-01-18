@@ -175,7 +175,7 @@ func GetCurrentContainerID() string {
 			strLines := string(lines)
 			if id := matchDockerCurrentContainerID(strLines); id != "" {
 				return id
-			} else if id:= matchECSCurrentContainerID(strLines); id != "" {
+			} else if id := matchECSCurrentContainerID(strLines); id != "" {
 				return id
 			}
 		}

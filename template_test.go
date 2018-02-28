@@ -71,7 +71,7 @@ func TestKeysEmpty(t *testing.T) {
 	}
 
 	if len(input) != vk.Len() {
-		t.Fatalf("Incorrect key count; expected %s, got %s", len(input), vk.Len())
+		t.Fatalf("Incorrect key count; expected %d, got %d", len(input), vk.Len())
 	}
 }
 
@@ -269,11 +269,11 @@ func TestGroupByMulti(t *testing.T) {
 	}
 
 	if len(groups["demo1.localhost"]) != 2 {
-		t.Fatalf("expected 2 got %s", len(groups["demo1.localhost"]))
+		t.Fatalf("expected 2 got %d", len(groups["demo1.localhost"]))
 	}
 
 	if len(groups["demo2.localhost"]) != 1 {
-		t.Fatalf("expected 1 got %s", len(groups["demo2.localhost"]))
+		t.Fatalf("expected 1 got %d", len(groups["demo2.localhost"]))
 	}
 	if groups["demo2.localhost"][0].(RuntimeContainer).ID != "3" {
 		t.Fatalf("expected 2 got %s", groups["demo2.localhost"][0].(RuntimeContainer).ID)
@@ -785,7 +785,7 @@ func TestJson(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(decoded) != len(containers) {
-		t.Fatal("Incorrect unmarshaled container count. Expected %d, got %d.", len(containers), len(decoded))
+		t.Fatalf("Incorrect unmarshaled container count. Expected %d, got %d.", len(containers), len(decoded))
 	}
 }
 

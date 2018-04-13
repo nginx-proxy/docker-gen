@@ -95,8 +95,13 @@ Options:
       run command after template is regenerated (e.g restart xyz)
   -notify-output
       log the output(stdout/stderr) of notify command
+  -notify-container container-ID
+      container to send a signal to
+  -notify-signal signal
+      signal to send to the -notify-container. -1 to call docker restart. Defaults to 1 aka. HUP.
+      All available signals available on the [dockerclient](https://github.com/fsouza/go-dockerclient/blob/01804dec8a84d0a77e63611f2b62d33e9bb2b64a/signal.go)
   -notify-sighup container-ID
-      send HUP signal to container.  Equivalent to 'docker kill -s HUP container-ID'
+      send HUP signal to container.  Equivalent to 'docker kill -s HUP container-ID', or `-notify-container container-ID -notify-signal 1`
   -only-exposed
       only include containers with exposed ports
   -only-published

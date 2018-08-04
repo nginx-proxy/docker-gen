@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strings"
 	"time"
-
 )
 
 type Config struct {

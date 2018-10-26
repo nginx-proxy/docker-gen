@@ -30,7 +30,7 @@ func TestDockerHostEndpoint(t *testing.T) {
 
 	endpoint, err := GetEndpoint("")
 	if err != nil {
-		t.Fatal("%s", err)
+		t.Fatalf("%s", err)
 	}
 
 	if endpoint != "tcp://127.0.0.1:4243" {
@@ -48,7 +48,7 @@ func TestDockerFlagEndpoint(t *testing.T) {
 	// flag value should override DOCKER_HOST and default value
 	endpoint, err := GetEndpoint("tcp://127.0.0.1:5555")
 	if err != nil {
-		t.Fatal("%s", err)
+		t.Fatalf("%s", err)
 	}
 	if endpoint != "tcp://127.0.0.1:5555" {
 		t.Fatalf("Expected tcp://127.0.0.1:5555, got %s", endpoint)

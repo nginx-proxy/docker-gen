@@ -25,6 +25,7 @@ var (
 	notifySigHUPContainerID string
 	onlyExposed             bool
 	onlyPublished           bool
+	templateEngine          string
 	includeStopped          bool
 	configFiles             stringslice
 	configs                 dockergen.ConfigFile
@@ -89,6 +90,7 @@ func initFlags() {
 	flag.BoolVar(&watch, "watch", false, "watch for container changes")
 	flag.StringVar(&wait, "wait", "", "minimum and maximum durations to wait (e.g. \"500ms:2s\") before triggering generate")
 	flag.BoolVar(&onlyExposed, "only-exposed", false, "only include containers with exposed ports")
+	flag.StringVar(&templateEngine, "engine", "go", "engine used to render templates (\"go\" or \"pongo2\")")
 
 	flag.BoolVar(&onlyPublished, "only-published", false,
 		"only include containers with published ports (implies -only-exposed)")
@@ -138,6 +140,7 @@ func main() {
 		config := dockergen.Config{
 			Template:         flag.Arg(0),
 			Dest:             flag.Arg(1),
+			Engine:           templateEngine,
 			Watch:            watch,
 			Wait:             w,
 			NotifyCmd:        notifyCmd,

@@ -11,6 +11,7 @@ import (
 type Config struct {
 	Template         string
 	Dest             string
+	Engine           string
 	Watch            bool
 	Wait             *Wait
 	NotifyCmd        string

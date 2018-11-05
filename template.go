@@ -18,6 +18,8 @@ import (
 	"strings"
 	"syscall"
 	"text/template"
+
+	"github.com/flosch/pongo2"
 )
 
 func exists(path string) (bool, error) {
@@ -461,6 +463,84 @@ func newTemplate(name string) *template.Template {
 	return tmpl
 }
 
+// Takes a template function that returns an error as its second return value,
+// and returns a function that takes a pongo2 ExecutionContext as its first
+// argument and calls ExecutionContext.OrigError() if the second return value
+// of the original function is not nil when called. Otherwise returns the first
+// return value.
+func pongoWrap(fn interface{}) func(*pongo2.ExecutionContext, ...interface{}) interface{} {
+	fv := reflect.ValueOf(fn)
+	ft := reflect.TypeOf(fn)
+	return func(ctx *pongo2.ExecutionContext, args ...interface{}) interface{} {
+		if ft.NumIn() != len(args) {
+			msg := fmt.Sprintf("Wrong number of arguments; expected %d, got %d", ft.NumIn(), len(args))
+			return ctx.Error(msg, nil)
+		}
+		vals := make([]reflect.Value, len(args))
+		for i, v := range args {
+			vt := reflect.TypeOf(v)
+			if !vt.ConvertibleTo(ft.In(i)) {
+				msg := fmt.Sprintf("Wrong type for argument %d (got %s, expected %s)\n", i, vt, ft.In(i))
+				return ctx.Error(msg, nil)
+			}
+			vals[i] = reflect.ValueOf(args[i])
+		}
+		retvals := fv.Call(vals)
+		ret := retvals[0].Interface()
+		err := retvals[1].Interface()
+		if err != nil {
+			return ctx.OrigError(err.(error), nil)
+		}
+		return ret
+	}
+}
+
+func pongoContext(containers Context) pongo2.Context {
+	context := pongo2.Context{
+		"containers":             containers,
+		"env":                    containers.Env,
+		"docker":                 containers.Docker,
+		"closest":                arrayClosest,
+		"coalesce":               coalesce,
+		"contains":               contains,
+		"dict":                   pongoWrap(dict),
+		"dir":                    pongoWrap(dirList),
+		"exists":                 pongoWrap(exists),
+		"first":                  arrayFirst,
+		"groupBy":                pongoWrap(groupBy),
+		"groupByKeys":            pongoWrap(groupByKeys),
+		"groupByMulti":           pongoWrap(groupByMulti),
+		"groupByLabel":           pongoWrap(groupByLabel),
+		"hasPrefix":              hasPrefix,
+		"hasSuffix":              hasSuffix,
+		"json":                   pongoWrap(marshalJson),
+		"intersect":              intersect,
+		"keys":                   pongoWrap(keys),
+		"last":                   arrayLast,
+		"replace":                strings.Replace,
+		"parseBool":              strconv.ParseBool,
+		"parseJson":              pongoWrap(unmarshalJson),
+		"printf":                 fmt.Sprintf,
+		"queryEscape":            url.QueryEscape,
+		"sha1":                   hashSha1,
+		"split":                  strings.Split,
+		"splitN":                 strings.SplitN,
+		"trimPrefix":             trimPrefix,
+		"trimSuffix":             trimSuffix,
+		"trim":                   trim,
+		"when":                   pongoWrap(when),
+		"where":                  pongoWrap(where),
+		"whereExist":             pongoWrap(whereExist),
+		"whereNotExist":          pongoWrap(whereNotExist),
+		"whereAny":               pongoWrap(whereAny),
+		"whereAll":               pongoWrap(whereAll),
+		"whereLabelExists":       pongoWrap(whereLabelExists),
+		"whereLabelDoesNotExist": pongoWrap(whereLabelDoesNotExist),
+		"whereLabelValueMatches": pongoWrap(whereLabelValueMatches),
+	}
+	return context
+}
+
 func filterRunning(config Config, containers Context) Context {
 	if config.IncludeStopped {
 		return containers
@@ -494,7 +574,7 @@ func GenerateFile(config Config, containers Context) bool {
 		filteredContainers = filteredRunningContainers
 	}
 
-	contents := executeTemplate(config.Template, filteredContainers)
+	contents := executeTemplate(config.Template, config.Engine, filteredContainers)
 
 	if !config.KeepBlankLines {
 		buf := new(bytes.Buffer)
@@ -545,16 +625,29 @@ func GenerateFile(config Config, containers Context) bool {
 	return true
 }
 
-func executeTemplate(templatePath string, containers Context) []byte {
-	tmpl, err := newTemplate(filepath.Base(templatePath)).ParseFiles(templatePath)
-	if err != nil {
-		log.Fatalf("Unable to parse template: %s", err)
-	}
+func executeTemplate(templatePath string, templateEngine string, containers Context) []byte {
+	if templateEngine == "pongo2" {
+		context := pongoContext(containers)
+		tmpl, err := pongo2.FromFile(templatePath)
+		if err != nil {
+			log.Fatalf("Unable to parse template: %s", err)
+		}
+		contents, err := tmpl.ExecuteBytes(context)
+		if err != nil {
+			log.Fatalf("Template error: %s\n", err)
+		}
+		return contents
+	} else {
+		tmpl, err := newTemplate(filepath.Base(templatePath)).ParseFiles(templatePath)
+		if err != nil {
+			log.Fatalf("Unable to parse template: %s", err)
+		}
 
-	buf := new(bytes.Buffer)
-	err = tmpl.ExecuteTemplate(buf, filepath.Base(templatePath), &containers)
-	if err != nil {
-		log.Fatalf("Template error: %s\n", err)
+		buf := new(bytes.Buffer)
+		err = tmpl.ExecuteTemplate(buf, filepath.Base(templatePath), &containers)
+		if err != nil {
+			log.Fatalf("Template error: %s\n", err)
+		}
+		return buf.Bytes()
 	}
-	return buf.Bytes()
 }

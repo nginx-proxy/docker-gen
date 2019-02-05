@@ -41,12 +41,12 @@ type GeneratorConfig struct {
 func NewGenerator(gc GeneratorConfig) (*generator, error) {
 	endpoint, err := GetEndpoint(gc.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("Bad endpoint: %s", err)
+		return nil, fmt.Errorf("bad endpoint: %s", err)
 	}
 
 	client, err := NewDockerClient(endpoint, gc.TLSVerify, gc.TLSCert, gc.TLSCACert, gc.TLSKey)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to create docker client: %s", err)
+		return nil, fmt.Errorf("unable to create docker client: %s", err)
 	}
 
 	apiVersion, err := client.Version()

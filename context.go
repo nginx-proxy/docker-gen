@@ -135,6 +135,7 @@ type SwarmNode struct {
 	ID      string
 	Name    string
 	Address Address
+	Labels  map[string]string
 }
 
 type Mount struct {

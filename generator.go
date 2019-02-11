@@ -434,6 +434,7 @@ func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 			runtimeContainer.Node.Address = Address{
 				IP: container.Node.IP,
 			}
+			runtimeContainer.Node.Labels = container.Node.Labels
 		}
 
 		for _, v := range container.Mounts {

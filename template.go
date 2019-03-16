@@ -517,7 +517,16 @@ func GenerateFile(config Config, containers Context) bool {
 		}
 
 		oldContents := []byte{}
-		if fi, err := os.Stat(config.Dest); err == nil {
+		if fi, err := os.Stat(config.Dest); err == nil || os.IsNotExist(err) {
+			if (err != nil && os.IsNotExist(err)) {
+				emptyFile, err := os.Create(config.Dest)
+				if err != nil {
+					log.Fatalf("Unable to create empty destination file: %s\n", err)
+				} else {
+					emptyFile.Close()
+					fi, err = os.Stat(config.Dest)
+				}
+			}
 			if err := dest.Chmod(fi.Mode()); err != nil {
 				log.Fatalf("Unable to chmod temp file: %s\n", err)
 			}

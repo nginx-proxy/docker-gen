@@ -340,7 +340,7 @@ func (g *generator) sendSignalToContainers(config Config) {
 	}
 	for container, signal := range config.NotifyContainers {
 		// Check if the input has a = (filter input requires key/value input) or default back to the old functionality
-		if filterSplit := strings.Split(container, "="); len(filterSplit) > 1 {
+		if filterSplit := strings.SplitN(container, "=", 2); len(filterSplit) > 1 {
 			filters := map[string][]string{}
 			filters[filterSplit[0]] = []string{filterSplit[1]}
 			listOpts := docker.ListContainersOptions{

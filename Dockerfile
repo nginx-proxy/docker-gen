@@ -1,4 +1,4 @@
-ARG VERSION=0.7.3
+ARG VERSION=0.7.4
 ARG ARCHITECTURE=amd64
 ARG DOWNLOAD_URL=https://github.com/jwilder/docker-gen/releases/download/$VERSION/docker-gen-alpine-linux-$ARCHITECTURE-$VERSION.tar.gz
 

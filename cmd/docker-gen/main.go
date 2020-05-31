@@ -10,9 +10,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	docker "github.com/fsouza/go-dockerclient"
-	"github.com/mickelindahl/docker-gen"
-	//"github.com/jwilder/docker-gen"
-	//"../git/docker-gen"
+	"github.com/jwilder/docker-gen"
 )
 
 
@@ -118,12 +116,8 @@ func main() {
 
 	if version {
 
-		fmt.Println("hej")
 		fmt.Println(buildVersion)
 
-		container := dockergen.GetCurrentContainerID()
-
-		fmt.Println(container)
 		return
 	}
 

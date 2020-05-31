@@ -173,9 +173,16 @@ func GetCurrentContainerID() string {
 		_, lines, err := bufio.ScanLines([]byte(scanner.Text()), true)
 		if err == nil {
 			strLines := string(lines)
+			//strLines := "11:cpuacct,cpu:/docker_limit.slice/a23376d4f26b91bffc57b2c5622fe8eac1743e9e631ef911d0a139d7f8b123e7"
+			//fmt.Println(strLines)
+			//fmt.Println(matchDockerCurrentContainerID(strLines))
+			//fmt.Println(matchECSCurrentContainerID(strLines))
+
 			if id := matchDockerCurrentContainerID(strLines); id != "" {
 				return id
 			} else if id := matchECSCurrentContainerID(strLines); id != "" {
+				return id
+			}else if id := matchDockerLimitCurrentContainerID(strLines); id != "" {
 				return id
 			}
 		}
@@ -197,8 +204,23 @@ func matchDockerCurrentContainerID(lines string) string {
 	return ""
 }
 
+
 func matchECSCurrentContainerID(lines string) string {
 	regex := "/ecs\\/[^\\/]+\\/(.+)$"
+	re := regexp.MustCompilePOSIX(regex)
+
+	if re.MatchString(string(lines)) {
+		submatches := re.FindStringSubmatch(string(lines))
+		containerID := submatches[1]
+
+		return containerID
+	}
+
+	return ""
+}
+
+func matchDockerLimitCurrentContainerID(lines string) string {
+	regex := "/docker[_-]limit.slice[/-]([[:alnum:]]{64})(\\.scope)?$"
 	re := regexp.MustCompilePOSIX(regex)
 
 	if re.MatchString(string(lines)) {

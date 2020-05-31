@@ -13,7 +13,6 @@ import (
 	"github.com/jwilder/docker-gen"
 )
 
-
 type stringslice []string
 
 var (
@@ -115,9 +114,7 @@ func main() {
 	initFlags()
 
 	if version {
-
 		fmt.Println(buildVersion)
-
 		return
 	}
 

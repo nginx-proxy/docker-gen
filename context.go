@@ -173,7 +173,6 @@ func GetCurrentContainerID() string {
 		_, lines, err := bufio.ScanLines([]byte(scanner.Text()), true)
 		if err == nil {
 			strLines := string(lines)
-
 			if id := matchDockerCurrentContainerID(strLines); id != "" {
 				return id
 			} else if id := matchECSCurrentContainerID(strLines); id != "" {
@@ -199,7 +198,6 @@ func matchDockerCurrentContainerID(lines string) string {
 	}
 	return ""
 }
-
 
 func matchECSCurrentContainerID(lines string) string {
 	regex := "/ecs\\/[^\\/]+\\/(.+)$"

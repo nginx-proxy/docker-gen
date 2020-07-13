@@ -1,12 +1,29 @@
+# Build docker-gen from scratch
+FROM golang:1.14-alpine as dockergen
+RUN apk add --no-cache git
+
+# Download the sources for the given version
+ENV VERSION 0.7.3
+ADD https://github.com/jwilder/docker-gen/archive/${VERSION}.tar.gz sources.tar.gz
+
+# Move the sources into the right directory
+RUN tar -xzf sources.tar.gz && \
+   mkdir -p /go/src/github.com/jwilder/ && \
+   mv docker-gen-* /go/src/github.com/jwilder/docker-gen
+
+# Install the dependencies and make the docker-gen executable
+WORKDIR /go/src/github.com/jwilder/docker-gen
+RUN go get -v ./... && \
+   CGO_ENABLED=0 GOOS=linux go build -ldflags "-X main.buildVersion=${VERSION}" ./cmd/docker-gen
+
 FROM alpine:latest
 LABEL maintainer="Jason Wilder <mail@jasonwilder.com>"
 
 RUN apk -U add openssl
 
 ENV VERSION 0.7.3
-ENV DOWNLOAD_URL https://github.com/jwilder/docker-gen/releases/download/$VERSION/docker-gen-alpine-linux-amd64-$VERSION.tar.gz
+COPY --from=dockergen /go/src/github.com/jwilder/docker-gen/docker-gen /usr/local/bin/docker-gen
 ENV DOCKER_HOST unix:///tmp/docker.sock
 
-RUN wget -qO- $DOWNLOAD_URL | tar xvz -C /usr/local/bin
 
 ENTRYPOINT ["/usr/local/bin/docker-gen"]

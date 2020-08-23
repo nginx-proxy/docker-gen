@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -21,14 +22,16 @@ type generator struct {
 	TLSVerify                  bool
 	TLSCert, TLSCaCert, TLSKey string
 	All                        bool
+	IsManager                  bool
+	NodeID                     string
 
-	wg    sync.WaitGroup
-	retry bool
+	wg       sync.WaitGroup
+	retry    bool
+	hostname string
 }
 
 type GeneratorConfig struct {
-	Endpoint string
-
+	Endpoint  string
 	TLSCert   string
 	TLSKey    string
 	TLSCACert string
@@ -71,6 +74,16 @@ func NewGenerator(gc GeneratorConfig) (*generator, error) {
 }
 
 func (g *generator) Generate() error {
+	info, err := g.Client.Info()
+	if err != nil {
+		log.Printf("Can't get docker info: %s", err)
+		time.Sleep(10 * time.Second)
+	}
+	g.NodeID = info.Swarm.NodeID
+	g.IsManager = info.Swarm.ControlAvailable
+	if g.NodeID != "" {
+		g.migrateToSwarmMode()
+	}
 	g.generateFromContainers()
 	g.generateAtInterval()
 	g.generateFromEvents()
@@ -227,7 +240,7 @@ func (g *generator) generateFromEvents() {
 				}
 				client, err = NewDockerClient(endpoint, g.TLSVerify, g.TLSCert, g.TLSCaCert, g.TLSKey)
 				if err != nil {
-					log.Printf("Unable to connect to docker daemon: %s", err)
+					log.Printf("Unable to connect to `docker` daemon: %s", err)
 					time.Sleep(10 * time.Second)
 					continue
 				}
@@ -453,6 +466,17 @@ func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 	}
 	return containers, nil
 
+}
+
+func (g *generator) migrateToSwarmMode() {
+	configs := make([]Config, len(g.Configs.Config))
+	copy(configs, g.Configs.Config)
+	for i, _ := range g.Configs.Config {
+		originConfig := g.Configs.Config[i]
+		fileExt := filepath.Ext(originConfig.Dest)
+		configs[i].Dest = strings.Replace(originConfig.Dest, fileExt, "-"+g.NodeID+fileExt, 1)
+	}
+	g.Configs.Config = configs
 }
 
 func newSignalChannel() <-chan os.Signal {

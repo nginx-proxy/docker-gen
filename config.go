@@ -2,6 +2,7 @@ package dockergen
 
 import (
 	"errors"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -82,4 +83,9 @@ func ParseWait(s string) (*Wait, error) {
 	}
 
 	return &Wait{min, max}, nil
+}
+
+func (c *Config) GetDestWithPostfix(postfix string) string {
+	fileExt := filepath.Ext(c.Dest)
+	return strings.Replace(c.Dest, fileExt, "-"+postfix+fileExt, 1)
 }

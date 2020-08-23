@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/thoas/go-funk"
 	"log"
 	"os"
 	"path/filepath"
@@ -18,6 +19,7 @@ type stringslice []string
 var (
 	buildVersion            string
 	version                 bool
+	swarmMode               bool
 	watch                   bool
 	wait                    string
 	notifyCmd               string
@@ -30,12 +32,12 @@ var (
 	configs                 dockergen.ConfigFile
 	interval                int
 	keepBlankLines          bool
-	endpoint                string
-	tlsCert                 string
-	tlsKey                  string
-	tlsCaCert               string
+	endpoints               stringslice
+	tlsCerts                stringslice
+	tlsKeys                 stringslice
+	tlsCaCerts              stringslice
+	tlsCertPaths            stringslice
 	tlsVerify               bool
-	tlsCertPath             string
 	wg                      sync.WaitGroup
 )
 
@@ -100,10 +102,13 @@ func initFlags() {
 	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (secs)")
 	flag.BoolVar(&keepBlankLines, "keep-blank-lines", false, "keep blank lines in the output file")
-	flag.StringVar(&endpoint, "endpoint", "", "docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock")
-	flag.StringVar(&tlsCert, "tlscert", filepath.Join(certPath, "cert.pem"), "path to TLS client certificate file")
-	flag.StringVar(&tlsKey, "tlskey", filepath.Join(certPath, "key.pem"), "path to TLS client key file")
-	flag.StringVar(&tlsCaCert, "tlscacert", filepath.Join(certPath, "ca.pem"), "path to TLS CA certificate file")
+
+	flag.BoolVar(&swarmMode, "swarmMode", false, "Enable Swarm Mode, multiple nodes")
+	flag.Var(&tlsCertPaths, "tlsCertPaths", "folder store docker host certs and keys")
+	flag.Var(&endpoints, "endpoints", "docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock")
+	flag.Var(&tlsCerts, "tlscerts", "path to TLS client certificate file (cert.pem)")
+	flag.Var(&tlsKeys, "tlskeys", "path to TLS client key file (key.pem)")
+	flag.Var(&tlsCaCerts, "tlscacerts", "path to TLS CA certificate file (ca.pem)")
 	flag.BoolVar(&tlsVerify, "tlsverify", os.Getenv("DOCKER_TLS_VERIFY") != "", "verify docker daemon's TLS certicate")
 
 	flag.Usage = usage
@@ -153,7 +158,8 @@ func main() {
 			config.NotifyContainers[notifySigHUPContainerID] = docker.SIGHUP
 		}
 		configs = dockergen.ConfigFile{
-			Config: []dockergen.Config{config}}
+			Config: []dockergen.Config{config},
+		}
 	}
 
 	all := true
@@ -163,21 +169,43 @@ func main() {
 		}
 	}
 
-	generator, err := dockergen.NewGenerator(dockergen.GeneratorConfig{
-		Endpoint:   endpoint,
-		TLSKey:     tlsKey,
-		TLSCert:    tlsCert,
-		TLSCACert:  tlsCaCert,
-		TLSVerify:  tlsVerify,
-		All:        all,
-		ConfigFile: configs,
-	})
-
-	if err != nil {
-		log.Fatalf("Error creating generator: %v", err)
+	if swarmMode {
+		tlsCerts = funk.Map(tlsCertPaths, func(certPath string) string {
+			return filepath.Join(certPath, "cert.pem")
+		}).([]string)
+		tlsKeys = funk.Map(tlsCertPaths, func(certPath string) string {
+			return filepath.Join(certPath, "key.pem")
+		}).([]string)
+		tlsCaCerts = funk.Map(tlsCertPaths, func(certPath string) string {
+			return filepath.Join(certPath, "ca.pem")
+		}).([]string)
 	}
 
-	if err := generator.Generate(); err != nil {
-		log.Fatalf("Error running generate: %v", err)
+	for i, _ := range endpoints {
+		generator, err := dockergen.NewGenerator(dockergen.GeneratorConfig{
+			Endpoint:   endpoints[i],
+			TLSKey:     tlsKeys[i],
+			TLSCert:    tlsCerts[i],
+			TLSCACert:  tlsCaCerts[i],
+			TLSVerify:  tlsVerify,
+			All:        all,
+			ConfigFile: configs,
+		})
+
+		if err != nil {
+			log.Fatalf("Error creating generator: %v", err)
+		}
+
+		var generate = func() {
+			if err := generator.Generate(); err != nil {
+				log.Fatalf("Error running generate: %v", err)
+			}
+		}
+
+		if i == len(endpoints)-1 {
+			generate()
+		} else {
+			go generate()
+		}
 	}
 }

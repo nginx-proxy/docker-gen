@@ -83,10 +83,6 @@ func loadConfig(file string) error {
 
 func initFlags() {
 
-	certPath := filepath.Join(os.Getenv("DOCKER_CERT_PATH"))
-	if certPath == "" {
-		certPath = filepath.Join(os.Getenv("HOME"), ".docker")
-	}
 	flag.BoolVar(&version, "version", false, "show version")
 	flag.BoolVar(&watch, "watch", false, "watch for container changes")
 	flag.StringVar(&wait, "wait", "", "minimum and maximum durations to wait (e.g. \"500ms:2s\") before triggering generate")
@@ -169,17 +165,23 @@ func main() {
 		}
 	}
 
-	if swarmMode {
-		tlsCerts = funk.Map(tlsCertPaths, func(certPath string) string {
-			return filepath.Join(certPath, "cert.pem")
-		}).([]string)
-		tlsKeys = funk.Map(tlsCertPaths, func(certPath string) string {
-			return filepath.Join(certPath, "key.pem")
-		}).([]string)
-		tlsCaCerts = funk.Map(tlsCertPaths, func(certPath string) string {
-			return filepath.Join(certPath, "ca.pem")
-		}).([]string)
+	if len(tlsCertPaths) == 0 {
+		certPath := filepath.Join(os.Getenv("DOCKER_CERT_PATH"))
+		if certPath == "" {
+			certPath = filepath.Join(os.Getenv("HOME"), ".docker")
+		}
+		tlsCertPaths = []string{certPath}
 	}
+
+	tlsCerts = funk.Map(tlsCertPaths, func(certPath string) string {
+		return filepath.Join(certPath, "cert.pem")
+	}).([]string)
+	tlsKeys = funk.Map(tlsCertPaths, func(certPath string) string {
+		return filepath.Join(certPath, "key.pem")
+	}).([]string)
+	tlsCaCerts = funk.Map(tlsCertPaths, func(certPath string) string {
+		return filepath.Join(certPath, "ca.pem")
+	}).([]string)
 
 	for i, _ := range endpoints {
 		generator, err := dockergen.NewGenerator(dockergen.GeneratorConfig{

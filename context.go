@@ -159,7 +159,7 @@ type Docker struct {
 }
 
 func GetCurrentContainerID() string {
-	file, err := os.Open("/proc/self/cgroup")
+	file, err := os.Open("/proc/self/mountinfo")
 
 	if err != nil {
 		return ""
@@ -185,7 +185,7 @@ func GetCurrentContainerID() string {
 }
 
 func matchDockerCurrentContainerID(lines string) string {
-	regex := "/docker[/-]([[:alnum:]]{64})(\\.scope)?$"
+	regex := "/var/lib/docker/containers[/-]([[:alnum:]]{64})/"
 	re := regexp.MustCompilePOSIX(regex)
 
 	if re.MatchString(lines) {

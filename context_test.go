@@ -31,21 +31,33 @@ func TestGetCurrentContainerID_ECS(t *testing.T) {
 
 func TestGetCurrentContainerID_DockerCE(t *testing.T) {
 	cgroup :=
-		`13:name=systemd:/docker-ce/docker/18862cabc2e0d24142cf93c46ccb6e070c2ea7b996c81c0311ec0309abcbcdfb
-12:pids:/docker-ce/docker/18862cabc2e0d24142cf93c46ccb6e070c2ea7b996c81c0311ec0309abcbcdfb
-11:hugetlb:/docker-ce/docker/18862cabc2e0d24142cf93c46ccb6e070c2ea7b996c81c0311ec0309abcbcdfb
-10:net_prio:/docker-ce/docker/18862cabc2e0d24142cf93c46ccb6e070c2ea7b996c81c0311ec0309abcbcdfb
-9:perf_event:/docker-ce/docker/18862cabc2e0d24142cf93c46ccb6e070c2ea7b996c81c0311ec0309abcbcdfb
-8:net_cls:/docker-ce/docker/18862cabc2e0d24142cf93c46ccb6e070c2ea7b996c81c0311ec0309abcbcdfb
-7:freezer:/docker-ce/docker/18862cabc2e0d24142cf93c46ccb6e070c2ea7b996c81c0311ec0309abcbcdfb
-6:devices:/docker-ce/docker/18862cabc2e0d24142cf93c46ccb6e070c2ea7b996c81c0311ec0309abcbcdfb
-5:memory:/docker-ce/docker/18862cabc2e0d24142cf93c46ccb6e070c2ea7b996c81c0311ec0309abcbcdfb
-4:blkio:/docker-ce/docker/18862cabc2e0d24142cf93c46ccb6e070c2ea7b996c81c0311ec0309abcbcdfb
-3:cpuacct:/docker-ce/docker/18862cabc2e0d24142cf93c46ccb6e070c2ea7b996c81c0311ec0309abcbcdfb
-2:cpu:/docker-ce/docker/18862cabc2e0d24142cf93c46ccb6e070c2ea7b996c81c0311ec0309abcbcdfb
-1:cpuset:/docker-ce/docker/18862cabc2e0d24142cf93c46ccb6e070c2ea7b996c81c0311ec0309abcbcdfb`
+		`550 209 0:38 / / rw,relatime master:97 - overlay overlay rw,seclabel,lowerdir=/var/lib/docker/overlay2/l/CMLIRGTLVPWATOT2BBGMMWTKPL:/var/lib/docker/overlay2/l/JBJ54L4BQPWTRHZVLNTFAIKIMU:/var/lib/docker/overlay2/l/GKWSGW3V5DTMUG5OV2QF2NDXZM:/var/lib/docker/overlay2/l/KKB7IBA5SXQ6GOHKPC3X2TVPDL,upperdir=/var/lib/docker/overlay2/d3c3d349e227bba0d9f66787a03a5ba8928e6fb8198e787d4d038425afc89fd0/diff,workdir=/var/lib/docker/overlay2/d3c3d349e227bba0d9f66787a03a5ba8928e6fb8198e787d4d038425afc89fd0/work
+551 550 0:47 / /proc rw,nosuid,nodev,noexec,relatime - proc proc rw
+552 550 0:48 / /dev rw,nosuid - tmpfs tmpfs rw,seclabel,size=65536k,mode=755,inode64
+553 552 0:49 / /dev/pts rw,nosuid,noexec,relatime - devpts devpts rw,seclabel,gid=5,mode=620,ptmxmode=666
+554 550 0:50 / /sys ro,nosuid,nodev,noexec,relatime - sysfs sysfs ro,seclabel
+555 554 0:27 / /sys/fs/cgroup ro,nosuid,nodev,noexec,relatime - cgroup2 cgroup rw,seclabel,nsdelegate
+556 552 0:46 / /dev/mqueue rw,nosuid,nodev,noexec,relatime - mqueue mqueue rw,seclabel
+557 552 0:51 / /dev/shm rw,nosuid,nodev,noexec,relatime - tmpfs shm rw,seclabel,size=65536k,inode64
+558 550 253:1 /var/lib/docker/containers/bc4ed21e220deb8e759970f0853854b868f0157d1b45caab844c5641435553a4/resolv.conf /etc/resolv.conf rw,relatime - xfs /dev/mapper/fedora_tpdachsserver-root rw,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota
+559 550 253:1 /var/lib/docker/containers/bc4ed21e220deb8e759970f0853854b868f0157d1b45caab844c5641435553a4/hostname /etc/hostname rw,relatime - xfs /dev/mapper/fedora_tpdachsserver-root rw,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota
+560 550 253:1 /var/lib/docker/containers/bc4ed21e220deb8e759970f0853854b868f0157d1b45caab844c5641435553a4/hosts /etc/hosts rw,relatime - xfs /dev/mapper/fedora_tpdachsserver-root rw,seclabel,attr2,inode64,logbufs=8,logbsize=32k,noquota
+210 551 0:47 /bus /proc/bus ro,relatime - proc proc rw
+211 551 0:47 /fs /proc/fs ro,relatime - proc proc rw
+212 551 0:47 /irq /proc/irq ro,relatime - proc proc rw
+264 551 0:47 /sys /proc/sys ro,relatime - proc proc rw
+265 551 0:47 /sysrq-trigger /proc/sysrq-trigger ro,relatime - proc proc rw
+523 551 0:58 / /proc/asound ro,relatime - tmpfs tmpfs ro,seclabel,inode64
+524 551 0:59 / /proc/acpi ro,relatime - tmpfs tmpfs ro,seclabel,inode64
+529 551 0:48 /null /proc/kcore rw,nosuid - tmpfs tmpfs rw,seclabel,size=65536k,mode=755,inode64
+530 551 0:48 /null /proc/keys rw,nosuid - tmpfs tmpfs rw,seclabel,size=65536k,mode=755,inode64
+531 551 0:48 /null /proc/latency_stats rw,nosuid - tmpfs tmpfs rw,seclabel,size=65536k,mode=755,inode64
+532 551 0:48 /null /proc/timer_list rw,nosuid - tmpfs tmpfs rw,seclabel,size=65536k,mode=755,inode64
+533 551 0:48 /null /proc/sched_debug rw,nosuid - tmpfs tmpfs rw,seclabel,size=65536k,mode=755,inode64
+534 551 0:60 / /proc/scsi ro,relatime - tmpfs tmpfs ro,seclabel,inode64
+535 554 0:61 / /sys/firmware ro,relatime - tmpfs tmpfs ro,seclabel,inode64`
 
-	if got, exp := matchDockerCurrentContainerID(cgroup), "18862cabc2e0d24142cf93c46ccb6e070c2ea7b996c81c0311ec0309abcbcdfb"; got != exp {
+	if got, exp := matchDockerCurrentContainerID(cgroup), "bc4ed21e220deb8e759970f0853854b868f0157d1b45caab844c5641435553a4"; got != exp {
 		t.Fatalf("id mismatch: got %v, exp %v", got, exp)
 	}
 

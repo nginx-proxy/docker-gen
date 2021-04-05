@@ -353,7 +353,7 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 
 * *`closest $array $value`*: Returns the longest matching substring in `$array` that matches `$value`
 * *`coalesce ...`*: Returns the first non-nil argument.
-* *`contains $map $key`*: Returns `true` if `$map` contains `$key`. Takes maps from `string` to `string`.
+* *`contains $map $key`*: Returns `true` if `$map` contains `$key`. Takes maps from `string` to any type.
 * *`dict $key $value ...`*: Creates a map from a list of pairs. Each `$key` value must be a `string`, but the `$value` can be any type (or `nil`). Useful for passing more than one value as a pipeline context to subtemplates.
 * *`dir $path`*: Returns an array of filenames in the specified `$path`.
 * *`exists $path`*: Returns `true` if `$path` refers to an existing file or directory. Takes a string.

@@ -33,7 +33,7 @@ func (tests templateTestList) run(t *testing.T, prefix string) {
 	}
 }
 
-func TestContains(t *testing.T) {
+func TestContainsString(t *testing.T) {
 	env := map[string]string{
 		"PORT": "1234",
 	}
@@ -43,6 +43,24 @@ func TestContains(t *testing.T) {
 	}
 
 	if contains(env, "MISSING") {
+		t.Fail()
+	}
+}
+
+func TestContainsInteger(t *testing.T) {
+	env := map[int]int{
+		42: 1234,
+	}
+
+	if !contains(env, 42) {
+		t.Fail()
+	}
+
+	if contains(env, "WRONG TYPE") {
+		t.Fail()
+	}
+
+	if contains(env, 24) {
 		t.Fail()
 	}
 }

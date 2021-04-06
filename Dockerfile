@@ -13,8 +13,7 @@ RUN tar -xzf sources.tar.gz && \
 
 # Install the dependencies and make the docker-gen executable
 WORKDIR /go/src/github.com/jwilder/docker-gen
-RUN go get -v ./... && \
-   CGO_ENABLED=0 GOOS=linux go build -ldflags "-X main.buildVersion=${VERSION}" ./cmd/docker-gen
+RUN CGO_ENABLED=0 go build -ldflags "-X main.buildVersion=${VERSION}" ./cmd/docker-gen
 
 FROM alpine:latest
 LABEL maintainer="Jason Wilder <mail@jasonwilder.com>"

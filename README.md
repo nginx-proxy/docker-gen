@@ -68,7 +68,7 @@ Fetch the template and start the docker-gen container with the shared volume:
 $ mkdir -p /tmp/templates && cd /tmp/templates
 $ curl -o nginx.tmpl https://raw.githubusercontent.com/jwilder/docker-gen/master/templates/nginx.tmpl
 $ docker run -d --name nginx-gen --volumes-from nginx \
-   -v /var/run/docker.sock:/tmp/docker.sock:ro \
+   -v /var/run/docker.sock:/tmp/docker.sock:rw \
    -v /tmp/templates:/etc/docker-gen/templates \
    -t jwilder/docker-gen -notify-sighup nginx -watch -only-exposed /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
 ```

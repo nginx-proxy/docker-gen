@@ -291,10 +291,20 @@ func intersect(l1, l2 []string) []string {
 	return keys
 }
 
-func contains(item map[string]string, key string) bool {
-	if _, ok := item[key]; ok {
-		return true
+func contains(input interface{}, key interface{}) bool {
+	if input == nil {
+		return false
 	}
+
+	val := reflect.ValueOf(input)
+	if val.Kind() == reflect.Map {
+		for _, k := range val.MapKeys() {
+			if k.Interface() == key {
+				return true
+			}
+		}
+	}
+
 	return false
 }
 

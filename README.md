@@ -128,7 +128,7 @@ Options:
 
 Arguments:
   template - path to a template to generate
-  dest - path to a write the template. If not specfied, STDOUT is used
+  dest - path to write the template. If not specfied, STDOUT is used
 
 Environment Variables:
   DOCKER_HOST - default value for -endpoint
@@ -151,7 +151,7 @@ An example configuration file, **docker-gen.cfg** can be found in the examples f
 Starts a configuration section
 
 dest = "path/to/a/file"
-path to a write the template. If not specfied, STDOUT is used
+path to write the template. If not specfied, STDOUT is used
 
 notifycmd = "/etc/init.d/foo reload"
 run command after template is regenerated (e.g restart xyz)

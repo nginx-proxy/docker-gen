@@ -31,7 +31,9 @@ jobs:
         id: docker_meta
         uses: crazy-max/ghaction-docker-meta@v2
         with:
-          images: jwilder/docker-gen
+          images: |
+            nginxproxy/docker-gen
+            jwilder/docker-gen
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}

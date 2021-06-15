@@ -1,9 +1,12 @@
 docker-gen
 =====
 
-![latest 0.7.6](https://img.shields.io/badge/latest-0.7.6-green.svg?style=flat)
-[![Build Status](https://travis-ci.org/jwilder/docker-gen.svg?branch=main)](https://travis-ci.org/jwilder/docker-gen)
-![License MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)
+
+[![Tests](https://github.com/nginx-proxy/docker-gen/actions/workflows/tests.yml/badge.svg)](https://github.com/nginx-proxy/docker-gen/actions/workflows/tests.yml)
+[![GitHub release](https://img.shields.io/github/v/release/nginx-proxy/docker-gen)](https://github.com/nginx-proxy/docker-gen/releases)
+[![Docker Image Size](https://img.shields.io/docker/image-size/nginxproxy/docker-gen?sort=semver)](https://hub.docker.com/r/nginxproxy/docker-gen "Click to view the image on Docker Hub")
+[![Docker stars](https://img.shields.io/docker/stars/nginxproxy/docker-gen.svg)](https://hub.docker.com/r/nginxproxy/docker-gen 'DockerHub')
+[![Docker pulls](https://img.shields.io/docker/pulls/nginxproxy/docker-gen.svg)](https://hub.docker.com/r/nginxproxy/docker-gen 'DockerHub')
 
 `docker-gen` is a file generator that renders templates using docker container meta-data.
 

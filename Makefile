@@ -41,7 +41,7 @@ release: dist
 	tar -cvzf docker-gen-darwin-amd64-$(TAG).tar.gz -C dist/darwin/amd64 docker-gen
 
 get-deps:
-	go get ./...
+	go mod download
 
 check-gofmt:
 	if [ -n "$(shell gofmt -l .)" ]; then \

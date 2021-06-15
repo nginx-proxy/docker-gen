@@ -2,16 +2,16 @@ docker-gen
 =====
 
 ![latest 0.7.6](https://img.shields.io/badge/latest-0.7.6-green.svg?style=flat)
-[![Build Status](https://travis-ci.org/jwilder/docker-gen.svg?branch=master)](https://travis-ci.org/jwilder/docker-gen)
+[![Build Status](https://travis-ci.org/jwilder/docker-gen.svg?branch=main)](https://travis-ci.org/jwilder/docker-gen)
 ![License MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)
 
 `docker-gen` is a file generator that renders templates using docker container meta-data.
 
 It can be used to generate various kinds of files for:
 
- * **Centralized logging** - [fluentd](https://github.com/jwilder/docker-gen/blob/master/templates/fluentd.conf.tmpl), logstash or other centralized logging tools that tail the containers JSON log file or files within the container.
- * **Log Rotation** - [logrotate](https://github.com/jwilder/docker-gen/blob/master/templates/logrotate.tmpl) files to rotate container JSON log files
- * **Reverse Proxy Configs** - [nginx](https://github.com/jwilder/docker-gen/blob/master/templates/nginx.tmpl), [haproxy](https://github.com/jwilder/docker-discover), etc. reverse proxy configs to route requests from the host to containers
+ * **Centralized logging** - [fluentd](https://github.com/jwilder/docker-gen/blob/main/templates/fluentd.conf.tmpl), logstash or other centralized logging tools that tail the containers JSON log file or files within the container.
+ * **Log Rotation** - [logrotate](https://github.com/jwilder/docker-gen/blob/main/templates/logrotate.tmpl) files to rotate container JSON log files
+ * **Reverse Proxy Configs** - [nginx](https://github.com/jwilder/docker-gen/blob/main/templates/nginx.tmpl), [haproxy](https://github.com/jwilder/docker-discover), etc. reverse proxy configs to route requests from the host to containers
  * **Service Discovery** - Scripts (python, bash, etc..) to register containers within [etcd](https://github.com/jwilder/docker-register), hipache, etc..
 
 ===
@@ -66,7 +66,7 @@ $ docker run -d -p 80:80 --name nginx -v /tmp/nginx:/etc/nginx/conf.d -t nginx
 Fetch the template and start the docker-gen container with the shared volume:
 ```
 $ mkdir -p /tmp/templates && cd /tmp/templates
-$ curl -o nginx.tmpl https://raw.githubusercontent.com/jwilder/docker-gen/master/templates/nginx.tmpl
+$ curl -o nginx.tmpl https://raw.githubusercontent.com/jwilder/docker-gen/main/templates/nginx.tmpl
 $ docker run -d --name nginx-gen --volumes-from nginx \
    -v /var/run/docker.sock:/tmp/docker.sock:ro \
    -v /tmp/templates:/etc/docker-gen/templates \

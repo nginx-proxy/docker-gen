@@ -1,7 +1,7 @@
 # Build docker-gen from scratch
 FROM golang:1.16-alpine as go-builder
 
-ARG VERSION=master
+ARG VERSION=main
 
 WORKDIR /build
 

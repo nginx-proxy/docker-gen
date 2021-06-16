@@ -437,7 +437,7 @@ func sortStrings(values []string) []string {
 
 // sortStrings returns a sorted array of strings
 func sortStringsReverse(values []string) []string {
-	sort.Sort(sort.Reverse(sort.StringSlice( values )))
+	sort.Sort(sort.Reverse(sort.StringSlice(values)))
 	return values
 }
 

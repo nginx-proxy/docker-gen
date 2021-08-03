@@ -8,17 +8,20 @@ import (
 	"testing"
 )
 
-func TestGetCurrentContainerID(t *testing.T) {
-	hostname := os.Getenv("HOSTNAME")
-	defer os.Setenv("HOSTNAME", hostname)
-
-	ids := []string{
+var (
+	ids = []string{
 		"0fa939e22e6938e7517f663de83e79a5087a18b1b997a36e0c933a917cddb295",
 		"e881f8c51a72db7da515e9d5cab8ed105b869579eb9923fdcf4ee80933160802",
 		"eede6bd9e72f5d783a4bfb845bd71f310e974cb26987328a5d15704e23a8d6cb",
 	}
 
-	contents := map[string]string{
+	fileKeys = []string{
+		"cpuset",
+		"cgroup",
+		"mountinfo",
+	}
+
+	contents = map[string]string{
 		"cpuset": fmt.Sprintf("/docker/%v", ids[0]),
 		"cgroup": fmt.Sprintf(`13:name=systemd:/docker-ce/docker/%[1]v
 12:pids:/docker-ce/docker/%[1]v
@@ -61,16 +64,15 @@ func TestGetCurrentContainerID(t *testing.T) {
 674 706 0:111 / /proc/scsi ro,relatime - tmpfs tmpfs ro,inode64
 675 709 0:112 / /sys/firmware ro,relatime - tmpfs tmpfs ro,inode64`, ids[2]),
 	}
+)
 
-	keys := []string{
-		"cpuset",
-		"cgroup",
-		"mountinfo",
-	}
+func TestGetCurrentContainerID(t *testing.T) {
+	hostname := os.Getenv("HOSTNAME")
+	defer os.Setenv("HOSTNAME", hostname)
 
 	var filepaths []string
 	// Create temporary files with test content
-	for _, key := range keys {
+	for _, key := range fileKeys {
 		file, err := ioutil.TempFile("", key)
 		if err != nil {
 			log.Fatal(err)
@@ -94,5 +96,40 @@ func TestGetCurrentContainerID(t *testing.T) {
 	os.Setenv("HOSTNAME", "customhostname")
 	if got, exp := GetCurrentContainerID(filepaths...), ids[0]; got != exp {
 		t.Fatalf("id mismatch with custom HOSTNAME: got %v, exp %v", got, exp)
+	}
+}
+
+func TestGetCurrentContainerIDMountInfo(t *testing.T) {
+	// Test specific to cases like https://github.com/nginx-proxy/docker-gen/issues/355
+	// where only the /proc/<pid>/mountinfo file contains information
+	hostname := os.Getenv("HOSTNAME")
+	defer os.Setenv("HOSTNAME", hostname)
+	os.Setenv("HOSTNAME", "customhostname")
+
+	id := ids[2]
+
+	content := map[string]string{
+		"cpuset":    "/",
+		"cgroup":    "0::/",
+		"mountinfo": contents["mountinfo"],
+	}
+
+	var filepaths []string
+	// Create temporary files with test content
+	for _, key := range fileKeys {
+		file, err := ioutil.TempFile("", key)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer os.Remove(file.Name())
+		if _, err = file.WriteString(content[key]); err != nil {
+			log.Fatal(err)
+		}
+		filepaths = append(filepaths, file.Name())
+	}
+
+	// We should match the correct 64 characters long ID in mountinfo, not the first encountered
+	if got, exp := GetCurrentContainerID(filepaths...), id; got != exp {
+		t.Fatalf("id mismatch on mountinfo: got %v, exp %v", got, exp)
 	}
 }

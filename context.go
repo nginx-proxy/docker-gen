@@ -2,9 +2,7 @@ package dockergen
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
-	"io"
 	"os"
 	"regexp"
 	"sync"
@@ -169,43 +167,42 @@ func GetCurrentContainerID(filepaths ...string) (id string) {
 		filepaths = []string{"/proc/1/cpuset", "/proc/self/cgroup", "/proc/self/mountinfo"}
 	}
 
-	var files []io.Reader
-
+	// We try to match a 64 character hex string starting with the hostname first
 	for _, filepath := range filepaths {
 		file, err := os.Open(filepath)
 		if err != nil {
 			continue
 		}
 		defer file.Close()
-		files = append(files, file)
-	}
-
-	reader := io.MultiReader(files...)
-	var buffer bytes.Buffer
-	tee := io.TeeReader(reader, &buffer)
-
-	// We try to match a 64 character hex string starting with the hostname first
-	scanner := bufio.NewScanner(tee)
-	scanner.Split(bufio.ScanLines)
-	for scanner.Scan() {
-		_, lines, err := bufio.ScanLines([]byte(scanner.Text()), true)
-		if err == nil {
-			strLines := string(lines)
-			if id = matchContainerIDWithHostname(strLines); len(id) == 64 {
-				return
+		scanner := bufio.NewScanner(file)
+		scanner.Split(bufio.ScanLines)
+		for scanner.Scan() {
+			_, lines, err := bufio.ScanLines([]byte(scanner.Text()), true)
+			if err == nil {
+				strLines := string(lines)
+				if id = matchContainerIDWithHostname(strLines); len(id) == 64 {
+					return
+				}
 			}
 		}
 	}
 
 	// If we didn't get any ID that matches the hostname, fall back to matching the first 64 character hex string
-	scanner = bufio.NewScanner(&buffer)
-	scanner.Split(bufio.ScanLines)
-	for scanner.Scan() {
-		_, lines, err := bufio.ScanLines([]byte(scanner.Text()), true)
-		if err == nil {
-			strLines := string(lines)
-			if id = matchContainerID(strLines); len(id) == 64 {
-				return
+	for _, filepath := range filepaths {
+		file, err := os.Open(filepath)
+		if err != nil {
+			continue
+		}
+		defer file.Close()
+		scanner := bufio.NewScanner(file)
+		scanner.Split(bufio.ScanLines)
+		for scanner.Scan() {
+			_, lines, err := bufio.ScanLines([]byte(scanner.Text()), true)
+			if err == nil {
+				strLines := string(lines)
+				if id = matchContainerID("([[:alnum:]]{64})", strLines); len(id) == 64 {
+					return
+				}
 			}
 		}
 	}
@@ -219,22 +216,21 @@ func matchContainerIDWithHostname(lines string) string {
 
 	if re.MatchString(hostname) {
 		regex := fmt.Sprintf("(%s[[:alnum:]]{52})", hostname)
-		re := regexp.MustCompilePOSIX(regex)
 
-		if re.MatchString(lines) {
-			submatches := re.FindStringSubmatch(string(lines))
-			containerID := submatches[1]
-
-			return containerID
-		}
+		return matchContainerID(regex, lines)
 	}
 	return ""
 }
 
-func matchContainerID(lines string) string {
-	regex := "([[:alnum:]]{64})"
-	re := regexp.MustCompilePOSIX(regex)
+func matchContainerID(regex, lines string) string {
+	// Attempt to detect if we're on a line from a /proc/<pid>/mountinfo file and modify the regexp accordingly
+	// https://www.kernel.org/doc/Documentation/filesystems/proc.txt section 3.5
+	re := regexp.MustCompilePOSIX("^[0-9]+ [0-9]+ [0-9]+:[0-9]+ /")
+	if re.MatchString(lines) {
+		regex = fmt.Sprintf("containers/%v", regex)
+	}
 
+	re = regexp.MustCompilePOSIX(regex)
 	if re.MatchString(lines) {
 		submatches := re.FindStringSubmatch(string(lines))
 		containerID := submatches[1]

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	dockertest "github.com/fsouza/go-dockerclient/testing"
 )
 
@@ -49,7 +49,7 @@ func TestGenerateFromEvents(t *testing.T) {
 	}))
 	server.CustomHandler("/containers/json", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		result := []docker.APIContainers{
-			docker.APIContainers{
+			{
 				ID:      containerID,
 				Image:   "base:latest",
 				Command: "/bin/sh",
@@ -87,7 +87,7 @@ func TestGenerateFromEvents(t *testing.T) {
 			},
 			Image: "0ff407d5a7d9ed36acdf3e75de8cc127afecc9af234d05486be2981cdc01a38d",
 			NetworkSettings: &docker.NetworkSettings{
-				IPAddress:   fmt.Sprintf("10.0.0.10"),
+				IPAddress:   "10.0.0.10",
 				IPPrefixLen: 24,
 				Gateway:     "10.0.0.1",
 				Bridge:      "docker0",
@@ -147,24 +147,24 @@ func TestGenerateFromEvents(t *testing.T) {
 		Endpoint: serverURL,
 		Configs: ConfigFile{
 			[]Config{
-				Config{
+				{
 					Template: tmplFile.Name(),
 					Dest:     destFiles[0].Name(),
 					Watch:    false,
 				},
-				Config{
+				{
 					Template: tmplFile.Name(),
 					Dest:     destFiles[1].Name(),
 					Watch:    true,
 					Wait:     &Wait{0, 0},
 				},
-				Config{
+				{
 					Template: tmplFile.Name(),
 					Dest:     destFiles[2].Name(),
 					Watch:    true,
 					Wait:     &Wait{20 * time.Millisecond, 25 * time.Millisecond},
 				},
-				Config{
+				{
 					Template: tmplFile.Name(),
 					Dest:     destFiles[3].Name(),
 					Watch:    true,

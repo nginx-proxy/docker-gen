@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"github.com/BurntSushi/toml"
 	docker "github.com/fsouza/go-dockerclient"
@@ -36,8 +35,6 @@ var (
 	tlsKey                string
 	tlsCaCert             string
 	tlsVerify             bool
-	tlsCertPath           string
-	wg                    sync.WaitGroup
 )
 
 func (strings *stringslice) String() string {

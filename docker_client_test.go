@@ -1,6 +1,10 @@
 package dockergen
 
 import (
+	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -128,4 +132,62 @@ func TestParseHostTCPDefault(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "tcp", proto, "failed to parse tcp://:4243")
 	assert.Equal(t, "127.0.0.1:4243", addr, "failed to parse tcp://:4243")
+}
+
+func TestParseHostSystemd(t *testing.T) {
+	proto, addr, err := parseHost("fd://")
+	assert.NoError(t, err)
+	assert.Equal(t, "fd", proto, "failed to parse fd://")
+	assert.Equal(t, "fd://", addr, "failed to parse fd://")
+}
+
+func assertParseHostError(t *testing.T, address string) {
+	proto, addr, err := parseHost(address)
+	message := fmt.Sprintf("should have failed to parse %v", address)
+	assert.Error(t, err, message)
+	assert.Equal(t, "", proto, message)
+	assert.Equal(t, "", addr, message)
+}
+
+func TestParseHostTCPNoAddressError(t *testing.T) {
+	assertParseHostError(t, "tcp://")
+}
+
+func TestParseHostTCPIncorrectBindAddressError(t *testing.T) {
+	incorrectBindAdresses := []string{
+		"tcp://127.0.0.1:4243:80",
+		"tcp://127.0.0.1:",
+		"tcp://127.0.0.1",
+	}
+
+	for _, address := range incorrectBindAdresses {
+		assertParseHostError(t, address)
+	}
+}
+
+func TestParseHostWrongProtocolError(t *testing.T) {
+	assertParseHostError(t, "foo://")
+}
+
+func TestTlsEnabled(t *testing.T) {
+	tls := tlsEnabled("foo", "bar", "baz")
+	assert.False(t, tls)
+
+	filepaths := map[string]string{
+		"cert":   "",
+		"caCert": "",
+		"key":    "",
+	}
+	// Create temporary files
+	for key := range filepaths {
+		file, err := ioutil.TempFile("", key)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer os.Remove(file.Name())
+		filepaths[key] = file.Name()
+	}
+
+	tls = tlsEnabled(filepaths["cert"], filepaths["caCert"], filepaths["key"])
+	assert.True(t, tls)
 }

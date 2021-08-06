@@ -20,17 +20,6 @@ import (
 	"text/template"
 )
 
-func exists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
-}
-
 func getArrayValues(funcName string, entries interface{}) (*reflect.Value, error) {
 	entriesVal := reflect.ValueOf(entries)
 
@@ -435,7 +424,7 @@ func newTemplate(name string) *template.Template {
 		"contains":               contains,
 		"dict":                   dict,
 		"dir":                    dirList,
-		"exists":                 exists,
+		"exists":                 pathExists,
 		"first":                  arrayFirst,
 		"groupBy":                groupBy,
 		"groupByKeys":            groupByKeys,

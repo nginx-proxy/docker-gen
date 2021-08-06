@@ -39,7 +39,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
 
-       - name: Retrieve version
+      - name: Retrieve version
         run: echo "VERSION=$(git describe --tags)" >> $GITHUB_ENV
 
       - name: Set up QEMU

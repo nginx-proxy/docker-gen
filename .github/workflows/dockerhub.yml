@@ -39,6 +39,9 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
 
+       - name: Retrieve version
+        run: echo "VERSION=$(git describe --tags)" >> $GITHUB_ENV
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       
@@ -55,6 +58,7 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v2
         with:
+          build-args: VERSION=${{ env.VERSION }}
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: ${{ steps.docker_meta.outputs.tags }}

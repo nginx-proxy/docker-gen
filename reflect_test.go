@@ -1,6 +1,10 @@
 package dockergen
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestDeepGetNoPath(t *testing.T) {
 	item := RuntimeContainer{}
@@ -21,13 +25,9 @@ func TestDeepGetSimple(t *testing.T) {
 		ID: "expected",
 	}
 	value := deepGet(item, "ID")
-	if _, ok := value.(string); !ok {
-		t.Errorf("expected: %#v. got: %#v", "expected", value)
-	}
+	assert.IsType(t, "", value)
 
-	if value != "expected" {
-		t.Errorf("expected: %s. got: %s", "expected", value)
-	}
+	assert.Equal(t, "expected", value)
 }
 
 func TestDeepGetSimpleDotPrefix(t *testing.T) {
@@ -35,13 +35,9 @@ func TestDeepGetSimpleDotPrefix(t *testing.T) {
 		ID: "expected",
 	}
 	value := deepGet(item, "...ID")
-	if _, ok := value.(string); !ok {
-		t.Errorf("expected: %#v. got: %#v", "expected", value)
-	}
+	assert.IsType(t, "", value)
 
-	if value != "expected" {
-		t.Errorf("expected: %s. got: %s", "expected", value)
-	}
+	assert.Equal(t, "expected", value)
 }
 
 func TestDeepGetMap(t *testing.T) {
@@ -51,11 +47,7 @@ func TestDeepGetMap(t *testing.T) {
 		},
 	}
 	value := deepGet(item, "Env.key")
-	if _, ok := value.(string); !ok {
-		t.Errorf("expected: %#v. got: %#v", "value", value)
-	}
+	assert.IsType(t, "", value)
 
-	if value != "value" {
-		t.Errorf("expected: %s. got: %s", "value", value)
-	}
+	assert.Equal(t, "value", value)
 }

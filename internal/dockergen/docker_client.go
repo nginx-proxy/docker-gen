@@ -3,7 +3,6 @@ package dockergen
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -117,16 +116,4 @@ func splitDockerImage(img string) (string, string, string) {
 	}
 
 	return registry, repository, tag
-}
-
-// pathExists returns whether the given file or directory exists or not
-func pathExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
 }

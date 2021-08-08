@@ -3,7 +3,6 @@ package dockergen
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"testing"
 
@@ -182,7 +181,7 @@ func TestTlsEnabled(t *testing.T) {
 	for key := range filepaths {
 		file, err := ioutil.TempFile("", key)
 		if err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 		defer os.Remove(file.Name())
 		filepaths[key] = file.Name()

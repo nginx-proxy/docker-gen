@@ -3,9 +3,10 @@ package dockergen
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -75,11 +76,11 @@ func TestGetCurrentContainerID(t *testing.T) {
 	for _, key := range fileKeys {
 		file, err := ioutil.TempFile("", key)
 		if err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 		defer os.Remove(file.Name())
 		if _, err = file.WriteString(contents[key]); err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 		filepaths = append(filepaths, file.Name())
 	}
@@ -87,16 +88,12 @@ func TestGetCurrentContainerID(t *testing.T) {
 	// Each time the HOSTNAME is set to a short form ID, GetCurrentContainerID() should match and return the corresponding full ID
 	for _, id := range ids {
 		os.Setenv("HOSTNAME", id[0:12])
-		if got, exp := GetCurrentContainerID(filepaths...), id; got != exp {
-			t.Fatalf("id mismatch with HOSTNAME %v: got %v, exp %v", id[0:12], got, exp)
-		}
+		assert.Equal(t, id, GetCurrentContainerID(filepaths...), "id mismatch with default HOSTNAME")
 	}
 
 	// If the Hostname isn't a short form ID, we should match the first valid ID (64 character hex string) instead
 	os.Setenv("HOSTNAME", "customhostname")
-	if got, exp := GetCurrentContainerID(filepaths...), ids[0]; got != exp {
-		t.Fatalf("id mismatch with custom HOSTNAME: got %v, exp %v", got, exp)
-	}
+	assert.Equal(t, ids[0], GetCurrentContainerID(filepaths...), "id mismatch with custom HOSTNAME")
 }
 
 func TestGetCurrentContainerIDMountInfo(t *testing.T) {
@@ -119,17 +116,50 @@ func TestGetCurrentContainerIDMountInfo(t *testing.T) {
 	for _, key := range fileKeys {
 		file, err := ioutil.TempFile("", key)
 		if err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 		defer os.Remove(file.Name())
 		if _, err = file.WriteString(content[key]); err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 		filepaths = append(filepaths, file.Name())
 	}
 
 	// We should match the correct 64 characters long ID in mountinfo, not the first encountered
-	if got, exp := GetCurrentContainerID(filepaths...), id; got != exp {
-		t.Fatalf("id mismatch on mountinfo: got %v, exp %v", got, exp)
+	assert.Equal(t, id, GetCurrentContainerID(filepaths...), "id mismatch on mountinfo")
+}
+
+func TestGetCurrentContainerEmpty(t *testing.T) {
+	assert.Equal(t, "", GetCurrentContainerID())
+}
+
+func TestPublishedAddresses(t *testing.T) {
+	container := &RuntimeContainer{
+		Addresses: []Address{
+			{
+				IP:       "172.19.0.1",
+				HostPort: "80",
+			},
+			{
+				IP: "172.19.0.2",
+			},
+			{
+				IP:       "172.19.0.3",
+				HostPort: "8080",
+			},
+		},
 	}
+
+	expected := []Address{
+		{
+			IP:       "172.19.0.1",
+			HostPort: "80",
+		},
+		{
+			IP:       "172.19.0.3",
+			HostPort: "8080",
+		},
+	}
+
+	assert.ElementsMatch(t, expected, container.PublishedAddresses())
 }

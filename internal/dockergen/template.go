@@ -408,6 +408,16 @@ func trim(s string) string {
 	return strings.TrimSpace(s)
 }
 
+// toLower return the string in lower case
+func toLower(s string) string {
+	return strings.ToLower(s)
+}
+
+// toUpper return the string in upper case
+func toUpper(s string) string {
+	return strings.ToUpper(s)
+}
+
 // when returns the trueValue when the condition is true and the falseValue otherwise
 func when(condition bool, trueValue, falseValue interface{}) interface{} {
 	if condition {
@@ -446,6 +456,8 @@ func newTemplate(name string) *template.Template {
 		"trimPrefix":             trimPrefix,
 		"trimSuffix":             trimSuffix,
 		"trim":                   trim,
+		"toLower":                toLower,
+		"toUpper":                toUpper,
 		"when":                   when,
 		"where":                  where,
 		"whereNot":               whereNot,

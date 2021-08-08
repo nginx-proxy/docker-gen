@@ -73,7 +73,7 @@ func ParseWait(s string) (*Wait, error) {
 			return nil, err
 		}
 		if max < min {
-			return nil, errors.New("Invalid wait interval: max must be larger than min")
+			return nil, errors.New("invalid wait interval: max must be larger than min")
 		}
 	} else {
 		max = 4 * min

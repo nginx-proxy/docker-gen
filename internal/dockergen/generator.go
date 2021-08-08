@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 )
 
 type generator struct {
@@ -41,12 +41,12 @@ type GeneratorConfig struct {
 func NewGenerator(gc GeneratorConfig) (*generator, error) {
 	endpoint, err := GetEndpoint(gc.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("Bad endpoint: %s", err)
+		return nil, fmt.Errorf("bad endpoint: %s", err)
 	}
 
 	client, err := NewDockerClient(endpoint, gc.TLSVerify, gc.TLSCert, gc.TLSCACert, gc.TLSKey)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to create docker client: %s", err)
+		return nil, fmt.Errorf("unable to create docker client: %s", err)
 	}
 
 	apiVersion, err := client.Version()
@@ -191,7 +191,7 @@ func (g *generator) generateFromEvents() {
 			watchers = append(watchers, watcher)
 
 			debouncedChan := newDebounceChannel(watcher, config.Wait)
-			for _ = range debouncedChan {
+			for range debouncedChan {
 				containers, err := g.getContainers()
 				if err != nil {
 					log.Printf("Error listing containers: %s\n", err)
@@ -367,7 +367,8 @@ func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 
 	containers := []*RuntimeContainer{}
 	for _, apiContainer := range apiContainers {
-		container, err := g.Client.InspectContainer(apiContainer.ID)
+		opts := docker.InspectContainerOptions{ID: apiContainer.ID}
+		container, err := g.Client.InspectContainerWithOptions(opts)
 		if err != nil {
 			log.Printf("Error inspecting container: %s: %s\n", apiContainer.ID, err)
 			continue
@@ -465,7 +466,7 @@ func (g *generator) getContainers() ([]*RuntimeContainer, error) {
 
 func newSignalChannel() <-chan os.Signal {
 	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL)
+	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	return sig
 }

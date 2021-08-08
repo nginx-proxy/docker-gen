@@ -124,19 +124,19 @@ func TestIntersect(t *testing.T) {
 
 func TestGroupByExistingKey(t *testing.T) {
 	containers := []*RuntimeContainer{
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo1.localhost",
 			},
 			ID: "1",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo1.localhost",
 			},
 			ID: "2",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost",
 			},
@@ -163,20 +163,20 @@ func TestGroupByExistingKey(t *testing.T) {
 
 func TestGroupByAfterWhere(t *testing.T) {
 	containers := []*RuntimeContainer{
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo1.localhost",
 				"EXTERNAL":     "true",
 			},
 			ID: "1",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo1.localhost",
 			},
 			ID: "2",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost",
 				"EXTERNAL":     "true",
@@ -206,28 +206,28 @@ func TestGroupByAfterWhere(t *testing.T) {
 
 func TestGroupByLabel(t *testing.T) {
 	containers := []*RuntimeContainer{
-		&RuntimeContainer{
+		{
 			Labels: map[string]string{
 				"com.docker.compose.project": "one",
 			},
 			ID: "1",
 		},
-		&RuntimeContainer{
+		{
 			Labels: map[string]string{
 				"com.docker.compose.project": "two",
 			},
 			ID: "2",
 		},
-		&RuntimeContainer{
+		{
 			Labels: map[string]string{
 				"com.docker.compose.project": "one",
 			},
 			ID: "3",
 		},
-		&RuntimeContainer{
+		{
 			ID: "4",
 		},
-		&RuntimeContainer{
+		{
 			Labels: map[string]string{
 				"com.docker.compose.project": "",
 			},
@@ -261,19 +261,19 @@ func TestGroupByLabel(t *testing.T) {
 
 func TestGroupByMulti(t *testing.T) {
 	containers := []*RuntimeContainer{
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo1.localhost",
 			},
 			ID: "1",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo1.localhost,demo3.localhost",
 			},
 			ID: "2",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost",
 			},
@@ -306,39 +306,39 @@ func TestGroupByMulti(t *testing.T) {
 
 func TestWhere(t *testing.T) {
 	containers := []*RuntimeContainer{
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo1.localhost",
 			},
 			ID: "1",
 			Addresses: []Address{
-				Address{
+				{
 					IP:    "172.16.42.1",
 					Port:  "80",
 					Proto: "tcp",
 				},
 			},
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost",
 			},
 			ID: "2",
 			Addresses: []Address{
-				Address{
+				{
 					IP:    "172.16.42.1",
 					Port:  "9999",
 					Proto: "tcp",
 				},
 			},
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo3.localhost",
 			},
 			ID: "3",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost",
 			},
@@ -371,39 +371,39 @@ func TestWhere(t *testing.T) {
 
 func TestWhereNot(t *testing.T) {
 	containers := []*RuntimeContainer{
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo1.localhost",
 			},
 			ID: "1",
 			Addresses: []Address{
-				Address{
+				{
 					IP:    "172.16.42.1",
 					Port:  "80",
 					Proto: "tcp",
 				},
 			},
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost",
 			},
 			ID: "2",
 			Addresses: []Address{
-				Address{
+				{
 					IP:    "172.16.42.1",
 					Port:  "9999",
 					Proto: "tcp",
 				},
 			},
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo3.localhost",
 			},
 			ID: "3",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost",
 			},
@@ -436,27 +436,27 @@ func TestWhereNot(t *testing.T) {
 
 func TestWhereExist(t *testing.T) {
 	containers := []*RuntimeContainer{
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo1.localhost",
 				"VIRTUAL_PATH": "/api",
 			},
 			ID: "1",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost",
 			},
 			ID: "2",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo3.localhost",
 				"VIRTUAL_PATH": "/api",
 			},
 			ID: "3",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_PROTO": "https",
 			},
@@ -476,27 +476,27 @@ func TestWhereExist(t *testing.T) {
 
 func TestWhereNotExist(t *testing.T) {
 	containers := []*RuntimeContainer{
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo1.localhost",
 				"VIRTUAL_PATH": "/api",
 			},
 			ID: "1",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost",
 			},
 			ID: "2",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo3.localhost",
 				"VIRTUAL_PATH": "/api",
 			},
 			ID: "3",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_PROTO": "https",
 			},
@@ -516,25 +516,25 @@ func TestWhereNotExist(t *testing.T) {
 
 func TestWhereSomeMatch(t *testing.T) {
 	containers := []*RuntimeContainer{
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo1.localhost",
 			},
 			ID: "1",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost,demo4.localhost",
 			},
 			ID: "2",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "bar,demo3.localhost,foo",
 			},
 			ID: "3",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost",
 			},
@@ -554,25 +554,25 @@ func TestWhereSomeMatch(t *testing.T) {
 
 func TestWhereRequires(t *testing.T) {
 	containers := []*RuntimeContainer{
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo1.localhost",
 			},
 			ID: "1",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost,demo4.localhost",
 			},
 			ID: "2",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "bar,demo3.localhost,foo",
 			},
 			ID: "3",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost",
 			},
@@ -592,14 +592,14 @@ func TestWhereRequires(t *testing.T) {
 
 func TestWhereLabelExists(t *testing.T) {
 	containers := []*RuntimeContainer{
-		&RuntimeContainer{
+		{
 			Labels: map[string]string{
 				"com.example.foo": "foo",
 				"com.example.bar": "bar",
 			},
 			ID: "1",
 		},
-		&RuntimeContainer{
+		{
 			Labels: map[string]string{
 				"com.example.bar": "bar",
 			},
@@ -618,14 +618,14 @@ func TestWhereLabelExists(t *testing.T) {
 
 func TestWhereLabelDoesNotExist(t *testing.T) {
 	containers := []*RuntimeContainer{
-		&RuntimeContainer{
+		{
 			Labels: map[string]string{
 				"com.example.foo": "foo",
 				"com.example.bar": "bar",
 			},
 			ID: "1",
 		},
-		&RuntimeContainer{
+		{
 			Labels: map[string]string{
 				"com.example.bar": "bar",
 			},
@@ -644,14 +644,14 @@ func TestWhereLabelDoesNotExist(t *testing.T) {
 
 func TestWhereLabelValueMatches(t *testing.T) {
 	containers := []*RuntimeContainer{
-		&RuntimeContainer{
+		{
 			Labels: map[string]string{
 				"com.example.foo": "foo",
 				"com.example.bar": "bar",
 			},
 			ID: "1",
 		},
-		&RuntimeContainer{
+		{
 			Labels: map[string]string{
 				"com.example.bar": "BAR",
 			},
@@ -729,19 +729,19 @@ func TestTrim(t *testing.T) {
 
 func TestDict(t *testing.T) {
 	containers := []*RuntimeContainer{
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo1.localhost",
 			},
 			ID: "1",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo1.localhost,demo3.localhost",
 			},
 			ID: "2",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost",
 			},
@@ -769,19 +769,19 @@ func TestSha1(t *testing.T) {
 
 func TestJson(t *testing.T) {
 	containers := []*RuntimeContainer{
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo1.localhost",
 			},
 			ID: "1",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo1.localhost,demo3.localhost",
 			},
 			ID: "2",
 		},
-		&RuntimeContainer{
+		{
 			Env: map[string]string{
 				"VIRTUAL_HOST": "demo2.localhost",
 			},

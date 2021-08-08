@@ -20,17 +20,6 @@ import (
 	"text/template"
 )
 
-func exists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
-}
-
 func getArrayValues(funcName string, entries interface{}) (*reflect.Value, error) {
 	entriesVal := reflect.ValueOf(entries)
 
@@ -45,7 +34,7 @@ func getArrayValues(funcName string, entries interface{}) (*reflect.Value, error
 	case reflect.Array, reflect.Slice:
 		break
 	default:
-		return nil, fmt.Errorf("Must pass an array or slice to '%v'; received %v; kind %v", funcName, entries, kind)
+		return nil, fmt.Errorf("must pass an array or slice to '%v'; received %v; kind %v", funcName, entries, kind)
 	}
 	return &entriesVal, nil
 }
@@ -121,7 +110,7 @@ func groupByLabel(entries interface{}, label string) (map[string][]interface{}, 
 			}
 			return nil, nil
 		}
-		return nil, fmt.Errorf("Must pass an array or slice of RuntimeContainer to 'groupByLabel'; received %v", v)
+		return nil, fmt.Errorf("must pass an array or slice of RuntimeContainer to 'groupByLabel'; received %v", v)
 	}
 	return generalizedGroupBy("groupByLabel", entries, getLabel, func(groups map[string][]interface{}, value interface{}, v interface{}) {
 		groups[value.(string)] = append(groups[value.(string)], v)
@@ -261,7 +250,7 @@ func keys(input interface{}) (interface{}, error) {
 
 	val := reflect.ValueOf(input)
 	if val.Kind() != reflect.Map {
-		return nil, fmt.Errorf("Cannot call keys on a non-map value: %v", input)
+		return nil, fmt.Errorf("cannot call keys on a non-map value: %v", input)
 	}
 
 	vk := val.MapKeys()
@@ -435,7 +424,7 @@ func newTemplate(name string) *template.Template {
 		"contains":               contains,
 		"dict":                   dict,
 		"dir":                    dirList,
-		"exists":                 exists,
+		"exists":                 pathExists,
 		"first":                  arrayFirst,
 		"groupBy":                groupBy,
 		"groupByKeys":            groupByKeys,
@@ -534,7 +523,7 @@ func GenerateFile(config Config, containers Context) bool {
 					log.Fatalf("Unable to create empty destination file: %s\n", err)
 				} else {
 					emptyFile.Close()
-					fi, err = os.Stat(config.Dest)
+					fi, _ = os.Stat(config.Dest)
 				}
 			}
 			if err := dest.Chmod(fi.Mode()); err != nil {
@@ -549,7 +538,7 @@ func GenerateFile(config Config, containers Context) bool {
 			}
 		}
 
-		if bytes.Compare(oldContents, contents) != 0 {
+		if !bytes.Equal(oldContents, contents) {
 			err = os.Rename(dest.Name(), config.Dest)
 			if err != nil {
 				log.Fatalf("Unable to create dest file %s: %s\n", config.Dest, err)

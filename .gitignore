@@ -1,3 +1,4 @@
 docker-gen
+!cmd/docker-gen
 dist
 *.gz

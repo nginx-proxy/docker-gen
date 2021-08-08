@@ -13,8 +13,7 @@ func TestDeepGetNoPath(t *testing.T) {
 		t.Fail()
 	}
 
-	var returned RuntimeContainer
-	returned = value.(RuntimeContainer)
+	returned := value.(RuntimeContainer)
 	if !returned.Equals(item) {
 		t.Fail()
 	}

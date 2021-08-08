@@ -6,11 +6,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"github.com/BurntSushi/toml"
 	docker "github.com/fsouza/go-dockerclient"
-	"github.com/jwilder/docker-gen"
+	"github.com/nginx-proxy/docker-gen/internal/dockergen"
 )
 
 type stringslice []string
@@ -36,8 +35,6 @@ var (
 	tlsKey                string
 	tlsCaCert             string
 	tlsVerify             bool
-	tlsCertPath           string
-	wg                    sync.WaitGroup
 )
 
 func (strings *stringslice) String() string {
@@ -69,7 +66,7 @@ Environment Variables:
   DOCKER_CERT_PATH - directory path containing key.pem, cert.pem and ca.pem
   DOCKER_TLS_VERIFY - enable client TLS verification
 `)
-	println(`For more information, see https://github.com/jwilder/docker-gen`)
+	println(`For more information, see https://github.com/nginx-proxy/docker-gen`)
 }
 
 func loadConfig(file string) error {

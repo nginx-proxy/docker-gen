@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
 	"reflect"
 	"testing"
 	"text/template"
@@ -52,6 +55,13 @@ func TestContainsInteger(t *testing.T) {
 	assert.True(t, contains(env, 42))
 	assert.False(t, contains(env, "WRONG TYPE"))
 	assert.False(t, contains(env, 24))
+}
+
+func TestContainsNilInput(t *testing.T) {
+	var env interface{} = nil
+
+	assert.False(t, contains(env, 0))
+	assert.False(t, contains(env, ""))
 }
 
 func TestKeys(t *testing.T) {
@@ -172,6 +182,45 @@ func TestGroupByAfterWhere(t *testing.T) {
 	assert.Equal(t, "3", groups["demo2.localhost"][0].(RuntimeContainer).ID)
 }
 
+func TestGroupByKeys(t *testing.T) {
+	containers := []*RuntimeContainer{
+		{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost",
+			},
+			ID: "1",
+		},
+		{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo1.localhost",
+			},
+			ID: "2",
+		},
+		{
+			Env: map[string]string{
+				"VIRTUAL_HOST": "demo2.localhost",
+			},
+			ID: "3",
+		},
+	}
+
+	expected := []string{"demo1.localhost", "demo2.localhost"}
+	groups, err := groupByKeys(containers, "Env.VIRTUAL_HOST")
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, expected, groups)
+
+	expected = []string{"1", "2", "3"}
+	groups, err = groupByKeys(containers, "ID")
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, expected, groups)
+}
+
+func TestGeneralizedGroupByError(t *testing.T) {
+	groups, err := groupBy("string", "")
+	assert.Error(t, err)
+	assert.Nil(t, groups)
+}
+
 func TestGroupByLabel(t *testing.T) {
 	containers := []*RuntimeContainer{
 		{
@@ -211,6 +260,13 @@ func TestGroupByLabel(t *testing.T) {
 	assert.Len(t, groups[""], 1)
 	assert.Len(t, groups["two"], 1)
 	assert.Equal(t, "2", groups["two"][0].(RuntimeContainer).ID)
+}
+
+func TestGroupByLabelError(t *testing.T) {
+	strings := []string{"foo", "bar", "baz"}
+	groups, err := groupByLabel(strings, "")
+	assert.Error(t, err)
+	assert.Nil(t, groups)
 }
 
 func TestGroupByMulti(t *testing.T) {
@@ -834,4 +890,47 @@ func TestWhenFalse(t *testing.T) {
 	if when(false, "first", "second") != "second" {
 		t.Fatal("Expected second value")
 	}
+}
+
+func TestDirList(t *testing.T) {
+	dir, err := ioutil.TempDir("", "dirList")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(dir)
+
+	files := map[string]string{
+		"aaa": "",
+		"bbb": "",
+		"ccc": "",
+	}
+	// Create temporary files
+	for key := range files {
+		file, err := ioutil.TempFile(dir, key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.Remove(file.Name())
+		files[key] = file.Name()
+	}
+
+	expected := []string{
+		path.Base(files["aaa"]),
+		path.Base(files["bbb"]),
+		path.Base(files["ccc"]),
+	}
+
+	filesList, _ := dirList(dir)
+	assert.Equal(t, expected, filesList)
+
+	filesList, _ = dirList("/wrong/path")
+	assert.Equal(t, []string{}, filesList)
+}
+
+func TestCoalesce(t *testing.T) {
+	v := coalesce(nil, "second", "third")
+	assert.Equal(t, "second", v, "Expected second value")
+
+	v = coalesce(nil, nil, nil)
+	assert.Nil(t, v, "Expected nil value")
 }

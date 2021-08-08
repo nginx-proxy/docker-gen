@@ -737,6 +737,18 @@ func TestTrim(t *testing.T) {
 	}
 }
 
+func TestToLower(t *testing.T) {
+	const str = ".RaNd0m StrinG_"
+	const lowered = ".rand0m string_"
+	assert.Equal(t, lowered, toLower(str), "Unexpected value from toLower()")
+}
+
+func TestToUpper(t *testing.T) {
+	const str = ".RaNd0m StrinG_"
+	const uppered = ".RAND0M STRING_"
+	assert.Equal(t, uppered, toUpper(str), "Unexpected value from toUpper()")
+}
+
 func TestDict(t *testing.T) {
 	containers := []*RuntimeContainer{
 		{

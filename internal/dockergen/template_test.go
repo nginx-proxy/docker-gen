@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"testing"
 	"text/template"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type templateTestList []struct {
@@ -38,13 +40,8 @@ func TestContainsString(t *testing.T) {
 		"PORT": "1234",
 	}
 
-	if !contains(env, "PORT") {
-		t.Fail()
-	}
-
-	if contains(env, "MISSING") {
-		t.Fail()
-	}
+	assert.True(t, contains(env, "PORT"))
+	assert.False(t, contains(env, "MISSING"))
 }
 
 func TestContainsInteger(t *testing.T) {
@@ -52,17 +49,9 @@ func TestContainsInteger(t *testing.T) {
 		42: 1234,
 	}
 
-	if !contains(env, 42) {
-		t.Fail()
-	}
-
-	if contains(env, "WRONG TYPE") {
-		t.Fail()
-	}
-
-	if contains(env, 24) {
-		t.Fail()
-	}
+	assert.True(t, contains(env, 42))
+	assert.False(t, contains(env, "WRONG TYPE"))
+	assert.False(t, contains(env, 24))
 }
 
 func TestKeys(t *testing.T) {
@@ -105,21 +94,17 @@ func TestKeysNil(t *testing.T) {
 }
 
 func TestIntersect(t *testing.T) {
-	if len(intersect([]string{"foo.fo.com", "bar.com"}, []string{"foo.bar.com"})) != 0 {
-		t.Fatal("Expected no match")
-	}
+	i := intersect([]string{"foo.fo.com", "bar.com"}, []string{"foo.bar.com"})
+	assert.Len(t, i, 0, "Expected no match")
 
-	if len(intersect([]string{"foo.fo.com", "bar.com"}, []string{"bar.com", "foo.com"})) != 1 {
-		t.Fatal("Expected only one match")
-	}
+	i = intersect([]string{"foo.fo.com", "bar.com"}, []string{"bar.com", "foo.com"})
+	assert.Len(t, i, 1, "Expected exactly one match")
 
-	if len(intersect([]string{"foo.com"}, []string{"bar.com", "foo.com"})) != 1 {
-		t.Fatal("Expected only one match")
-	}
+	i = intersect([]string{"foo.com"}, []string{"bar.com", "foo.com"})
+	assert.Len(t, i, 1, "Expected exactly one match")
 
-	if len(intersect([]string{"foo.fo.com", "foo.com", "bar.com"}, []string{"bar.com", "foo.com"})) != 2 {
-		t.Fatal("Expected two matches")
-	}
+	i = intersect([]string{"foo.fo.com", "foo.com", "bar.com"}, []string{"bar.com", "foo.com"})
+	assert.Len(t, i, 2, "Expected exactly two matches")
 }
 
 func TestGroupByExistingKey(t *testing.T) {
@@ -144,21 +129,13 @@ func TestGroupByExistingKey(t *testing.T) {
 		},
 	}
 
-	groups, _ := groupBy(containers, "Env.VIRTUAL_HOST")
-	if len(groups) != 2 {
-		t.Fail()
-	}
+	groups, err := groupBy(containers, "Env.VIRTUAL_HOST")
 
-	if len(groups["demo1.localhost"]) != 2 {
-		t.Fail()
-	}
-
-	if len(groups["demo2.localhost"]) != 1 {
-		t.FailNow()
-	}
-	if groups["demo2.localhost"][0].(RuntimeContainer).ID != "3" {
-		t.Fail()
-	}
+	assert.NoError(t, err)
+	assert.Len(t, groups, 2)
+	assert.Len(t, groups["demo1.localhost"], 2)
+	assert.Len(t, groups["demo2.localhost"], 1)
+	assert.Equal(t, "3", groups["demo2.localhost"][0].(RuntimeContainer).ID)
 }
 
 func TestGroupByAfterWhere(t *testing.T) {
@@ -186,22 +163,13 @@ func TestGroupByAfterWhere(t *testing.T) {
 	}
 
 	filtered, _ := where(containers, "Env.EXTERNAL", "true")
-	groups, _ := groupBy(filtered, "Env.VIRTUAL_HOST")
+	groups, err := groupBy(filtered, "Env.VIRTUAL_HOST")
 
-	if len(groups) != 2 {
-		t.Fail()
-	}
-
-	if len(groups["demo1.localhost"]) != 1 {
-		t.Fail()
-	}
-
-	if len(groups["demo2.localhost"]) != 1 {
-		t.FailNow()
-	}
-	if groups["demo2.localhost"][0].(RuntimeContainer).ID != "3" {
-		t.Fail()
-	}
+	assert.NoError(t, err)
+	assert.Len(t, groups, 2)
+	assert.Len(t, groups["demo1.localhost"], 1)
+	assert.Len(t, groups["demo2.localhost"], 1)
+	assert.Equal(t, "3", groups["demo2.localhost"][0].(RuntimeContainer).ID)
 }
 
 func TestGroupByLabel(t *testing.T) {
@@ -236,27 +204,13 @@ func TestGroupByLabel(t *testing.T) {
 	}
 
 	groups, err := groupByLabel(containers, "com.docker.compose.project")
-	if err != nil {
-		t.FailNow()
-	}
 
-	if len(groups) != 3 {
-		t.Fail()
-	}
-
-	if len(groups["one"]) != 2 {
-		t.Fail()
-	}
-	if len(groups[""]) != 1 {
-		t.Fail()
-	}
-
-	if len(groups["two"]) != 1 {
-		t.FailNow()
-	}
-	if groups["two"][0].(RuntimeContainer).ID != "2" {
-		t.Fail()
-	}
+	assert.NoError(t, err)
+	assert.Len(t, groups, 3)
+	assert.Len(t, groups["one"], 2)
+	assert.Len(t, groups[""], 1)
+	assert.Len(t, groups["two"], 1)
+	assert.Equal(t, "2", groups["two"][0].(RuntimeContainer).ID)
 }
 
 func TestGroupByMulti(t *testing.T) {

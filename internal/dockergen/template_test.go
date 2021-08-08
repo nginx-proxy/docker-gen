@@ -38,6 +38,25 @@ func (tests templateTestList) run(t *testing.T, prefix string) {
 	}
 }
 
+func TestGetArrayValues(t *testing.T) {
+	values := []string{"foor", "bar", "baz"}
+	var expectedType *reflect.Value
+
+	arrayValues, err := getArrayValues("testFunc", values)
+	assert.NoError(t, err)
+	assert.IsType(t, expectedType, arrayValues)
+	assert.Equal(t, "bar", arrayValues.Index(1).String())
+
+	arrayValues, err = getArrayValues("testFunc", &values)
+	assert.NoError(t, err)
+	assert.IsType(t, expectedType, arrayValues)
+	assert.Equal(t, "baz", arrayValues.Index(2).String())
+
+	arrayValues, err = getArrayValues("testFunc", "foo")
+	assert.Error(t, err)
+	assert.Nil(t, arrayValues)
+}
+
 func TestContainsString(t *testing.T) {
 	env := map[string]string{
 		"PORT": "1234",

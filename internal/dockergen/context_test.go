@@ -128,3 +128,38 @@ func TestGetCurrentContainerIDMountInfo(t *testing.T) {
 	// We should match the correct 64 characters long ID in mountinfo, not the first encountered
 	assert.Equal(t, id, GetCurrentContainerID(filepaths...), "id mismatch on mountinfo")
 }
+
+func TestGetCurrentContainerEmpty(t *testing.T) {
+	assert.Equal(t, "", GetCurrentContainerID())
+}
+
+func TestPublishedAddresses(t *testing.T) {
+	container := &RuntimeContainer{
+		Addresses: []Address{
+			{
+				IP:       "172.19.0.1",
+				HostPort: "80",
+			},
+			{
+				IP: "172.19.0.2",
+			},
+			{
+				IP:       "172.19.0.3",
+				HostPort: "8080",
+			},
+		},
+	}
+
+	expected := []Address{
+		{
+			IP:       "172.19.0.1",
+			HostPort: "80",
+		},
+		{
+			IP:       "172.19.0.3",
+			HostPort: "8080",
+		},
+	}
+
+	assert.ElementsMatch(t, expected, container.PublishedAddresses())
+}

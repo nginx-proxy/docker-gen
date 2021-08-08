@@ -3,7 +3,6 @@ package dockergen
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"testing"
 )
@@ -75,11 +74,11 @@ func TestGetCurrentContainerID(t *testing.T) {
 	for _, key := range fileKeys {
 		file, err := ioutil.TempFile("", key)
 		if err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 		defer os.Remove(file.Name())
 		if _, err = file.WriteString(contents[key]); err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 		filepaths = append(filepaths, file.Name())
 	}
@@ -119,11 +118,11 @@ func TestGetCurrentContainerIDMountInfo(t *testing.T) {
 	for _, key := range fileKeys {
 		file, err := ioutil.TempFile("", key)
 		if err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 		defer os.Remove(file.Name())
 		if _, err = file.WriteString(content[key]); err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 		filepaths = append(filepaths, file.Name())
 	}

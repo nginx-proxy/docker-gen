@@ -1,4 +1,4 @@
-package dockergen
+package context
 
 import (
 	"bufio"
@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/nginx-proxy/docker-gen/internal/utils"
 )
 
 var (
@@ -19,7 +20,7 @@ var (
 type Context []*RuntimeContainer
 
 func (c *Context) Env() map[string]string {
-	return splitKeyValueSlice(os.Environ())
+	return utils.SplitKeyValueSlice(os.Environ())
 }
 
 func (c *Context) Docker() Docker {

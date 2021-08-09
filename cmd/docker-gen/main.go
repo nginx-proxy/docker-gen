@@ -9,7 +9,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 	docker "github.com/fsouza/go-dockerclient"
-	"github.com/nginx-proxy/docker-gen/internal/dockergen"
+	"github.com/nginx-proxy/docker-gen/internal/config"
+	"github.com/nginx-proxy/docker-gen/internal/generator"
 )
 
 type stringslice []string
@@ -27,7 +28,7 @@ var (
 	onlyPublished         bool
 	includeStopped        bool
 	configFiles           stringslice
-	configs               dockergen.ConfigFile
+	configs               config.ConfigFile
 	interval              int
 	keepBlankLines        bool
 	endpoint              string
@@ -133,11 +134,11 @@ func main() {
 			}
 		}
 	} else {
-		w, err := dockergen.ParseWait(wait)
+		w, err := config.ParseWait(wait)
 		if err != nil {
 			log.Fatalf("Error parsing wait interval: %s\n", err)
 		}
-		config := dockergen.Config{
+		cfg := config.Config{
 			Template:         flag.Arg(0),
 			Dest:             flag.Arg(1),
 			Watch:            watch,
@@ -152,10 +153,10 @@ func main() {
 			KeepBlankLines:   keepBlankLines,
 		}
 		if notifyContainerID != "" {
-			config.NotifyContainers[notifyContainerID] = notifyContainerSignal
+			cfg.NotifyContainers[notifyContainerID] = notifyContainerSignal
 		}
-		configs = dockergen.ConfigFile{
-			Config: []dockergen.Config{config}}
+		configs = config.ConfigFile{
+			Config: []config.Config{cfg}}
 	}
 
 	all := true
@@ -165,7 +166,7 @@ func main() {
 		}
 	}
 
-	generator, err := dockergen.NewGenerator(dockergen.GeneratorConfig{
+	generator, err := generator.NewGenerator(generator.GeneratorConfig{
 		Endpoint:   endpoint,
 		TLSKey:     tlsKey,
 		TLSCert:    tlsCert,

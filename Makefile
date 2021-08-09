@@ -44,16 +44,16 @@ get-deps:
 	go mod download
 
 check-gofmt:
-	if [ -n "$(shell gofmt -l ./cmd/docker-gen)" ]; then \
+	if [ -n "$(shell go fmt ./cmd/...)" ]; then \
 		echo 1>&2 'The following files need to be formatted:'; \
 		gofmt -l ./cmd/docker-gen; \
 		exit 1; \
 	fi
-	if [ -n "$(shell gofmt -l ./internal/dockergen)" ]; then \
+	if [ -n "$(shell go fmt ./internal/...)" ]; then \
 		echo 1>&2 'The following files need to be formatted:'; \
 		gofmt -l ./internal/dockergen; \
 		exit 1; \
 	fi
 
 test:
-	go test ./internal/dockergen
+	go test ./internal/...

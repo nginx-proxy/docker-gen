@@ -1,4 +1,4 @@
-package dockergen
+package dockerclient
 
 import (
 	"fmt"
@@ -6,17 +6,74 @@ import (
 	"os"
 	"testing"
 
+	"github.com/nginx-proxy/docker-gen/internal/context"
 	"github.com/stretchr/testify/assert"
 )
 
+func TestDefaultEndpoint(t *testing.T) {
+	err := os.Unsetenv("DOCKER_HOST")
+	if err != nil {
+		t.Fatalf("Unable to unset DOCKER_HOST: %s", err)
+	}
+
+	endpoint, err := GetEndpoint("")
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+	if endpoint != "unix:///var/run/docker.sock" {
+		t.Fatalf("Expected unix:///var/run/docker.sock, got %s", endpoint)
+	}
+}
+
+func TestDockerHostEndpoint(t *testing.T) {
+	err := os.Setenv("DOCKER_HOST", "tcp://127.0.0.1:4243")
+	if err != nil {
+		t.Fatalf("Unable to set DOCKER_HOST: %s", err)
+	}
+
+	endpoint, err := GetEndpoint("")
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+
+	if endpoint != "tcp://127.0.0.1:4243" {
+		t.Fatalf("Expected tcp://127.0.0.1:4243, got %s", endpoint)
+	}
+}
+
+func TestDockerFlagEndpoint(t *testing.T) {
+
+	err := os.Setenv("DOCKER_HOST", "tcp://127.0.0.1:4243")
+	if err != nil {
+		t.Fatalf("Unable to set DOCKER_HOST: %s", err)
+	}
+
+	// flag value should override DOCKER_HOST and default value
+	endpoint, err := GetEndpoint("tcp://127.0.0.1:5555")
+	if err != nil {
+		t.Fatalf("%s", err)
+	}
+	if endpoint != "tcp://127.0.0.1:5555" {
+		t.Fatalf("Expected tcp://127.0.0.1:5555, got %s", endpoint)
+	}
+}
+
+func TestUnixBadFormat(t *testing.T) {
+	endpoint := "unix:/var/run/docker.sock"
+	_, err := GetEndpoint(endpoint)
+	if err == nil {
+		t.Fatal("endpoint should have failed")
+	}
+}
+
 func TestSplitDockerImageRepository(t *testing.T) {
-	registry, repository, tag := splitDockerImage("ubuntu")
+	registry, repository, tag := SplitDockerImage("ubuntu")
 
 	assert.Equal(t, "", registry)
 	assert.Equal(t, "ubuntu", repository)
 	assert.Equal(t, "", tag)
 
-	dockerImage := DockerImage{
+	dockerImage := context.DockerImage{
 		Registry:   registry,
 		Repository: repository,
 		Tag:        tag,
@@ -25,13 +82,13 @@ func TestSplitDockerImageRepository(t *testing.T) {
 }
 
 func TestSplitDockerImageWithRegistry(t *testing.T) {
-	registry, repository, tag := splitDockerImage("custom.registry/ubuntu")
+	registry, repository, tag := SplitDockerImage("custom.registry/ubuntu")
 
 	assert.Equal(t, "custom.registry", registry)
 	assert.Equal(t, "ubuntu", repository)
 	assert.Equal(t, "", tag)
 
-	dockerImage := DockerImage{
+	dockerImage := context.DockerImage{
 		Registry:   registry,
 		Repository: repository,
 		Tag:        tag,
@@ -40,13 +97,13 @@ func TestSplitDockerImageWithRegistry(t *testing.T) {
 }
 
 func TestSplitDockerImageWithRegistryAndTag(t *testing.T) {
-	registry, repository, tag := splitDockerImage("custom.registry/ubuntu:12.04")
+	registry, repository, tag := SplitDockerImage("custom.registry/ubuntu:12.04")
 
 	assert.Equal(t, "custom.registry", registry)
 	assert.Equal(t, "ubuntu", repository)
 	assert.Equal(t, "12.04", tag)
 
-	dockerImage := DockerImage{
+	dockerImage := context.DockerImage{
 		Registry:   registry,
 		Repository: repository,
 		Tag:        tag,
@@ -55,13 +112,13 @@ func TestSplitDockerImageWithRegistryAndTag(t *testing.T) {
 }
 
 func TestSplitDockerImageWithRepositoryAndTag(t *testing.T) {
-	registry, repository, tag := splitDockerImage("ubuntu:12.04")
+	registry, repository, tag := SplitDockerImage("ubuntu:12.04")
 
 	assert.Equal(t, "", registry)
 	assert.Equal(t, "ubuntu", repository)
 	assert.Equal(t, "12.04", tag)
 
-	dockerImage := DockerImage{
+	dockerImage := context.DockerImage{
 		Registry:   registry,
 		Repository: repository,
 		Tag:        tag,
@@ -70,13 +127,13 @@ func TestSplitDockerImageWithRepositoryAndTag(t *testing.T) {
 }
 
 func TestSplitDockerImageWithPrivateRegistryPath(t *testing.T) {
-	registry, repository, tag := splitDockerImage("localhost:8888/ubuntu/foo:12.04")
+	registry, repository, tag := SplitDockerImage("localhost:8888/ubuntu/foo:12.04")
 
 	assert.Equal(t, "localhost:8888", registry)
 	assert.Equal(t, "ubuntu/foo", repository)
 	assert.Equal(t, "12.04", tag)
 
-	dockerImage := DockerImage{
+	dockerImage := context.DockerImage{
 		Registry:   registry,
 		Repository: repository,
 		Tag:        tag,
@@ -84,13 +141,13 @@ func TestSplitDockerImageWithPrivateRegistryPath(t *testing.T) {
 	assert.Equal(t, "localhost:8888/ubuntu/foo:12.04", dockerImage.String())
 }
 func TestSplitDockerImageWithLocalRepositoryAndTag(t *testing.T) {
-	registry, repository, tag := splitDockerImage("localhost:8888/ubuntu:12.04")
+	registry, repository, tag := SplitDockerImage("localhost:8888/ubuntu:12.04")
 
 	assert.Equal(t, "localhost:8888", registry)
 	assert.Equal(t, "ubuntu", repository)
 	assert.Equal(t, "12.04", tag)
 
-	dockerImage := DockerImage{
+	dockerImage := context.DockerImage{
 		Registry:   registry,
 		Repository: repository,
 		Tag:        tag,

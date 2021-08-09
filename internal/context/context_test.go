@@ -1,4 +1,4 @@
-package dockergen
+package context
 
 import (
 	"fmt"

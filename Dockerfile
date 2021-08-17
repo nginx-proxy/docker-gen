@@ -1,5 +1,5 @@
 # Build docker-gen from scratch
-FROM golang:1.16.7-alpine as go-builder
+FROM golang:1.17.0-alpine as go-builder
 
 ARG VERSION=main
 

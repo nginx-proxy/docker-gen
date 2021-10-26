@@ -376,6 +376,10 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 * *`sha1 $string`*: Returns the hexadecimal representation of the SHA1 hash of `$string`.
 * *`split $string $sep`*: Splits `$string` into a slice of substrings delimited by `$sep`. Alias for [`strings.Split`](http://golang.org/pkg/strings/#Split)
 * *`splitN $string $sep $count`*: Splits `$string` into a slice of substrings delimited by `$sep`, with number of substrings returned determined by `$count`. Alias for [`strings.SplitN`](https://golang.org/pkg/strings/#SplitN)
+* *`sortStringsAsc $strings`: Returns a slice of strings `$strings` sorted in ascending order.
+* *`sortStringsDesc $strings`: Returns a slice of strings `$strings` sorted in descending (reverse) order.
+* *`sortObjectsByKeysAsc $objects $fieldPath`: Returns the array `$objects`, sorted in ascending order based on the values of a field path expression `$fieldPath`.
+* *`sortObjectsByKeysDesc $objects $fieldPath`: Returns the array `$objects`, sorted in descending (reverse) order based on the values of a field path expression `$fieldPath`.
 * *`trimPrefix $prefix $string`*: If `$prefix` is a prefix of `$string`, return `$string` with `$prefix` trimmed from the beginning. Otherwise, return `$string` unchanged.
 * *`trimSuffix $suffix $string`*: If `$suffix` is a suffix of `$string`, return `$string` with `$suffix` trimmed from the end. Otherwise, return `$string` unchanged.
 * *`trim $string`*: Removes whitespace from both sides of `$string`.

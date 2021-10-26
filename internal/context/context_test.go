@@ -1,4 +1,4 @@
-package dockergen
+package context
 
 import (
 	"fmt"
@@ -162,4 +162,40 @@ func TestPublishedAddresses(t *testing.T) {
 	}
 
 	assert.ElementsMatch(t, expected, container.PublishedAddresses())
+}
+
+func TestRuntimeContainerEquals(t *testing.T) {
+	rc1 := &RuntimeContainer{
+		ID: "baz",
+		Image: DockerImage{
+			Registry: "foo/bar",
+		},
+	}
+	rc2 := &RuntimeContainer{
+		ID:   "baz",
+		Name: "qux",
+		Image: DockerImage{
+			Registry: "foo/bar",
+		},
+	}
+	assert.True(t, rc1.Equals(*rc2))
+	assert.True(t, rc2.Equals(*rc1))
+
+	rc2.Image.Tag = "quux"
+	assert.False(t, rc1.Equals(*rc2))
+	assert.False(t, rc2.Equals(*rc1))
+}
+
+func TestDockerImageString(t *testing.T) {
+	image := &DockerImage{Repository: "foo/bar"}
+	assert.Equal(t, "foo/bar", image.String())
+
+	image.Registry = "baz.io"
+	assert.Equal(t, "baz.io/foo/bar", image.String())
+
+	image.Tag = "qux"
+	assert.Equal(t, "baz.io/foo/bar:qux", image.String())
+
+	image.Registry = ""
+	assert.Equal(t, "foo/bar:qux", image.String())
 }

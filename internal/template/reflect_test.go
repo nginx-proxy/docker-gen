@@ -1,26 +1,27 @@
-package dockergen
+package template
 
 import (
 	"testing"
 
+	"github.com/nginx-proxy/docker-gen/internal/context"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDeepGetNoPath(t *testing.T) {
-	item := RuntimeContainer{}
+	item := context.RuntimeContainer{}
 	value := deepGet(item, "")
-	if _, ok := value.(RuntimeContainer); !ok {
+	if _, ok := value.(context.RuntimeContainer); !ok {
 		t.Fail()
 	}
 
-	returned := value.(RuntimeContainer)
+	returned := value.(context.RuntimeContainer)
 	if !returned.Equals(item) {
 		t.Fail()
 	}
 }
 
 func TestDeepGetSimple(t *testing.T) {
-	item := RuntimeContainer{
+	item := context.RuntimeContainer{
 		ID: "expected",
 	}
 	value := deepGet(item, "ID")
@@ -30,7 +31,7 @@ func TestDeepGetSimple(t *testing.T) {
 }
 
 func TestDeepGetSimpleDotPrefix(t *testing.T) {
-	item := RuntimeContainer{
+	item := context.RuntimeContainer{
 		ID: "expected",
 	}
 	value := deepGet(item, "...ID")
@@ -40,7 +41,7 @@ func TestDeepGetSimpleDotPrefix(t *testing.T) {
 }
 
 func TestDeepGetMap(t *testing.T) {
-	item := RuntimeContainer{
+	item := context.RuntimeContainer{
 		Env: map[string]string{
 			"key": "value",
 		},

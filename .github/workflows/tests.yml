@@ -32,4 +32,4 @@ jobs:
         run: make check-gofmt
 
       - name: Run tests
-        run: go test -v ./internal/dockergen
+        run: go test -v ./internal/...

@@ -1,4 +1,4 @@
-package dockergen
+package template
 
 import (
 	"log"

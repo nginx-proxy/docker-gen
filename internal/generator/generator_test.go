@@ -1,4 +1,4 @@
-package dockergen
+package generator
 
 import (
 	"bufio"
@@ -14,6 +14,9 @@ import (
 
 	docker "github.com/fsouza/go-dockerclient"
 	dockertest "github.com/fsouza/go-dockerclient/testing"
+	"github.com/nginx-proxy/docker-gen/internal/config"
+	"github.com/nginx-proxy/docker-gen/internal/context"
+	"github.com/nginx-proxy/docker-gen/internal/dockerclient"
 )
 
 func TestGenerateFromEvents(t *testing.T) {
@@ -102,7 +105,7 @@ func TestGenerateFromEvents(t *testing.T) {
 	}))
 
 	serverURL := fmt.Sprintf("tcp://%s", strings.TrimRight(strings.TrimPrefix(server.URL(), "http://"), "/"))
-	client, err := NewDockerClient(serverURL, false, "", "", "")
+	client, err := dockerclient.NewDockerClient(serverURL, false, "", "", "")
 	if err != nil {
 		t.Errorf("Failed to create client: %s", err)
 	}
@@ -140,13 +143,13 @@ func TestGenerateFromEvents(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to retrieve docker server version info: %v\n", err)
 	}
-	SetDockerEnv(apiVersion) // prevents a panic
+	context.SetDockerEnv(apiVersion) // prevents a panic
 
 	generator := &generator{
 		Client:   client,
 		Endpoint: serverURL,
-		Configs: ConfigFile{
-			[]Config{
+		Configs: config.ConfigFile{
+			Config: []config.Config{
 				{
 					Template: tmplFile.Name(),
 					Dest:     destFiles[0].Name(),
@@ -156,19 +159,19 @@ func TestGenerateFromEvents(t *testing.T) {
 					Template: tmplFile.Name(),
 					Dest:     destFiles[1].Name(),
 					Watch:    true,
-					Wait:     &Wait{0, 0},
+					Wait:     &config.Wait{Min: 0, Max: 0},
 				},
 				{
 					Template: tmplFile.Name(),
 					Dest:     destFiles[2].Name(),
 					Watch:    true,
-					Wait:     &Wait{20 * time.Millisecond, 25 * time.Millisecond},
+					Wait:     &config.Wait{Min: 20 * time.Millisecond, Max: 25 * time.Millisecond},
 				},
 				{
 					Template: tmplFile.Name(),
 					Dest:     destFiles[3].Name(),
 					Watch:    true,
-					Wait:     &Wait{25 * time.Millisecond, 100 * time.Millisecond},
+					Wait:     &config.Wait{Min: 25 * time.Millisecond, Max: 100 * time.Millisecond},
 				},
 			},
 		},

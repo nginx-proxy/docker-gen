@@ -6,6 +6,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestFilterWatches(t *testing.T) {
+	testConfigFile := &ConfigFile{
+		Config: []Config{
+			{Template: "foo", Watch: true},
+			{Template: "bar"},
+			{Template: "baz", Watch: true},
+		},
+	}
+
+	expected := []Config{
+		{Template: "foo", Watch: true},
+		{Template: "baz", Watch: true},
+	}
+
+	configFile := testConfigFile.FilterWatches()
+	assert.Equal(t, expected, configFile.Config)
+}
+
 func TestParseWait(t *testing.T) {
 	incorrectIntervals := []string{
 		"500x",    // Incorrect min interval

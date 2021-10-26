@@ -1,7 +1,11 @@
 package utils
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSplitKeyValueSlice(t *testing.T) {
@@ -22,4 +26,20 @@ func TestSplitKeyValueSlice(t *testing.T) {
 		}
 
 	}
+}
+
+func TestPathExists(t *testing.T) {
+	file, err := ioutil.TempFile("", "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(file.Name())
+
+	exists, err := PathExists(file.Name())
+	assert.NoError(t, err)
+	assert.True(t, exists)
+
+	exists, err = PathExists("/wrong/path")
+	assert.NoError(t, err)
+	assert.False(t, exists)
 }

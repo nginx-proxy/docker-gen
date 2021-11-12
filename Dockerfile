@@ -12,7 +12,7 @@ RUN go mod download -json
 # Build the docker-gen executable
 RUN CGO_ENABLED=0 go build -ldflags "-X main.buildVersion=${VERSION}" -o docker-gen ./cmd/docker-gen
 
-FROM alpine:3.13
+FROM alpine:3.14.3
 
 LABEL maintainer="Jason Wilder <mail@jasonwilder.com>"
 

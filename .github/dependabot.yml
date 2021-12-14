@@ -1,6 +1,12 @@
 version: 2
 updates:
 
+  # Maintain dependencies for Go modules
+    - package-ecosystem: "gomod"
+      directory: "/"
+      schedule:
+        interval: "daily"
+
   # Maintain dependencies for Docker
   - package-ecosystem: "docker"
     directory: "/"

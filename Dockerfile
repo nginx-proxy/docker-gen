@@ -7,10 +7,10 @@ WORKDIR /build
 
 # Install the dependencies
 COPY . .
-RUN go mod download -json
+RUN go mod download
 
 # Build the docker-gen executable
-RUN CGO_ENABLED=0 go build -ldflags "-X main.buildVersion=${VERSION}" -o docker-gen ./cmd/docker-gen
+RUN GOOS=linux CGO_ENABLED=0 go build -ldflags "-X main.buildVersion=${VERSION}" -o docker-gen ./cmd/docker-gen
 
 FROM alpine:3.13
 

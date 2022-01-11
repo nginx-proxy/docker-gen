@@ -14,7 +14,7 @@ RUN GOOS=linux go build -ldflags "-X main.buildVersion=${VERSION}" -o docker-gen
 
 FROM debian:11-slim
 
-LABEL maintainer="Jason Wilder <mail@jasonwilder.com>"
+LABEL maintainer="Nicolas Duchon <nicolas.duchon@gmail.com> (@buchdag)"
 
 ENV DOCKER_HOST unix:///tmp/docker.sock
 

@@ -14,7 +14,7 @@ RUN GOOS=linux CGO_ENABLED=0 go build -ldflags "-X main.buildVersion=${VERSION}"
 
 FROM alpine:3.13
 
-LABEL maintainer="Jason Wilder <mail@jasonwilder.com>"
+LABEL maintainer="Nicolas Duchon <nicolas.duchon@gmail.com> (@buchdag)"
 
 ENV DOCKER_HOST unix:///tmp/docker.sock
 

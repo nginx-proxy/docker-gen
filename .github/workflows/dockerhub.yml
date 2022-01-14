@@ -46,6 +46,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
           labels: |
+            org.opencontainers.image.authors=Nicolas Duchon <nicolas.duchon@gmail.com> (@buchdag), Jason Wilder
             org.opencontainers.image.version=${{ env.GIT_DESCRIBE }}
       
       - name: Get Docker tags for Debian based image
@@ -61,6 +62,7 @@ jobs:
             type=semver,suffix=-debian,pattern={{major}}.{{minor}}
             type=raw,value=debian,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
           labels: |
+            org.opencontainers.image.authors=Nicolas Duchon <nicolas.duchon@gmail.com> (@buchdag), Jason Wilder
             org.opencontainers.image.version=${{ env.GIT_DESCRIBE }}
           flavor: latest=false
 

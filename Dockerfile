@@ -14,8 +14,6 @@ RUN GOOS=linux CGO_ENABLED=0 go build -ldflags "-X main.buildVersion=${VERSION}"
 
 FROM alpine:3.13
 
-LABEL maintainer="Nicolas Duchon <nicolas.duchon@gmail.com> (@buchdag)"
-
 ENV DOCKER_HOST unix:///tmp/docker.sock
 
 # Install packages required by the image

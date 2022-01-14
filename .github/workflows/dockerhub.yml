@@ -33,7 +33,7 @@ jobs:
       - name: Get Docker tags for Alpine based image
         if: ${{ matrix.base == 'alpine' }}
         id: docker_meta_alpine
-        uses: crazy-max/ghaction-docker-meta@v2
+        uses: docker/metadata-action@v3
         with:
           images: |
             nginxproxy/docker-gen
@@ -46,7 +46,7 @@ jobs:
       - name: Get Docker tags for Debian based image
         if: ${{ matrix.base == 'debian' }}
         id: docker_meta_debian
-        uses: crazy-max/ghaction-docker-meta@v2
+        uses: docker/metadata-action@v3
         with:
           images: |
             nginxproxy/docker-gen

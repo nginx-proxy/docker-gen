@@ -208,6 +208,8 @@ e75a60548dc9 = 1  # a key can be either container name (nginx) or ID
 
 The templates used by docker-gen are written using the Go [text/template](http://golang.org/pkg/text/template/) language. In addition to the [built-in functions](http://golang.org/pkg/text/template/#hdr-Functions) supplied by Go, docker-gen uses [sprig](https://masterminds.github.io/sprig/) and some additional functions to make it simpler (or possible) to generate your desired output.
 
+For parsing several templates, split path with `;` (for example `template = "nginx.tmpl;header.tmpl"`). This makes possible to use go nested templates through standard `template` function.
+
 #### Emit Structure
 
 Within the templates, the object emitted by docker-gen will be a structure consisting of following Go structs:
@@ -365,6 +367,7 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 * *`groupByKeys $containers $fieldPath`*: Returns the same as `groupBy` but only returns the keys of the map.
 * *`groupByMulti $containers $fieldPath $sep`*: Like `groupBy`, but the string value specified by `$fieldPath` is first split by `$sep` into a list of strings. A container whose `$fieldPath` value contains a list of strings will show up in the map output under each of those strings.
 * *`groupByLabel $containers $label`*: Returns the same as `groupBy` but grouping by the given label's value.
+* *`include $file`*: Returns content of `$file`, and empty string if file reading error.
 * *`intersect $slice1 $slice2`*: Returns the strings that exist in both string slices.
 * *`json $value`*: Returns the JSON representation of `$value` as a `string`.
 * *`keys $map`*: Returns the keys from `$map`. If `$map` is `nil`, a `nil` is returned. If `$map` is not a `map`, an error will be thrown.

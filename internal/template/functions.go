@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
 	"reflect"
 	"strings"
 )
@@ -29,6 +30,14 @@ func keys(input interface{}) (interface{}, error) {
 	}
 
 	return k, nil
+}
+
+func include(file string) string {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return ""
+	}
+	return string(data)
 }
 
 func intersect(l1, l2 []string) []string {

@@ -78,6 +78,16 @@ func TestKeysNil(t *testing.T) {
 	}
 }
 
+func TestInclude(t *testing.T) {
+	data := include("some_random_file")
+	assert.Equal(t, "", data)
+
+	_ = os.WriteFile("/tmp/docker-gen-test-temp-file", []byte("some string"), 0o777)
+	data = include("/tmp/docker-gen-test-temp-file")
+	assert.Equal(t, "some string", data)
+	_ = os.Remove("/tmp/docker-gen-test-temp-file")
+}
+
 func TestIntersect(t *testing.T) {
 	i := intersect([]string{"foo.fo.com", "bar.com"}, []string{"foo.bar.com"})
 	assert.Len(t, i, 0, "Expected no match")

@@ -4,13 +4,13 @@ go 1.17
 
 require (
 	github.com/BurntSushi/toml v1.0.0
-	github.com/fsouza/go-dockerclient v1.7.8
+	github.com/fsouza/go-dockerclient v1.7.9
 	github.com/stretchr/testify v1.7.0
 )
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
-	github.com/Microsoft/go-winio v0.5.1 // indirect
+	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/Microsoft/hcsshim v0.8.23 // indirect
 	github.com/containerd/cgroups v1.0.1 // indirect
 	github.com/containerd/containerd v1.5.9 // indirect

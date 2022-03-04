@@ -13,6 +13,7 @@ on:
       - '.dockerignore'
       - '.github/workflows/dockerhub.yml'
       - 'Dockerfile'
+      - 'Dockerfile.debian'
       - 'go.mod'
       - 'go.sum'
       - '**.go'

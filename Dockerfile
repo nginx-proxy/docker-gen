@@ -12,7 +12,7 @@ RUN go mod download
 # Build the docker-gen executable
 RUN GOOS=linux CGO_ENABLED=0 go build -ldflags "-X main.buildVersion=${VERSION}" -o docker-gen ./cmd/docker-gen
 
-FROM alpine:3.13
+FROM alpine:3.15.0
 
 ENV DOCKER_HOST unix:///tmp/docker.sock
 

@@ -1,7 +1,9 @@
+ARG DOCKER_GEN_VERSION=main
+
 # Build docker-gen from scratch
 FROM golang:1.17.8 as go-builder
 
-ARG VERSION=main
+ARG DOCKER_GEN_VERSION
 
 WORKDIR /build
 
@@ -10,11 +12,13 @@ COPY . .
 RUN go mod download
 
 # Build the docker-gen executable
-RUN GOOS=linux go build -ldflags "-X main.buildVersion=${VERSION}" -o docker-gen ./cmd/docker-gen
+RUN GOOS=linux go build -ldflags "-X main.buildVersion=${DOCKER_GEN_VERSION}" -o docker-gen ./cmd/docker-gen
 
 FROM debian:11.2-slim
 
-ENV DOCKER_HOST unix:///tmp/docker.sock
+ARG VERSION
+ENV DOCKER_GEN_VERSION=${VERSION} \
+    DOCKER_HOST=unix:///tmp/docker.sock
 
 # Install packages required by the image
 RUN apt-get update \

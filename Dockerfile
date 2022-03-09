@@ -22,4 +22,7 @@ RUN apk add --no-cache --virtual .bin-deps openssl
 # Install docker-gen from build stage
 COPY --from=go-builder /build/docker-gen /usr/local/bin/docker-gen
 
+# Copy the license
+COPY LICENSE /usr/local/share/doc/docker-gen/
+
 ENTRYPOINT ["/usr/local/bin/docker-gen"]

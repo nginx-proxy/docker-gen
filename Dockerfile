@@ -1,7 +1,9 @@
 ARG DOCKER_GEN_VERSION=main
+ARG ARCH=
+ARG GOARCH=
 
 # Build docker-gen from scratch
-FROM golang:1.17.8-alpine as go-builder
+FROM ${ARCH}/golang:1.17.8-alpine as go-builder
 
 ARG DOCKER_GEN_VERSION
 WORKDIR /build
@@ -11,9 +13,9 @@ COPY . .
 RUN go mod download
 
 # Build the docker-gen executable
-RUN GOOS=linux CGO_ENABLED=0 go build -ldflags "-X main.buildVersion=${DOCKER_GEN_VERSION}" -o docker-gen ./cmd/docker-gen
+RUN GOOS=linux GOARCH=${GOARCH} CGO_ENABLED=0 go build -ldflags "-X main.buildVersion=${DOCKER_GEN_VERSION}" -o docker-gen ./cmd/docker-gen
 
-FROM alpine:3.15.0
+FROM ${ARCH}/alpine:3.15.0
 
 ARG DOCKER_GEN_VERSION
 ENV DOCKER_GEN_VERSION=${DOCKER_GEN_VERSION} \

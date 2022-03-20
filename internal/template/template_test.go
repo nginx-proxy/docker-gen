@@ -113,3 +113,41 @@ func TestRemoveBlankLines(t *testing.T) {
 		}
 	}
 }
+
+// TestSprig ensures that the migration to sprig to provide certain functions did not break
+// compatibility with existing templates.
+func TestSprig(t *testing.T) {
+	for _, tc := range []struct {
+		desc string
+		tts  templateTestList
+	}{
+		{"dict", templateTestList{
+			{`{{ $d := dict "a" "b" }}{{ if eq (index $d "a") "b" }}ok{{ end }}`, nil, `ok`},
+			{`{{ $d := dict "a" "b" }}{{ if eq (index $d "x") nil }}ok{{ end }}`, nil, `ok`},
+			{`{{ $d := dict "a" "b" "c" (dict "d" "e") }}{{ if eq (index $d "c" "d") "e" }}ok{{ end }}`, nil, `ok`},
+		}},
+		{"first", templateTestList{
+			{`{{ if eq (first $) "a"}}ok{{ end }}`, []string{"a", "b"}, `ok`},
+			{`{{ if eq (first $) "a"}}ok{{ end }}`, [2]string{"a", "b"}, `ok`},
+		}},
+		{"hasPrefix", templateTestList{
+			{`{{ if hasPrefix "tcp://" "tcp://127.0.0.1:2375" }}ok{{ end }}`, nil, `ok`},
+			{`{{ if not (hasPrefix "udp://" "tcp://127.0.0.1:2375") }}ok{{ end }}`, nil, `ok`},
+		}},
+		{"hasSuffix", templateTestList{
+			{`{{ if hasSuffix ".local" "myhost.local" }}ok{{ end }}`, nil, `ok`},
+			{`{{ if not (hasSuffix ".example" "myhost.local") }}ok{{ end }}`, nil, `ok`},
+		}},
+		{"last", templateTestList{
+			{`{{ if eq (last $) "b"}}ok{{ end }}`, []string{"a", "b"}, `ok`},
+			{`{{ if eq (last $) "b"}}ok{{ end }}`, [2]string{"a", "b"}, `ok`},
+		}},
+		{"trim", templateTestList{
+			{`{{ if eq (trim "  myhost.local  ") "myhost.local" }}ok{{ end }}`, nil, `ok`},
+		}},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			tc.tts.run(t)
+		})
+	}
+}

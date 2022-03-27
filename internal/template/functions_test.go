@@ -47,7 +47,7 @@ func TestKeys(t *testing.T) {
 		{`{{range (keys $)}}{{.}}{{end}}`, env, `VIRTUAL_HOST`},
 	}
 
-	tests.run(t, "keys")
+	tests.run(t)
 }
 
 func TestKeysEmpty(t *testing.T) {
@@ -116,7 +116,7 @@ func TestSplitN(t *testing.T) {
 		{`{{len (splitN . "/" 2)}}`, "example.com", `1`},
 	}
 
-	tests.run(t, "splitN")
+	tests.run(t)
 }
 
 func TestTrimPrefix(t *testing.T) {
@@ -250,7 +250,7 @@ func TestParseJson(t *testing.T) {
 		{`{{index (parseJson . | first) "enabled"}}`, `[{"enabled":true}]`, `true`},
 	}
 
-	tests.run(t, "parseJson")
+	tests.run(t)
 }
 
 func TestQueryEscape(t *testing.T) {
@@ -261,7 +261,7 @@ func TestQueryEscape(t *testing.T) {
 		{`{{queryEscape .}}`, `~^example\.com(\..*\.xip\.io)?$`, `~%5Eexample%5C.com%28%5C..%2A%5C.xip%5C.io%29%3F%24`},
 	}
 
-	tests.run(t, "queryEscape")
+	tests.run(t)
 }
 
 func TestArrayClosestExact(t *testing.T) {
@@ -299,7 +299,7 @@ func TestWhen(t *testing.T) {
 		{`{{ when (not (eq .StringValue "foo")) "first" "second" | print }}`, context, `second`},
 	}
 
-	tests.run(t, "when")
+	tests.run(t)
 }
 
 func TestWhenTrue(t *testing.T) {

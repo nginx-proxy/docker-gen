@@ -2,11 +2,10 @@ package template
 
 import (
 	"bytes"
-	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
-	"text/template"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -17,23 +16,22 @@ type templateTestList []struct {
 	expected string
 }
 
-func (tests templateTestList) run(t *testing.T, prefix string) {
+func (tests templateTestList) run(t *testing.T) {
 	for n, test := range tests {
 		test := test
-		tmplName := fmt.Sprintf("%s-test-%d", prefix, n)
-		t.Run(tmplName, func(t *testing.T) {
+		t.Run(strconv.Itoa(n), func(t *testing.T) {
 			t.Parallel()
-			tmpl := template.Must(newTemplate(tmplName).Parse(test.tmpl))
+			tmpl := template.Must(newTemplate("testTemplate").Parse(test.tmpl))
 
 			var b bytes.Buffer
-			err := tmpl.ExecuteTemplate(&b, tmplName, test.context)
+			err := tmpl.ExecuteTemplate(&b, "testTemplate", test.context)
 			if err != nil {
-				t.Fatalf("Error executing template: %v (test %s)", err, tmplName)
+				t.Fatalf("Error executing template: %v", err)
 			}
 
 			got := b.String()
 			if test.expected != got {
-				t.Fatalf("Incorrect output found; expected %s, got %s (test %s)", test.expected, got, tmplName)
+				t.Fatalf("Incorrect output found; expected %s, got %s", test.expected, got)
 			}
 		})
 	}

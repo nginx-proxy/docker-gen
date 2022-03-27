@@ -21,10 +21,13 @@ func (tests templateTestList) run(t *testing.T) {
 		test := test
 		t.Run(strconv.Itoa(n), func(t *testing.T) {
 			t.Parallel()
-			tmpl := template.Must(newTemplate("testTemplate").Parse(test.tmpl))
+			tmpl, err := newTemplate("testTemplate").Parse(test.tmpl)
+			if err != nil {
+				t.Fatalf("Template parse failed: %v", err)
+			}
 
 			var b bytes.Buffer
-			err := tmpl.ExecuteTemplate(&b, "testTemplate", test.context)
+			err = tmpl.ExecuteTemplate(&b, "testTemplate", test.context)
 			if err != nil {
 				t.Fatalf("Error executing template: %v", err)
 			}

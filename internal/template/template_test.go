@@ -19,8 +19,10 @@ type templateTestList []struct {
 
 func (tests templateTestList) run(t *testing.T, prefix string) {
 	for n, test := range tests {
+		test := test
 		tmplName := fmt.Sprintf("%s-test-%d", prefix, n)
 		t.Run(tmplName, func(t *testing.T) {
+			t.Parallel()
 			tmpl := template.Must(newTemplate(tmplName).Parse(test.tmpl))
 
 			var b bytes.Buffer

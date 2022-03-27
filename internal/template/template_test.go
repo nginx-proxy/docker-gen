@@ -20,18 +20,20 @@ type templateTestList []struct {
 func (tests templateTestList) run(t *testing.T, prefix string) {
 	for n, test := range tests {
 		tmplName := fmt.Sprintf("%s-test-%d", prefix, n)
-		tmpl := template.Must(newTemplate(tmplName).Parse(test.tmpl))
+		t.Run(tmplName, func(t *testing.T) {
+			tmpl := template.Must(newTemplate(tmplName).Parse(test.tmpl))
 
-		var b bytes.Buffer
-		err := tmpl.ExecuteTemplate(&b, tmplName, test.context)
-		if err != nil {
-			t.Fatalf("Error executing template: %v (test %s)", err, tmplName)
-		}
+			var b bytes.Buffer
+			err := tmpl.ExecuteTemplate(&b, tmplName, test.context)
+			if err != nil {
+				t.Fatalf("Error executing template: %v (test %s)", err, tmplName)
+			}
 
-		got := b.String()
-		if test.expected != got {
-			t.Fatalf("Incorrect output found; expected %s, got %s (test %s)", test.expected, got, tmplName)
-		}
+			got := b.String()
+			if test.expected != got {
+				t.Fatalf("Incorrect output found; expected %s, got %s (test %s)", test.expected, got, tmplName)
+			}
+		})
 	}
 }
 

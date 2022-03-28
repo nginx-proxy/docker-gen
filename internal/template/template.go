@@ -17,6 +17,7 @@ import (
 	"text/template"
 	"unicode"
 
+	sprig "github.com/Masterminds/sprig/v3"
 	"github.com/nginx-proxy/docker-gen/internal/config"
 	"github.com/nginx-proxy/docker-gen/internal/context"
 	"github.com/nginx-proxy/docker-gen/internal/utils"
@@ -42,24 +43,19 @@ func getArrayValues(funcName string, entries interface{}) (*reflect.Value, error
 }
 
 func newTemplate(name string) *template.Template {
-	tmpl := template.New(name).Funcs(template.FuncMap{
+	tmpl := template.New(name).Funcs(sprig.TxtFuncMap()).Funcs(template.FuncMap{
 		"closest":                arrayClosest,
 		"coalesce":               coalesce,
 		"contains":               contains,
-		"dict":                   dict,
 		"dir":                    dirList,
 		"exists":                 utils.PathExists,
-		"first":                  arrayFirst,
 		"groupBy":                groupBy,
 		"groupByKeys":            groupByKeys,
 		"groupByMulti":           groupByMulti,
 		"groupByLabel":           groupByLabel,
-		"hasPrefix":              hasPrefix,
-		"hasSuffix":              hasSuffix,
 		"json":                   marshalJson,
 		"intersect":              intersect,
 		"keys":                   keys,
-		"last":                   arrayLast,
 		"replace":                strings.Replace,
 		"parseBool":              strconv.ParseBool,
 		"parseJson":              unmarshalJson,
@@ -73,7 +69,6 @@ func newTemplate(name string) *template.Template {
 		"sortObjectsByKeysDesc":  sortObjectsByKeysDesc,
 		"trimPrefix":             trimPrefix,
 		"trimSuffix":             trimSuffix,
-		"trim":                   trim,
 		"toLower":                toLower,
 		"toUpper":                toUpper,
 		"when":                   when,

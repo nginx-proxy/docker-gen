@@ -68,7 +68,7 @@ func TestWhere(t *testing.T) {
 		},
 	}
 
-	tests.run(t, "where")
+	tests.run(t)
 }
 
 func TestWhereNot(t *testing.T) {
@@ -133,7 +133,7 @@ func TestWhereNot(t *testing.T) {
 		},
 	}
 
-	tests.run(t, "whereNot")
+	tests.run(t)
 }
 
 func TestWhereExist(t *testing.T) {
@@ -173,7 +173,7 @@ func TestWhereExist(t *testing.T) {
 		{`{{whereExist . "Env.VIRTUAL_PROTO" | len}}`, containers, `1`},
 	}
 
-	tests.run(t, "whereExist")
+	tests.run(t)
 }
 
 func TestWhereNotExist(t *testing.T) {
@@ -213,7 +213,7 @@ func TestWhereNotExist(t *testing.T) {
 		{`{{whereNotExist . "Env.VIRTUAL_PROTO" | len}}`, containers, `3`},
 	}
 
-	tests.run(t, "whereNotExist")
+	tests.run(t)
 }
 
 func TestWhereSomeMatch(t *testing.T) {
@@ -251,7 +251,7 @@ func TestWhereSomeMatch(t *testing.T) {
 		{`{{whereAny . "Env.NOEXIST" "," (split "demo3.localhost" ",") | len}}`, containers, `0`},
 	}
 
-	tests.run(t, "whereAny")
+	tests.run(t)
 }
 
 func TestWhereRequires(t *testing.T) {
@@ -289,7 +289,7 @@ func TestWhereRequires(t *testing.T) {
 		{`{{whereAll . "Env.NOEXIST" "," (split "demo3.localhost" ",") | len}}`, containers, `0`},
 	}
 
-	tests.run(t, "whereAll")
+	tests.run(t)
 }
 
 func TestWhereLabelExists(t *testing.T) {
@@ -315,7 +315,7 @@ func TestWhereLabelExists(t *testing.T) {
 		{`{{whereLabelExists . "com.example.baz" | len}}`, containers, `0`},
 	}
 
-	tests.run(t, "whereLabelExists")
+	tests.run(t)
 }
 
 func TestWhereLabelDoesNotExist(t *testing.T) {
@@ -341,7 +341,7 @@ func TestWhereLabelDoesNotExist(t *testing.T) {
 		{`{{whereLabelDoesNotExist . "com.example.baz" | len}}`, containers, `2`},
 	}
 
-	tests.run(t, "whereLabelDoesNotExist")
+	tests.run(t)
 }
 
 func TestWhereLabelValueMatches(t *testing.T) {
@@ -370,5 +370,5 @@ func TestWhereLabelValueMatches(t *testing.T) {
 		{`{{whereLabelValueMatches . "com.example.baz" ".*" | len}}`, containers, `0`},
 	}
 
-	tests.run(t, "whereLabelValueMatches")
+	tests.run(t)
 }

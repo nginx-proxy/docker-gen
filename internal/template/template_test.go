@@ -2,11 +2,10 @@ package template
 
 import (
 	"bytes"
-	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
-	"text/template"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -17,21 +16,27 @@ type templateTestList []struct {
 	expected string
 }
 
-func (tests templateTestList) run(t *testing.T, prefix string) {
+func (tests templateTestList) run(t *testing.T) {
 	for n, test := range tests {
-		tmplName := fmt.Sprintf("%s-test-%d", prefix, n)
-		tmpl := template.Must(newTemplate(tmplName).Parse(test.tmpl))
+		test := test
+		t.Run(strconv.Itoa(n), func(t *testing.T) {
+			t.Parallel()
+			tmpl, err := newTemplate("testTemplate").Parse(test.tmpl)
+			if err != nil {
+				t.Fatalf("Template parse failed: %v", err)
+			}
 
-		var b bytes.Buffer
-		err := tmpl.ExecuteTemplate(&b, tmplName, test.context)
-		if err != nil {
-			t.Fatalf("Error executing template: %v (test %s)", err, tmplName)
-		}
+			var b bytes.Buffer
+			err = tmpl.ExecuteTemplate(&b, "testTemplate", test.context)
+			if err != nil {
+				t.Fatalf("Error executing template: %v", err)
+			}
 
-		got := b.String()
-		if test.expected != got {
-			t.Fatalf("Incorrect output found; expected %s, got %s (test %s)", test.expected, got, tmplName)
-		}
+			got := b.String()
+			if test.expected != got {
+				t.Fatalf("Incorrect output found; expected %s, got %s", test.expected, got)
+			}
+		})
 	}
 }
 
@@ -106,5 +111,43 @@ func TestRemoveBlankLines(t *testing.T) {
 		if output.String() != i.expected {
 			t.Fatalf("expected '%v'. got '%v'", i.expected, output)
 		}
+	}
+}
+
+// TestSprig ensures that the migration to sprig to provide certain functions did not break
+// compatibility with existing templates.
+func TestSprig(t *testing.T) {
+	for _, tc := range []struct {
+		desc string
+		tts  templateTestList
+	}{
+		{"dict", templateTestList{
+			{`{{ $d := dict "a" "b" }}{{ if eq (index $d "a") "b" }}ok{{ end }}`, nil, `ok`},
+			{`{{ $d := dict "a" "b" }}{{ if eq (index $d "x") nil }}ok{{ end }}`, nil, `ok`},
+			{`{{ $d := dict "a" "b" "c" (dict "d" "e") }}{{ if eq (index $d "c" "d") "e" }}ok{{ end }}`, nil, `ok`},
+		}},
+		{"first", templateTestList{
+			{`{{ if eq (first $) "a"}}ok{{ end }}`, []string{"a", "b"}, `ok`},
+			{`{{ if eq (first $) "a"}}ok{{ end }}`, [2]string{"a", "b"}, `ok`},
+		}},
+		{"hasPrefix", templateTestList{
+			{`{{ if hasPrefix "tcp://" "tcp://127.0.0.1:2375" }}ok{{ end }}`, nil, `ok`},
+			{`{{ if not (hasPrefix "udp://" "tcp://127.0.0.1:2375") }}ok{{ end }}`, nil, `ok`},
+		}},
+		{"hasSuffix", templateTestList{
+			{`{{ if hasSuffix ".local" "myhost.local" }}ok{{ end }}`, nil, `ok`},
+			{`{{ if not (hasSuffix ".example" "myhost.local") }}ok{{ end }}`, nil, `ok`},
+		}},
+		{"last", templateTestList{
+			{`{{ if eq (last $) "b"}}ok{{ end }}`, []string{"a", "b"}, `ok`},
+			{`{{ if eq (last $) "b"}}ok{{ end }}`, [2]string{"a", "b"}, `ok`},
+		}},
+		{"trim", templateTestList{
+			{`{{ if eq (trim "  myhost.local  ") "myhost.local" }}ok{{ end }}`, nil, `ok`},
+		}},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			tc.tts.run(t)
+		})
 	}
 }

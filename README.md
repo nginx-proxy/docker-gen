@@ -206,7 +206,7 @@ e75a60548dc9 = 1  # a key can be either container name (nginx) or ID
 
 ### Templating
 
-The templates used by docker-gen are written using the Go [text/template](http://golang.org/pkg/text/template/) language. In addition to the [built-in functions](http://golang.org/pkg/text/template/#hdr-Functions) supplied by Go, docker-gen provides a number of additional functions to make it simpler (or possible) to generate your desired output.
+The templates used by docker-gen are written using the Go [text/template](http://golang.org/pkg/text/template/) language. In addition to the [built-in functions](http://golang.org/pkg/text/template/#hdr-Functions) supplied by Go, docker-gen uses [sprig](https://masterminds.github.io/sprig/) and some additional functions to make it simpler (or possible) to generate your desired output.
 
 #### Emit Structure
 
@@ -354,23 +354,20 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 
 #### Functions
 
+* [Functions from Go](https://pkg.go.dev/text/template#hdr-Functions)
+* [Functions from Sprig v3](https://masterminds.github.io/sprig/), except for those that have the same name as one of the following functions.
 * *`closest $array $value`*: Returns the longest matching substring in `$array` that matches `$value`
 * *`coalesce ...`*: Returns the first non-nil argument.
 * *`contains $map $key`*: Returns `true` if `$map` contains `$key`. Takes maps from `string` to any type.
-* *`dict $key $value ...`*: Creates a map from a list of pairs. Each `$key` value must be a `string`, but the `$value` can be any type (or `nil`). Useful for passing more than one value as a pipeline context to subtemplates.
 * *`dir $path`*: Returns an array of filenames in the specified `$path`.
 * *`exists $path`*: Returns `true` if `$path` refers to an existing file or directory. Takes a string.
-* *`first $array`*: Returns the first value of an array or nil if the arry is nil or empty.
 * *`groupBy $containers $fieldPath`*: Groups an array of `RuntimeContainer` instances based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value, which must be a string. Returns a map from the value of the field path expression to an array of containers having that value. Containers that do not have a value for the field path in question are omitted.
 * *`groupByKeys $containers $fieldPath`*: Returns the same as `groupBy` but only returns the keys of the map.
 * *`groupByMulti $containers $fieldPath $sep`*: Like `groupBy`, but the string value specified by `$fieldPath` is first split by `$sep` into a list of strings. A container whose `$fieldPath` value contains a list of strings will show up in the map output under each of those strings.
 * *`groupByLabel $containers $label`*: Returns the same as `groupBy` but grouping by the given label's value.
-* *`hasPrefix $prefix $string`*: Returns whether `$prefix` is a prefix of `$string`.
-* *`hasSuffix $suffix $string`*: Returns whether `$suffix` is a suffix of `$string`.
 * *`intersect $slice1 $slice2`*: Returns the strings that exist in both string slices.
 * *`json $value`*: Returns the JSON representation of `$value` as a `string`.
 * *`keys $map`*: Returns the keys from `$map`. If `$map` is `nil`, a `nil` is returned. If `$map` is not a `map`, an error will be thrown.
-* *`last $array`*: Returns the last value of an array.
 * *`parseBool $string`*: parseBool returns the boolean value represented by the string. It accepts 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False. Any other value returns an error. Alias for [`strconv.ParseBool`](http://golang.org/pkg/strconv/#ParseBool) 
 * *`replace $string $old $new $count`*: Replaces up to `$count` occurences of `$old` with `$new` in `$string`. Alias for [`strings.Replace`](http://golang.org/pkg/strings/#Replace)
 * *`sha1 $string`*: Returns the hexadecimal representation of the SHA1 hash of `$string`.
@@ -382,7 +379,6 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 * *`sortObjectsByKeysDesc $objects $fieldPath`: Returns the array `$objects`, sorted in descending (reverse) order based on the values of a field path expression `$fieldPath`.
 * *`trimPrefix $prefix $string`*: If `$prefix` is a prefix of `$string`, return `$string` with `$prefix` trimmed from the beginning. Otherwise, return `$string` unchanged.
 * *`trimSuffix $suffix $string`*: If `$suffix` is a suffix of `$string`, return `$string` with `$suffix` trimmed from the end. Otherwise, return `$string` unchanged.
-* *`trim $string`*: Removes whitespace from both sides of `$string`.
 * *`toLower $string`*: Replace capital letters in `$string` to lowercase.
 * *`toUpper $string`*: Replace lowercase letters in `$string` to uppercase.
 * *`when $condition $trueValue $falseValue`*: Returns the `$trueValue` when the `$condition` is `true` and the `$falseValue` otherwise

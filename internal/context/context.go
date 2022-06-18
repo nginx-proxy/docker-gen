@@ -81,6 +81,11 @@ type Volume struct {
 
 type State struct {
 	Running bool
+	Health  Health
+}
+
+type Health struct {
+	Status string
 }
 
 type RuntimeContainer struct {

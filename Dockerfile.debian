@@ -14,7 +14,7 @@ RUN go mod download
 # Build the docker-gen executable
 RUN GOOS=linux go build -ldflags "-X main.buildVersion=${DOCKER_GEN_VERSION}" -o docker-gen ./cmd/docker-gen
 
-FROM debian:11.3-slim
+FROM debian:11.5-slim
 
 ARG VERSION
 ENV DOCKER_GEN_VERSION=${VERSION} \

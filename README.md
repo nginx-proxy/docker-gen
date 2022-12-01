@@ -30,7 +30,7 @@ There are three common ways to run docker-gen:
 
 Linux/OSX binaries for release [0.9.0](https://github.com/nginx-proxy/docker-gen/releases)
 
-* [amd64](https://github.com/ngilatestnx-proxy/docker-gen/releases/download/0.9.0/docker-gen-linux-amd64-0.9.0.tar.gz)
+* [amd64](https://github.com/nginx-proxy/docker-gen/releases/download/0.9.0/docker-gen-linux-amd64-0.9.0.tar.gz)
 * [i386](https://github.com/nginx-proxy/docker-gen/releases/download/0.9.0/docker-gen-linux-i386-0.9.0.tar.gz)
 * [alpine-linux](https://github.com/nginx-proxy/docker-gen/releases/download/0.9.0/docker-gen-alpine-linux-amd64-0.9.0.tar.gz)
 

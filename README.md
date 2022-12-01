@@ -28,17 +28,17 @@ There are three common ways to run docker-gen:
 
 #### Host Install
 
-Linux/OSX binaries for release [0.7.6](https://github.com/nginx-proxy/docker-gen/releases)
+Linux/OSX binaries for release [0.9.0](https://github.com/nginx-proxy/docker-gen/releases)
 
-* [amd64](https://github.com/nginx-proxy/docker-gen/releases/download/0.7.6/docker-gen-linux-amd64-0.7.6.tar.gz)
-* [i386](https://github.com/nginx-proxy/docker-gen/releases/download/0.7.6/docker-gen-linux-i386-0.7.6.tar.gz)
-* [alpine-linux](https://github.com/nginx-proxy/docker-gen/releases/download/0.7.6/docker-gen-alpine-linux-amd64-0.7.6.tar.gz)
+* [amd64](https://github.com/nginx-proxy/docker-gen/releases/download/0.9.0/docker-gen-linux-amd64-0.9.0.tar.gz)
+* [i386](https://github.com/nginx-proxy/docker-gen/releases/download/0.9.0/docker-gen-linux-i386-0.9.0.tar.gz)
+* [alpine-linux](https://github.com/nginx-proxy/docker-gen/releases/download/0.9.0/docker-gen-alpine-linux-amd64-0.9.0.tar.gz)
 
 Download the version you need, untar, and install to your PATH.
 
 ```
-$ wget https://github.com/nginx-proxy/docker-gen/releases/download/0.7.6/docker-gen-linux-amd64-0.7.6.tar.gz
-$ tar xvzf docker-gen-linux-amd64-0.7.6.tar.gz
+$ wget https://github.com/nginx-proxy/docker-gen/releases/download/0.9.0/docker-gen-linux-amd64-0.9.0.tar.gz
+$ tar xvzf docker-gen-linux-amd64-0.9.0.tar.gz
 $ ./docker-gen
 ```
 

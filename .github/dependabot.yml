@@ -1,6 +1,5 @@
 version: 2
 updates:
-
   # Maintain dependencies for Go modules
   - package-ecosystem: "gomod"
     directory: "/"

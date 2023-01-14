@@ -3,6 +3,7 @@ package template
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -43,11 +44,27 @@ func getArrayValues(funcName string, entries interface{}) (*reflect.Value, error
 }
 
 func newTemplate(name string) *template.Template {
-	tmpl := template.New(name).Funcs(sprig.TxtFuncMap()).Funcs(template.FuncMap{
+	tmpl := template.New(name)
+	// The eval function is defined here because it must be a closure around tmpl.
+	eval := func(name string, args ...any) (string, error) {
+		buf := bytes.NewBuffer(nil)
+		data := any(nil)
+		if len(args) == 1 {
+			data = args[0]
+		} else if len(args) > 1 {
+			return "", errors.New("too many arguments")
+		}
+		if err := tmpl.ExecuteTemplate(buf, name, data); err != nil {
+			return "", err
+		}
+		return buf.String(), nil
+	}
+	tmpl.Funcs(sprig.TxtFuncMap()).Funcs(template.FuncMap{
 		"closest":                arrayClosest,
 		"coalesce":               coalesce,
 		"contains":               contains,
 		"dir":                    dirList,
+		"eval":                   eval,
 		"exists":                 utils.PathExists,
 		"groupBy":                groupBy,
 		"groupByKeys":            groupByKeys,

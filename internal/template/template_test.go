@@ -2,6 +2,7 @@ package template
 
 import (
 	"bytes"
+	"errors"
 	"reflect"
 	"strconv"
 	"strings"
@@ -13,7 +14,7 @@ import (
 type templateTestList []struct {
 	tmpl     string
 	context  interface{}
-	expected string
+	expected interface{}
 }
 
 func (tests templateTestList) run(t *testing.T) {
@@ -21,6 +22,11 @@ func (tests templateTestList) run(t *testing.T) {
 		test := test
 		t.Run(strconv.Itoa(n), func(t *testing.T) {
 			t.Parallel()
+			wantErr, _ := test.expected.(error)
+			want, ok := test.expected.(string)
+			if !ok && wantErr == nil {
+				t.Fatalf("test bug: want a string or error for .expected, got %v", test.expected)
+			}
 			tmpl, err := newTemplate("testTemplate").Parse(test.tmpl)
 			if err != nil {
 				t.Fatalf("Template parse failed: %v", err)
@@ -28,13 +34,17 @@ func (tests templateTestList) run(t *testing.T) {
 
 			var b bytes.Buffer
 			err = tmpl.ExecuteTemplate(&b, "testTemplate", test.context)
-			if err != nil {
-				t.Fatalf("Error executing template: %v", err)
-			}
-
 			got := b.String()
-			if test.expected != got {
-				t.Fatalf("Incorrect output found; expected %s, got %s", test.expected, got)
+			if err != nil {
+				if wantErr != nil {
+					return
+				}
+				t.Fatalf("Error executing template: %v", err)
+			} else if wantErr != nil {
+				t.Fatalf("Expected error, got %v", got)
+			}
+			if want != got {
+				t.Fatalf("Incorrect output found; want %#v, got %#v", want, got)
 			}
 		})
 	}
@@ -144,6 +154,38 @@ func TestSprig(t *testing.T) {
 		}},
 		{"trim", templateTestList{
 			{`{{ if eq (trim "  myhost.local  ") "myhost.local" }}ok{{ end }}`, nil, `ok`},
+		}},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			tc.tts.run(t)
+		})
+	}
+}
+
+func TestEval(t *testing.T) {
+	for _, tc := range []struct {
+		desc string
+		tts  templateTestList
+	}{
+		{"undefined", templateTestList{
+			{`{{eval "missing"}}`, nil, errors.New("")},
+			{`{{eval "missing" nil}}`, nil, errors.New("")},
+			{`{{eval "missing" "abc"}}`, nil, errors.New("")},
+			{`{{eval "missing" "abc" "def"}}`, nil, errors.New("")},
+		}},
+		// The purpose of the "ctx" context is to assert that $ and . inside the template is the
+		// eval argument, not the global context.
+		{"noArg", templateTestList{
+			{`{{define "T"}}{{$}}{{.}}{{end}}{{eval "T"}}`, "ctx", "<no value><no value>"},
+		}},
+		{"nilArg", templateTestList{
+			{`{{define "T"}}{{$}}{{.}}{{end}}{{eval "T" nil}}`, "ctx", "<no value><no value>"},
+		}},
+		{"oneArg", templateTestList{
+			{`{{define "T"}}{{$}}{{.}}{{end}}{{eval "T" "arg"}}`, "ctx", "argarg"},
+		}},
+		{"moreThanOneArg", templateTestList{
+			{`{{define "T"}}{{$}}{{.}}{{end}}{{eval "T" "a" "b"}}`, "ctx", errors.New("")},
 		}},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {

@@ -361,6 +361,7 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 * *`contains $map $key`*: Returns `true` if `$map` contains `$key`. Takes maps from `string` to any type.
 * *`dir $path`*: Returns an array of filenames in the specified `$path`.
 * *`exists $path`*: Returns `true` if `$path` refers to an existing file or directory. Takes a string.
+* *`eval $templateName [$data]`*: Evaluates the named template like Go's built-in `template` action, but instead of writing out the result it returns the result as a string so that it can be post-processed.  The `$data` argument may be omitted, which is equivalent to passing `nil`.
 * *`groupBy $containers $fieldPath`*: Groups an array of `RuntimeContainer` instances based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value, which must be a string. Returns a map from the value of the field path expression to an array of containers having that value. Containers that do not have a value for the field path in question are omitted.
 * *`groupByKeys $containers $fieldPath`*: Returns the same as `groupBy` but only returns the keys of the map.
 * *`groupByMulti $containers $fieldPath $sep`*: Like `groupBy`, but the string value specified by `$fieldPath` is first split by `$sep` into a list of strings. A container whose `$fieldPath` value contains a list of strings will show up in the map output under each of those strings.

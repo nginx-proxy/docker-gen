@@ -14,6 +14,13 @@ func deepGetImpl(v reflect.Value, path []string) interface{} {
 	if len(path) == 0 {
 		return v.Interface()
 	}
+	if v.Kind() == reflect.Pointer {
+		v = v.Elem()
+	}
+	if v.Kind() == reflect.Pointer {
+		log.Printf("unable to descend into pointer of a pointer\n")
+		return nil
+	}
 	switch v.Kind() {
 	case reflect.Struct:
 		return deepGetImpl(v.FieldByName(path[0]), path[1:])

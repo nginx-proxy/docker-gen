@@ -53,6 +53,9 @@ func TestDeepGetMap(t *testing.T) {
 }
 
 func TestDeepGet(t *testing.T) {
+	s := struct{ X string }{"foo"}
+	sp := &s
+
 	for _, tc := range []struct {
 		desc string
 		item interface{}
@@ -71,6 +74,9 @@ func TestDeepGet(t *testing.T) {
 			"...",
 			"foo",
 		},
+		{"struct", s, "X", "foo"},
+		{"pointer to struct", sp, "X", "foo"},
+		{"double pointer to struct", &sp, ".X", nil},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			got := deepGet(tc.item, tc.path)

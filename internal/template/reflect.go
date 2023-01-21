@@ -18,32 +18,29 @@ func stripPrefix(s, prefix string) string {
 	return path
 }
 
-func deepGet(item interface{}, path string) interface{} {
-	if path == "" {
-		return item
-	}
-
-	path = stripPrefix(path, ".")
-	parts := strings.Split(path, ".")
-	itemValue := reflect.ValueOf(item)
-
-	if len(parts) > 0 {
-		switch itemValue.Kind() {
-		case reflect.Struct:
-			fieldValue := itemValue.FieldByName(parts[0])
-			if fieldValue.IsValid() {
-				return deepGet(fieldValue.Interface(), strings.Join(parts[1:], "."))
-			}
-		case reflect.Map:
-			mapValue := itemValue.MapIndex(reflect.ValueOf(parts[0]))
-			if mapValue.IsValid() {
-				return deepGet(mapValue.Interface(), strings.Join(parts[1:], "."))
-			}
-		default:
-			log.Printf("Can't group by %s (value %v, kind %s)\n", path, itemValue, itemValue.Kind())
-		}
+func deepGetImpl(v reflect.Value, path []string) interface{} {
+	if !v.IsValid() {
+		log.Printf("invalid value\n")
 		return nil
 	}
+	if len(path) == 0 {
+		return v.Interface()
+	}
+	switch v.Kind() {
+	case reflect.Struct:
+		return deepGetImpl(v.FieldByName(path[0]), path[1:])
+	case reflect.Map:
+		return deepGetImpl(v.MapIndex(reflect.ValueOf(path[0])), path[1:])
+	default:
+		log.Printf("unable to index by %s (value %v, kind %s)\n", path[0], v, v.Kind())
+		return nil
+	}
+}
 
-	return itemValue.Interface()
+func deepGet(item interface{}, path string) interface{} {
+	var parts []string
+	if path != "" {
+		parts = strings.Split(stripPrefix(path, "."), ".")
+	}
+	return deepGetImpl(reflect.ValueOf(item), parts)
 }

@@ -18,7 +18,7 @@ func generalizedWhere(funcName string, entries interface{}, key string, test fun
 
 	selection := make([]interface{}, 0)
 	for i := 0; i < entriesVal.Len(); i++ {
-		v := reflect.Indirect(entriesVal.Index(i)).Interface()
+		v := entriesVal.Index(i).Interface()
 
 		value := deepGet(v, key)
 		if test(value) {

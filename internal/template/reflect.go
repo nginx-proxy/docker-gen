@@ -6,18 +6,6 @@ import (
 	"strings"
 )
 
-func stripPrefix(s, prefix string) string {
-	path := s
-	for {
-		if strings.HasPrefix(path, ".") {
-			path = path[1:]
-			continue
-		}
-		break
-	}
-	return path
-}
-
 func deepGetImpl(v reflect.Value, path []string) interface{} {
 	if !v.IsValid() {
 		log.Printf("invalid value\n")
@@ -40,7 +28,7 @@ func deepGetImpl(v reflect.Value, path []string) interface{} {
 func deepGet(item interface{}, path string) interface{} {
 	var parts []string
 	if path != "" {
-		parts = strings.Split(stripPrefix(path, "."), ".")
+		parts = strings.Split(strings.TrimPrefix(path, "."), ".")
 	}
 	return deepGetImpl(reflect.ValueOf(item), parts)
 }

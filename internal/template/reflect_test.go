@@ -77,6 +77,14 @@ func TestDeepGet(t *testing.T) {
 		{"struct", s, "X", "foo"},
 		{"pointer to struct", sp, "X", "foo"},
 		{"double pointer to struct", &sp, ".X", nil},
+		{"slice index", []string{"foo", "bar"}, "1", "bar"},
+		{"slice index out of bounds", []string{}, "0", nil},
+		{"slice index negative", []string{}, "-1", nil},
+		{"slice index nonnumber", []string{}, "foo", nil},
+		{"array index", [2]string{"foo", "bar"}, "1", "bar"},
+		{"array index out of bounds", [1]string{"foo"}, "1", nil},
+		{"array index negative", [1]string{"foo"}, "-1", nil},
+		{"array index nonnumber", [1]string{"foo"}, "foo", nil},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			got := deepGet(tc.item, tc.path)

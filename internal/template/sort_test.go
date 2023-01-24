@@ -49,15 +49,15 @@ func TestSortObjectsByKeysAsc(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Len(t, sorted, 4)
-	assert.Equal(t, "foo.localhost", sorted[0].(context.RuntimeContainer).Env["VIRTUAL_HOST"])
-	assert.Equal(t, "9", sorted[3].(context.RuntimeContainer).ID)
+	assert.Equal(t, "foo.localhost", sorted[0].(*context.RuntimeContainer).Env["VIRTUAL_HOST"])
+	assert.Equal(t, "9", sorted[3].(*context.RuntimeContainer).ID)
 
 	sorted, err = sortObjectsByKeysAsc(sorted, "Env.VIRTUAL_HOST")
 
 	assert.NoError(t, err)
 	assert.Len(t, sorted, 4)
-	assert.Equal(t, "foo.localhost", sorted[3].(context.RuntimeContainer).Env["VIRTUAL_HOST"])
-	assert.Equal(t, "8", sorted[0].(context.RuntimeContainer).ID)
+	assert.Equal(t, "foo.localhost", sorted[3].(*context.RuntimeContainer).Env["VIRTUAL_HOST"])
+	assert.Equal(t, "8", sorted[0].(*context.RuntimeContainer).ID)
 }
 
 func TestSortObjectsByKeysDesc(t *testing.T) {
@@ -90,13 +90,13 @@ func TestSortObjectsByKeysDesc(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Len(t, sorted, 4)
-	assert.Equal(t, "bar.localhost", sorted[0].(context.RuntimeContainer).Env["VIRTUAL_HOST"])
-	assert.Equal(t, "1", sorted[3].(context.RuntimeContainer).ID)
+	assert.Equal(t, "bar.localhost", sorted[0].(*context.RuntimeContainer).Env["VIRTUAL_HOST"])
+	assert.Equal(t, "1", sorted[3].(*context.RuntimeContainer).ID)
 
 	sorted, err = sortObjectsByKeysDesc(sorted, "Env.VIRTUAL_HOST")
 
 	assert.NoError(t, err)
 	assert.Len(t, sorted, 4)
-	assert.Equal(t, "", sorted[3].(context.RuntimeContainer).Env["VIRTUAL_HOST"])
-	assert.Equal(t, "1", sorted[0].(context.RuntimeContainer).ID)
+	assert.Equal(t, "", sorted[3].(*context.RuntimeContainer).Env["VIRTUAL_HOST"])
+	assert.Equal(t, "1", sorted[0].(*context.RuntimeContainer).ID)
 }

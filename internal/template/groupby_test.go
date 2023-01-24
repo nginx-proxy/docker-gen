@@ -35,7 +35,7 @@ func TestGroupByExistingKey(t *testing.T) {
 	assert.Len(t, groups, 2)
 	assert.Len(t, groups["demo1.localhost"], 2)
 	assert.Len(t, groups["demo2.localhost"], 1)
-	assert.Equal(t, "3", groups["demo2.localhost"][0].(context.RuntimeContainer).ID)
+	assert.Equal(t, "3", groups["demo2.localhost"][0].(*context.RuntimeContainer).ID)
 }
 
 func TestGroupByAfterWhere(t *testing.T) {
@@ -69,7 +69,7 @@ func TestGroupByAfterWhere(t *testing.T) {
 	assert.Len(t, groups, 2)
 	assert.Len(t, groups["demo1.localhost"], 1)
 	assert.Len(t, groups["demo2.localhost"], 1)
-	assert.Equal(t, "3", groups["demo2.localhost"][0].(context.RuntimeContainer).ID)
+	assert.Equal(t, "3", groups["demo2.localhost"][0].(*context.RuntimeContainer).ID)
 }
 
 func TestGroupByKeys(t *testing.T) {
@@ -149,7 +149,7 @@ func TestGroupByLabel(t *testing.T) {
 	assert.Len(t, groups["one"], 2)
 	assert.Len(t, groups[""], 1)
 	assert.Len(t, groups["two"], 1)
-	assert.Equal(t, "2", groups["two"][0].(context.RuntimeContainer).ID)
+	assert.Equal(t, "2", groups["two"][0].(*context.RuntimeContainer).ID)
 }
 
 func TestGroupByLabelError(t *testing.T) {
@@ -193,13 +193,13 @@ func TestGroupByMulti(t *testing.T) {
 	if len(groups["demo2.localhost"]) != 1 {
 		t.Fatalf("expected 1 got %d", len(groups["demo2.localhost"]))
 	}
-	if groups["demo2.localhost"][0].(context.RuntimeContainer).ID != "3" {
-		t.Fatalf("expected 2 got %s", groups["demo2.localhost"][0].(context.RuntimeContainer).ID)
+	if groups["demo2.localhost"][0].(*context.RuntimeContainer).ID != "3" {
+		t.Fatalf("expected 2 got %s", groups["demo2.localhost"][0].(*context.RuntimeContainer).ID)
 	}
 	if len(groups["demo3.localhost"]) != 1 {
 		t.Fatalf("expect 1 got %d", len(groups["demo3.localhost"]))
 	}
-	if groups["demo3.localhost"][0].(context.RuntimeContainer).ID != "2" {
-		t.Fatalf("expected 2 got %s", groups["demo3.localhost"][0].(context.RuntimeContainer).ID)
+	if groups["demo3.localhost"][0].(*context.RuntimeContainer).ID != "2" {
+		t.Fatalf("expected 2 got %s", groups["demo3.localhost"][0].(*context.RuntimeContainer).ID)
 	}
 }

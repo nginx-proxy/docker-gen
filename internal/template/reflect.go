@@ -2,48 +2,57 @@ package template
 
 import (
 	"log"
+	"math"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
-func stripPrefix(s, prefix string) string {
-	path := s
-	for {
-		if strings.HasPrefix(path, ".") {
-			path = path[1:]
-			continue
-		}
-		break
+func deepGetImpl(v reflect.Value, path []string) interface{} {
+	if !v.IsValid() {
+		log.Printf("invalid value\n")
+		return nil
 	}
-	return path
+	if len(path) == 0 {
+		return v.Interface()
+	}
+	if v.Kind() == reflect.Pointer {
+		v = v.Elem()
+	}
+	if v.Kind() == reflect.Pointer {
+		log.Printf("unable to descend into pointer of a pointer\n")
+		return nil
+	}
+	switch v.Kind() {
+	case reflect.Struct:
+		return deepGetImpl(v.FieldByName(path[0]), path[1:])
+	case reflect.Map:
+		return deepGetImpl(v.MapIndex(reflect.ValueOf(path[0])), path[1:])
+	case reflect.Slice, reflect.Array:
+		iu64, err := strconv.ParseUint(path[0], 10, 64)
+		if err != nil {
+			log.Printf("non-negative decimal number required for array/slice index, got %#v\n", path[0])
+			return nil
+		}
+		if iu64 > math.MaxInt {
+			iu64 = math.MaxInt
+		}
+		i := int(iu64)
+		if i >= v.Len() {
+			log.Printf("index %v out of bounds", i)
+			return nil
+		}
+		return deepGetImpl(v.Index(i), path[1:])
+	default:
+		log.Printf("unable to index by %s (value %v, kind %s)\n", path[0], v, v.Kind())
+		return nil
+	}
 }
 
 func deepGet(item interface{}, path string) interface{} {
-	if path == "" {
-		return item
+	var parts []string
+	if path != "" {
+		parts = strings.Split(strings.TrimPrefix(path, "."), ".")
 	}
-
-	path = stripPrefix(path, ".")
-	parts := strings.Split(path, ".")
-	itemValue := reflect.ValueOf(item)
-
-	if len(parts) > 0 {
-		switch itemValue.Kind() {
-		case reflect.Struct:
-			fieldValue := itemValue.FieldByName(parts[0])
-			if fieldValue.IsValid() {
-				return deepGet(fieldValue.Interface(), strings.Join(parts[1:], "."))
-			}
-		case reflect.Map:
-			mapValue := itemValue.MapIndex(reflect.ValueOf(parts[0]))
-			if mapValue.IsValid() {
-				return deepGet(mapValue.Interface(), strings.Join(parts[1:], "."))
-			}
-		default:
-			log.Printf("Can't group by %s (value %v, kind %s)\n", path, itemValue, itemValue.Kind())
-		}
-		return nil
-	}
-
-	return itemValue.Interface()
+	return deepGetImpl(reflect.ValueOf(item), parts)
 }

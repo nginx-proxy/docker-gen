@@ -30,7 +30,7 @@ func getArrayValues(funcName string, entries interface{}) (*reflect.Value, error
 	kind := entriesVal.Kind()
 
 	if kind == reflect.Ptr {
-		entriesVal = reflect.Indirect(entriesVal)
+		entriesVal = entriesVal.Elem()
 		kind = entriesVal.Kind()
 	}
 

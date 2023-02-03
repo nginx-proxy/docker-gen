@@ -1,7 +1,7 @@
 ARG DOCKER_GEN_VERSION=main
 
 # Build docker-gen from scratch
-FROM golang:1.19.5-alpine as go-builder
+FROM golang:1.20.0-alpine as go-builder
 
 ARG DOCKER_GEN_VERSION
 WORKDIR /build

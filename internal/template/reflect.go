@@ -10,7 +10,6 @@ import (
 
 func deepGetImpl(v reflect.Value, path []string) interface{} {
 	if !v.IsValid() {
-		log.Printf("invalid value\n")
 		return nil
 	}
 	if len(path) == 0 {

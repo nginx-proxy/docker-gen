@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -22,7 +23,7 @@ import (
 func TestGenerateFromEvents(t *testing.T) {
 	log.SetOutput(ioutil.Discard)
 	containerID := "8dfafdbc3a40"
-	counter := 0
+	var counter atomic.Int32
 
 	eventsResponse := `
 {"status":"start","id":"8dfafdbc3a40","from":"base:latest","time":1374067924}
@@ -67,7 +68,7 @@ func TestGenerateFromEvents(t *testing.T) {
 		json.NewEncoder(w).Encode(result)
 	}))
 	server.CustomHandler(fmt.Sprintf("/containers/%s/json", containerID), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		counter++
+		counter := counter.Add(1)
 		container := docker.Container{
 			Name:    "docker-gen-test",
 			ID:      containerID,

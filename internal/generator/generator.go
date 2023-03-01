@@ -110,7 +110,7 @@ func (g *generator) generateFromSignals() {
 			switch sig {
 			case syscall.SIGHUP:
 				g.generateFromContainers()
-			case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
+			case syscall.SIGTERM, syscall.SIGINT:
 				// exit when context is done
 				return
 			}
@@ -164,7 +164,7 @@ func (g *generator) generateAtInterval() {
 				case sig := <-sigChan:
 					log.Printf("Received signal: %s\n", sig)
 					switch sig {
-					case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
+					case syscall.SIGTERM, syscall.SIGINT:
 						ticker.Stop()
 						return
 					}
@@ -296,7 +296,7 @@ func (g *generator) generateFromEvents() {
 				case sig := <-sigChan:
 					log.Printf("Received signal: %s\n", sig)
 					switch sig {
-					case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
+					case syscall.SIGTERM, syscall.SIGINT:
 						// close all watchers and exit
 						for _, watcher := range watchers {
 							close(watcher)
@@ -471,7 +471,7 @@ func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
 
 func newSignalChannel() <-chan os.Signal {
 	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
 
 	return sig
 }

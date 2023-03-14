@@ -190,11 +190,11 @@ func (g *generator) generateFromEvents() {
 		}
 
 		g.wg.Add(1)
+		watcher := make(chan *docker.APIEvents, 100)
+		watchers = append(watchers, watcher)
 
-		go func(cfg config.Config, watcher chan *docker.APIEvents) {
+		go func(cfg config.Config) {
 			defer g.wg.Done()
-			watchers = append(watchers, watcher)
-
 			debouncedChan := newDebounceChannel(watcher, cfg.Wait)
 			for range debouncedChan {
 				containers, err := g.getContainers()
@@ -210,7 +210,7 @@ func (g *generator) generateFromEvents() {
 				g.runNotifyCmd(cfg)
 				g.sendSignalToContainer(cfg)
 			}
-		}(cfg, make(chan *docker.APIEvents, 100))
+		}(cfg)
 	}
 
 	// maintains docker client connection and passes events to watchers

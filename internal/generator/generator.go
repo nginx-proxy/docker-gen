@@ -111,7 +111,7 @@ func (g *generator) generateFromSignals() {
 			switch sig {
 			case syscall.SIGHUP:
 				g.generateFromContainers()
-			case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
+			case syscall.SIGTERM, syscall.SIGINT:
 				// exit when context is done
 				return
 			}
@@ -166,7 +166,7 @@ func (g *generator) generateAtInterval() {
 				case sig := <-sigChan:
 					log.Printf("Received signal: %s\n", sig)
 					switch sig {
-					case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
+					case syscall.SIGTERM, syscall.SIGINT:
 						ticker.Stop()
 						return
 					}
@@ -192,11 +192,11 @@ func (g *generator) generateFromEvents() {
 		}
 
 		g.wg.Add(1)
+		watcher := make(chan *docker.APIEvents, 100)
+		watchers = append(watchers, watcher)
 
-		go func(cfg config.Config, watcher chan *docker.APIEvents) {
+		go func(cfg config.Config) {
 			defer g.wg.Done()
-			watchers = append(watchers, watcher)
-
 			debouncedChan := newDebounceChannel(watcher, cfg.Wait)
 			for range debouncedChan {
 				containers, err := g.getContainers()
@@ -212,7 +212,7 @@ func (g *generator) generateFromEvents() {
 				g.runNotifyCmd(cfg)
 				g.sendSignalToContainer(cfg)
 			}
-		}(cfg, make(chan *docker.APIEvents, 100))
+		}(cfg)
 	}
 
 	// maintains docker client connection and passes events to watchers
@@ -299,7 +299,7 @@ func (g *generator) generateFromEvents() {
 				case sig := <-sigChan:
 					log.Printf("Received signal: %s\n", sig)
 					switch sig {
-					case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
+					case syscall.SIGTERM, syscall.SIGINT:
 						// close all watchers and exit
 						for _, watcher := range watchers {
 							close(watcher)
@@ -474,7 +474,7 @@ func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
 
 func newSignalChannel() (<-chan os.Signal, func()) {
 	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
 	return sig, func() { signal.Stop(sig) }
 }
 

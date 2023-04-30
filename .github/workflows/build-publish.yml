@@ -1,4 +1,4 @@
-name: DockerHub
+name: Build and publish Docker images
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ on:
       - "*.*.*"
     paths:
       - ".dockerignore"
-      - ".github/workflows/dockerhub.yml"
+      - ".github/workflows/build-publish.yml"
       - "Dockerfile"
       - "Dockerfile.debian"
       - "go.mod"
@@ -20,6 +20,7 @@ on:
 
 jobs:
   multiarch-build:
+    name: Build and publish image
     strategy:
       matrix:
         base: [alpine, debian]

@@ -91,7 +91,7 @@ jobs:
       - name: Build and push the Alpine based image
         if: ${{ matrix.base == 'alpine' }}
         id: docker_build_alpine
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           build-args: DOCKER_GEN_VERSION=${{ env.GIT_DESCRIBE }}
@@ -103,7 +103,7 @@ jobs:
       - name: Build and push the Debian based image
         if: ${{ matrix.base == 'debian' }}
         id: docker_build_debian
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           build-args: DOCKER_GEN_VERSION=${{ env.GIT_DESCRIBE }}

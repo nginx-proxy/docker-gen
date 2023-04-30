@@ -2,11 +2,8 @@ name: Tests
 
 on:
   push:
-    paths-ignore:
-      - "LICENSE"
-      - "**.md"
-      - "examples/*"
-      - "templates/*"
+    branches:
+      - main
   pull_request:
     paths-ignore:
       - "LICENSE"

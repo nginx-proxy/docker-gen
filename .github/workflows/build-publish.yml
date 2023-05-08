@@ -33,7 +33,8 @@ jobs:
           fetch-depth: 0
 
       - name: Retrieve version
-        run: echo "GIT_DESCRIBE=$(git describe --tags)" >> $GITHUB_ENV
+        id: docker-gen_version
+        run: echo "VERSION=$(git describe --tags)" >> "$GITHUB_OUTPUT"
 
       - name: Get Docker tags
         id: docker_meta
@@ -52,7 +53,7 @@ jobs:
             type=raw,value=debian,enable=${{ github.ref == 'refs/heads/main' && matrix.base == 'debian' }}
           labels: |
             org.opencontainers.image.authors=Nicolas Duchon <nicolas.duchon@gmail.com> (@buchdag), Jason Wilder
-            org.opencontainers.image.version=${{ env.GIT_DESCRIBE }}
+            org.opencontainers.image.version=${{ steps.docker-gen_version.outputs.VERSION }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -78,7 +79,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          build-args: DOCKER_GEN_VERSION=${{ env.GIT_DESCRIBE }}
+          build-args: DOCKER_GEN_VERSION=${{ steps.docker-gen_version.outputs.VERSION }}
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           file: Dockerfile.${{ matrix.base }}
           push: true

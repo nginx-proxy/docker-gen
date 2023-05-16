@@ -2,17 +2,14 @@ name: Tests
 
 on:
   push:
-    paths-ignore:
-    - 'LICENSE'
-    - '**.md'
-    - 'examples/*'
-    - 'templates/*'
+    branches:
+      - main
   pull_request:
     paths-ignore:
-    - 'LICENSE'
-    - '**.md'
-    - 'examples/*'
-    - 'templates/*'
+      - "LICENSE"
+      - "**.md"
+      - "examples/*"
+      - "templates/*"
 
 jobs:
   unit:
@@ -20,13 +17,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      
-      - uses: actions/setup-go@v2
+
+      - uses: actions/setup-go@v4
         with:
-          go-version: '1.17'
+          go-version: "1.20"
 
       - name: Install dependencies
         run: make get-deps
@@ -38,4 +35,4 @@ jobs:
         run: make check-gofmt
 
       - name: Run tests
-        run: go test -v ./internal/...
+        run: go test -race -v ./internal/...

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,16 +11,6 @@ import (
 	"reflect"
 	"strings"
 )
-
-// hasPrefix returns whether a given string is a prefix of another string
-func hasPrefix(prefix, s string) bool {
-	return strings.HasPrefix(s, prefix)
-}
-
-// hasSuffix returns whether a given string is a suffix of another string
-func hasSuffix(suffix, s string) bool {
-	return strings.HasSuffix(s, suffix)
-}
 
 func keys(input interface{}) (interface{}, error) {
 	if input == nil {
@@ -77,21 +66,6 @@ func contains(input interface{}, key interface{}) bool {
 	return false
 }
 
-func dict(values ...interface{}) (map[string]interface{}, error) {
-	if len(values)%2 != 0 {
-		return nil, errors.New("invalid dict call")
-	}
-	dict := make(map[string]interface{}, len(values)/2)
-	for i := 0; i < len(values); i += 2 {
-		key, ok := values[i].(string)
-		if !ok {
-			return nil, errors.New("dict keys must be strings")
-		}
-		dict[key] = values[i+1]
-	}
-	return dict, nil
-}
-
 func hashSha1(input string) string {
 	h := sha1.New()
 	io.WriteString(h, input)
@@ -113,28 +87,6 @@ func unmarshalJson(input string) (interface{}, error) {
 		return nil, err
 	}
 	return v, nil
-}
-
-// arrayFirst returns first item in the array or nil if the
-// input is nil or empty
-func arrayFirst(input interface{}) interface{} {
-	if input == nil {
-		return nil
-	}
-
-	arr := reflect.ValueOf(input)
-
-	if arr.Len() == 0 {
-		return nil
-	}
-
-	return arr.Index(0).Interface()
-}
-
-// arrayLast returns last item in the array
-func arrayLast(input interface{}) interface{} {
-	arr := reflect.ValueOf(input)
-	return arr.Index(arr.Len() - 1).Interface()
 }
 
 // arrayClosest find the longest matching substring in values
@@ -181,11 +133,6 @@ func trimPrefix(prefix, s string) string {
 // trimSuffix returns a string without the suffix, if present
 func trimSuffix(suffix, s string) string {
 	return strings.TrimSuffix(s, suffix)
-}
-
-// trim returns the string without leading or trailing whitespace
-func trim(s string) string {
-	return strings.TrimSpace(s)
 }
 
 // toLower return the string in lower case

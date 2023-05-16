@@ -103,14 +103,15 @@ func (g *generator) generateFromSignals() {
 	go func() {
 		defer g.wg.Done()
 
-		sigChan := newSignalChannel()
+		sigChan, cleanup := newSignalChannel()
+		defer cleanup()
 		for {
 			sig := <-sigChan
 			log.Printf("Received signal: %s\n", sig)
 			switch sig {
 			case syscall.SIGHUP:
 				g.generateFromContainers()
-			case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
+			case syscall.SIGTERM, syscall.SIGINT:
 				// exit when context is done
 				return
 			}
@@ -148,7 +149,8 @@ func (g *generator) generateAtInterval() {
 		go func(cfg config.Config) {
 			defer g.wg.Done()
 
-			sigChan := newSignalChannel()
+			sigChan, cleanup := newSignalChannel()
+			defer cleanup()
 			for {
 				select {
 				case <-ticker.C:
@@ -164,7 +166,7 @@ func (g *generator) generateAtInterval() {
 				case sig := <-sigChan:
 					log.Printf("Received signal: %s\n", sig)
 					switch sig {
-					case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
+					case syscall.SIGTERM, syscall.SIGINT:
 						ticker.Stop()
 						return
 					}
@@ -190,11 +192,11 @@ func (g *generator) generateFromEvents() {
 		}
 
 		g.wg.Add(1)
+		watcher := make(chan *docker.APIEvents, 100)
+		watchers = append(watchers, watcher)
 
-		go func(cfg config.Config, watcher chan *docker.APIEvents) {
+		go func(cfg config.Config) {
 			defer g.wg.Done()
-			watchers = append(watchers, watcher)
-
 			debouncedChan := newDebounceChannel(watcher, cfg.Wait)
 			for range debouncedChan {
 				containers, err := g.getContainers()
@@ -210,14 +212,15 @@ func (g *generator) generateFromEvents() {
 				g.runNotifyCmd(cfg)
 				g.sendSignalToContainers(cfg)
 			}
-		}(cfg, make(chan *docker.APIEvents, 100))
+		}(cfg)
 	}
 
 	// maintains docker client connection and passes events to watchers
 	go func() {
 		// channel will be closed by go-dockerclient
 		eventChan := make(chan *docker.APIEvents, 100)
-		sigChan := newSignalChannel()
+		sigChan, cleanup := newSignalChannel()
+		defer cleanup()
 
 		for {
 			watching := false
@@ -296,7 +299,7 @@ func (g *generator) generateFromEvents() {
 				case sig := <-sigChan:
 					log.Printf("Received signal: %s\n", sig)
 					switch sig {
-					case syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, syscall.SIGINT:
+					case syscall.SIGTERM, syscall.SIGINT:
 						// close all watchers and exit
 						for _, watcher := range watchers {
 							close(watcher)
@@ -482,11 +485,10 @@ func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
 
 }
 
-func newSignalChannel() <-chan os.Signal {
+func newSignalChannel() (<-chan os.Signal, func()) {
 	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-
-	return sig
+	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
+	return sig, func() { signal.Stop(sig) }
 }
 
 func newDebounceChannel(input chan *docker.APIEvents, wait *config.Wait) chan *docker.APIEvents {

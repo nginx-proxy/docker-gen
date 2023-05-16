@@ -19,84 +19,48 @@ func TestSortStringsDesc(t *testing.T) {
 	assert.Equal(t, expected, sortStringsDesc(strings))
 }
 
-func TestSortObjectsByKeysAsc(t *testing.T) {
-	containers := []*context.RuntimeContainer{
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "bar.localhost",
-			},
-			ID: "9",
+func TestSortObjectsByKeys(t *testing.T) {
+	o0 := &context.RuntimeContainer{
+		Env: map[string]string{
+			"VIRTUAL_HOST": "bar.localhost",
 		},
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "foo.localhost",
-			},
-			ID: "1",
-		},
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "baz.localhost",
-			},
-			ID: "3",
-		},
-		{
-			Env: map[string]string{},
-			ID:  "8",
-		},
+		ID: "9",
 	}
-
-	sorted, err := sortObjectsByKeysAsc(containers, "ID")
-
-	assert.NoError(t, err)
-	assert.Len(t, sorted, 4)
-	assert.Equal(t, "foo.localhost", sorted[0].(context.RuntimeContainer).Env["VIRTUAL_HOST"])
-	assert.Equal(t, "9", sorted[3].(context.RuntimeContainer).ID)
-
-	sorted, err = sortObjectsByKeysAsc(sorted, "Env.VIRTUAL_HOST")
-
-	assert.NoError(t, err)
-	assert.Len(t, sorted, 4)
-	assert.Equal(t, "foo.localhost", sorted[3].(context.RuntimeContainer).Env["VIRTUAL_HOST"])
-	assert.Equal(t, "8", sorted[0].(context.RuntimeContainer).ID)
-}
-
-func TestSortObjectsByKeysDesc(t *testing.T) {
-	containers := []*context.RuntimeContainer{
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "bar.localhost",
-			},
-			ID: "9",
+	o1 := &context.RuntimeContainer{
+		Env: map[string]string{
+			"VIRTUAL_HOST": "foo.localhost",
 		},
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "foo.localhost",
-			},
-			ID: "1",
-		},
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "baz.localhost",
-			},
-			ID: "3",
-		},
-		{
-			Env: map[string]string{},
-			ID:  "8",
-		},
+		ID: "1",
 	}
+	o2 := &context.RuntimeContainer{
+		Env: map[string]string{
+			"VIRTUAL_HOST": "baz.localhost",
+		},
+		ID: "3",
+	}
+	o3 := &context.RuntimeContainer{
+		Env: map[string]string{},
+		ID:  "8",
+	}
+	containers := []*context.RuntimeContainer{o0, o1, o2, o3}
 
-	sorted, err := sortObjectsByKeysDesc(containers, "ID")
-
-	assert.NoError(t, err)
-	assert.Len(t, sorted, 4)
-	assert.Equal(t, "bar.localhost", sorted[0].(context.RuntimeContainer).Env["VIRTUAL_HOST"])
-	assert.Equal(t, "1", sorted[3].(context.RuntimeContainer).ID)
-
-	sorted, err = sortObjectsByKeysDesc(sorted, "Env.VIRTUAL_HOST")
-
-	assert.NoError(t, err)
-	assert.Len(t, sorted, 4)
-	assert.Equal(t, "", sorted[3].(context.RuntimeContainer).Env["VIRTUAL_HOST"])
-	assert.Equal(t, "1", sorted[0].(context.RuntimeContainer).ID)
+	for _, tc := range []struct {
+		desc string
+		fn   func(interface{}, string) ([]interface{}, error)
+		key  string
+		want []interface{}
+	}{
+		{"Asc simple", sortObjectsByKeysAsc, "ID", []interface{}{o1, o2, o3, o0}},
+		{"Asc complex", sortObjectsByKeysAsc, "Env.VIRTUAL_HOST", []interface{}{o3, o0, o2, o1}},
+		{"Desc simple", sortObjectsByKeysDesc, "ID", []interface{}{o0, o3, o2, o1}},
+		{"Desc complex", sortObjectsByKeysDesc, "Env.VIRTUAL_HOST", []interface{}{o1, o2, o0, o3}},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			got, err := tc.fn(containers, tc.key)
+			assert.NoError(t, err)
+			// The function should return a sorted copy of the slice, not modify the original.
+			assert.Equal(t, []*context.RuntimeContainer{o0, o1, o2, o3}, containers)
+			assert.Equal(t, tc.want, got)
+		})
+	}
 }

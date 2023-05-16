@@ -3,6 +3,7 @@ package template
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,6 +18,7 @@ import (
 	"text/template"
 	"unicode"
 
+	sprig "github.com/Masterminds/sprig/v3"
 	"github.com/nginx-proxy/docker-gen/internal/config"
 	"github.com/nginx-proxy/docker-gen/internal/context"
 	"github.com/nginx-proxy/docker-gen/internal/utils"
@@ -28,7 +30,7 @@ func getArrayValues(funcName string, entries interface{}) (*reflect.Value, error
 	kind := entriesVal.Kind()
 
 	if kind == reflect.Ptr {
-		entriesVal = reflect.Indirect(entriesVal)
+		entriesVal = entriesVal.Elem()
 		kind = entriesVal.Kind()
 	}
 
@@ -42,24 +44,35 @@ func getArrayValues(funcName string, entries interface{}) (*reflect.Value, error
 }
 
 func newTemplate(name string) *template.Template {
-	tmpl := template.New(name).Funcs(template.FuncMap{
+	tmpl := template.New(name)
+	// The eval function is defined here because it must be a closure around tmpl.
+	eval := func(name string, args ...any) (string, error) {
+		buf := bytes.NewBuffer(nil)
+		data := any(nil)
+		if len(args) == 1 {
+			data = args[0]
+		} else if len(args) > 1 {
+			return "", errors.New("too many arguments")
+		}
+		if err := tmpl.ExecuteTemplate(buf, name, data); err != nil {
+			return "", err
+		}
+		return buf.String(), nil
+	}
+	tmpl.Funcs(sprig.TxtFuncMap()).Funcs(template.FuncMap{
 		"closest":                arrayClosest,
 		"coalesce":               coalesce,
 		"contains":               contains,
-		"dict":                   dict,
 		"dir":                    dirList,
+		"eval":                   eval,
 		"exists":                 utils.PathExists,
-		"first":                  arrayFirst,
 		"groupBy":                groupBy,
 		"groupByKeys":            groupByKeys,
 		"groupByMulti":           groupByMulti,
 		"groupByLabel":           groupByLabel,
-		"hasPrefix":              hasPrefix,
-		"hasSuffix":              hasSuffix,
 		"json":                   marshalJson,
 		"intersect":              intersect,
 		"keys":                   keys,
-		"last":                   arrayLast,
 		"replace":                strings.Replace,
 		"parseBool":              strconv.ParseBool,
 		"parseJson":              unmarshalJson,
@@ -73,7 +86,6 @@ func newTemplate(name string) *template.Template {
 		"sortObjectsByKeysDesc":  sortObjectsByKeysDesc,
 		"trimPrefix":             trimPrefix,
 		"trimSuffix":             trimSuffix,
-		"trim":                   trim,
 		"toLower":                toLower,
 		"toUpper":                toUpper,
 		"when":                   when,

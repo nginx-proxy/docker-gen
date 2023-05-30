@@ -6,7 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.2.1
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/fsouza/go-dockerclient v1.9.7
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 )
 
 require (

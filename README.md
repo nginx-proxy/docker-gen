@@ -76,6 +76,12 @@ $ docker run -d --name nginx-gen --volumes-from nginx \
    -t nginxproxy/docker-gen -notify-sighup nginx -watch -only-exposed /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
 ```
 
+Start a container, taking note of any Environment variables a container expects. See the top of a template for details.
+
+```
+$ docker run --env VIRTUAL_HOST='example.com' --env VIRTUAL_PORT=80 ...
+```
+
 ===
 
 ### Usage
@@ -206,7 +212,7 @@ e75a60548dc9 = 1  # a key can be either container name (nginx) or ID
 
 ### Templating
 
-The templates used by docker-gen are written using the Go [text/template](http://golang.org/pkg/text/template/) language. In addition to the [built-in functions](http://golang.org/pkg/text/template/#hdr-Functions) supplied by Go, docker-gen uses [sprig](https://masterminds.github.io/sprig/) and some additional functions to make it simpler (or possible) to generate your desired output.
+The templates used by docker-gen are written using the Go [text/template](http://golang.org/pkg/text/template/) language. In addition to the [built-in functions](http://golang.org/pkg/text/template/#hdr-Functions) supplied by Go, docker-gen uses [sprig](https://masterminds.github.io/sprig/) and some additional functions to make it simpler (or possible) to generate your desired output. Some templates rely on environment variables within the container to make decisions on what to generate from the template.
 
 #### Emit Structure
 
@@ -411,10 +417,10 @@ Start nginx-proxy:
 $ docker run -d -p 80:80 -v /var/run/docker.sock:/tmp/docker.sock -t nginxproxy/nginx-proxy
 ```
 
-Then start containers with a VIRTUAL_HOST env variable:
+Then start containers with a VIRTUAL_HOST (and the VIRTUAL_PORT if more than one port is exposed) env variable:
 
 ```
-$ docker run -e VIRTUAL_HOST=foo.bar.com -t ...
+$ docker run -e VIRTUAL_HOST=foo.bar.com -e VIRTUAL_PORT=80 -t ...
 ```
 
 If you wanted to run docker-gen directly on the host, you could do it with:

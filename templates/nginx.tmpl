@@ -1,3 +1,8 @@
+{{/* default nginx configuration template */}}
+{{/* Generate a configuration file based on the containers mandatory */}}
+{{/* VIRTUAL_HOST environment variable and the exposed ports. If multiple */}}
+{{/* ports are exposed, the first one is used, unless set with VIRTUAL_PORT */}}
+
 server {
 	listen 80 default_server;
 	server_name _; # This is just an invalid value which will never trigger on a real hostname.
@@ -13,7 +18,7 @@ upstream {{ $host }} {
 
 	{{ $addrLen := len $value.Addresses }}
 	{{ $network := index $value.Networks 0 }}
-	
+
 	{{/* If only 1 port exposed, use that */}}
 	{{ if eq $addrLen 1 }}
 		{{ with $address := index $value.Addresses 0 }}

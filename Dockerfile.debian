@@ -32,4 +32,5 @@ COPY --from=go-builder /build/docker-gen /usr/local/bin/docker-gen
 # Copy the license
 COPY LICENSE /usr/local/share/doc/docker-gen/
 
-ENTRYPOINT ["/usr/local/bin/docker-gen"]
+COPY "./container-entrypoint.sh" "/app/container-entrypoint.sh"
+ENTRYPOINT [ "/app/container-entrypoint.sh" ]

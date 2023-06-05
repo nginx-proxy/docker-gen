@@ -1,3 +1,6 @@
+{{/* Simple dnsmasq template generating host entries */}}
+{{/* Domains are hard-coded, replace 'docker.comany.com' below */}}
+
 {{$domain := "docker.company.com"}}
 {{range $key, $value := .}}
 # {{ $value.Name }} ({{$value.ID}} from {{$value.Image.Repository}})

@@ -1,3 +1,7 @@
+{{/* Generate logrotate snippets for logrotate based on files listed in */}}
+{{/* the comma separated environment variable LOG_FILES */}}
+{{/* e.g. docker run --env='/var/log/messages,/var/log/lastlog' ... */}}
+
 {{ range $index, $value := $ }}
 {{ $logs := $value.Env.LOG_FILES }}
 {{ if $logs }}

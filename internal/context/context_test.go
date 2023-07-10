@@ -2,7 +2,6 @@ package context
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -74,7 +73,7 @@ func TestGetCurrentContainerID(t *testing.T) {
 	var filepaths []string
 	// Create temporary files with test content
 	for _, key := range fileKeys {
-		file, err := ioutil.TempFile("", key)
+		file, err := os.CreateTemp("", key)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -114,7 +113,7 @@ func TestGetCurrentContainerIDMountInfo(t *testing.T) {
 	var filepaths []string
 	// Create temporary files with test content
 	for _, key := range fileKeys {
-		file, err := ioutil.TempFile("", key)
+		file, err := os.CreateTemp("", key)
 		if err != nil {
 			t.Fatal(err)
 		}

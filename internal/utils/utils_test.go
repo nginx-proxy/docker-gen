@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -29,7 +28,7 @@ func TestSplitKeyValueSlice(t *testing.T) {
 }
 
 func TestPathExists(t *testing.T) {
-	file, err := ioutil.TempFile("", "test")
+	file, err := os.CreateTemp("", "test")
 	if err != nil {
 		t.Fatal(err)
 	}

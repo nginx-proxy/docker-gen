@@ -2,7 +2,6 @@ package dockerclient
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -236,7 +235,7 @@ func TestTlsEnabled(t *testing.T) {
 	}
 	// Create temporary files
 	for key := range filepaths {
-		file, err := ioutil.TempFile("", key)
+		file, err := os.CreateTemp("", key)
 		if err != nil {
 			t.Fatal(err)
 		}

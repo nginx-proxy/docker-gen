@@ -3,7 +3,6 @@ package template
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path"
 	"reflect"
@@ -258,7 +257,7 @@ func TestWhenFalse(t *testing.T) {
 }
 
 func TestDirList(t *testing.T) {
-	dir, err := ioutil.TempDir("", "dirList")
+	dir, err := os.MkdirTemp("", "dirList")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -271,7 +270,7 @@ func TestDirList(t *testing.T) {
 	}
 	// Create temporary files
 	for key := range files {
-		file, err := ioutil.TempFile(dir, key)
+		file, err := os.CreateTemp(dir, key)
 		if err != nil {
 			t.Fatal(err)
 		}

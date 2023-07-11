@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -21,7 +21,7 @@ import (
 )
 
 func TestGenerateFromEvents(t *testing.T) {
-	log.SetOutput(ioutil.Discard)
+	log.SetOutput(io.Discard)
 	containerID := "8dfafdbc3a40"
 	var counter atomic.Int32
 
@@ -112,7 +112,7 @@ func TestGenerateFromEvents(t *testing.T) {
 	}
 	client.SkipServerVersionCheck = true
 
-	tmplFile, err := ioutil.TempFile(os.TempDir(), "docker-gen-tmpl")
+	tmplFile, err := os.CreateTemp(os.TempDir(), "docker-gen-tmpl")
 	if err != nil {
 		t.Errorf("Failed to create temp file: %v\n", err)
 	}
@@ -120,14 +120,14 @@ func TestGenerateFromEvents(t *testing.T) {
 		tmplFile.Close()
 		os.Remove(tmplFile.Name())
 	}()
-	err = ioutil.WriteFile(tmplFile.Name(), []byte("{{range $key, $value := .}}{{$value.ID}}.{{$value.Env.COUNTER}}{{end}}"), 0644)
+	err = os.WriteFile(tmplFile.Name(), []byte("{{range $key, $value := .}}{{$value.ID}}.{{$value.Env.COUNTER}}{{end}}"), 0644)
 	if err != nil {
 		t.Errorf("Failed to write to temp file: %v\n", err)
 	}
 
 	var destFiles []*os.File
 	for i := 0; i < 4; i++ {
-		destFile, err := ioutil.TempFile(os.TempDir(), "docker-gen-out")
+		destFile, err := os.CreateTemp(os.TempDir(), "docker-gen-out")
 		if err != nil {
 			t.Errorf("Failed to create temp file: %v\n", err)
 		}
@@ -202,7 +202,7 @@ func TestGenerateFromEvents(t *testing.T) {
 	expectedCounters := []int{1, 5, 6, 7}
 
 	for i, counter := range expectedCounters {
-		value, _ = ioutil.ReadFile(destFiles[i].Name())
+		value, _ = os.ReadFile(destFiles[i].Name())
 		expected = fmt.Sprintf("%s.%d", containerID, counter)
 		if string(value) != expected {
 			t.Errorf("expected: %s. got: %s", expected, value)

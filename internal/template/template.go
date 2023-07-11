@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -172,7 +171,7 @@ func GenerateFile(config config.Config, containers context.Context) bool {
 	}
 
 	if config.Dest != "" {
-		dest, err := ioutil.TempFile(filepath.Dir(config.Dest), "docker-gen")
+		dest, err := os.CreateTemp(filepath.Dir(config.Dest), "docker-gen")
 		defer func() {
 			dest.Close()
 			os.Remove(dest.Name())
@@ -202,7 +201,7 @@ func GenerateFile(config config.Config, containers context.Context) bool {
 			if err := dest.Chown(int(fi.Sys().(*syscall.Stat_t).Uid), int(fi.Sys().(*syscall.Stat_t).Gid)); err != nil {
 				log.Fatalf("Unable to chown temp file: %s\n", err)
 			}
-			oldContents, err = ioutil.ReadFile(config.Dest)
+			oldContents, err = os.ReadFile(config.Dest)
 			if err != nil {
 				log.Fatalf("Unable to compare current file contents: %s: %s\n", config.Dest, err)
 			}

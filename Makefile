@@ -51,7 +51,7 @@ check-gofmt:
 	fi
 	if [ -n "$(shell go fmt ./internal/...)" ]; then \
 		echo 1>&2 'The following files need to be formatted:'; \
-		gofmt -l ./internal/dockergen; \
+		gofmt -l ./internal; \
 		exit 1; \
 	fi
 

@@ -65,8 +65,8 @@ func TestDeepGet(t *testing.T) {
 		{
 			"map key empty string",
 			map[string]map[string]map[string]string{
-				"": map[string]map[string]string{
-					"": map[string]string{
+				"": {
+					"": {
 						"": "foo",
 					},
 				},

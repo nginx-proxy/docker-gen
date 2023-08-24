@@ -96,6 +96,8 @@ Options:
       config files with template directives. Config files will be merged if this option is specified multiple times. (default [])
   -endpoint string
       docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock
+  -swarm-node value
+      docker api endpoints from which to listen for events. Default equals to value of `endpoint` argument
   -interval int
       notify command interval (secs)
   -keep-blank-lines

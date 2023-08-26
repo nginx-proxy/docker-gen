@@ -373,6 +373,7 @@ func (g *generator) sendSignalToContainers(config config.Config) {
 		return
 	}
 	for _, container := range containers {
+		log.Printf("Sending container '%s' signal '%v'", container.ID, config.NotifyContainersSignal)
 		if config.NotifyContainersSignal == -1 {
 			if err := g.Client.RestartContainer(container.ID, 10); err != nil {
 				log.Printf("Error sending restarting container: %s", err)

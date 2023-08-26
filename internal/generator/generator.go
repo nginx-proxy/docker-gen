@@ -133,6 +133,7 @@ func (g *generator) generateFromContainers() {
 		}
 		g.runNotifyCmd(config)
 		g.sendSignalToContainer(config)
+		g.sendSignalToContainers(config)
 	}
 }
 
@@ -163,6 +164,7 @@ func (g *generator) generateAtInterval() {
 					template.GenerateFile(cfg, containers)
 					g.runNotifyCmd(cfg)
 					g.sendSignalToContainer(cfg)
+					g.sendSignalToContainers(cfg)
 				case sig := <-sigChan:
 					log.Printf("Received signal: %s\n", sig)
 					switch sig {
@@ -211,6 +213,7 @@ func (g *generator) generateFromEvents() {
 				}
 				g.runNotifyCmd(cfg)
 				g.sendSignalToContainer(cfg)
+				g.sendSignalToContainers(cfg)
 			}
 		}(cfg)
 	}
@@ -353,6 +356,35 @@ func (g *generator) sendSignalToContainer(config config.Config) {
 		}
 		if err := g.Client.KillContainer(killOpts); err != nil {
 			log.Printf("Error sending signal to container: %s", err)
+		}
+	}
+}
+
+func (g *generator) sendSignalToContainers(config config.Config) {
+	if len(config.NotifyContainersFilter) < 1 {
+		return
+	}
+
+	containers, err := g.Client.ListContainers(docker.ListContainersOptions{
+		Filters: config.NotifyContainersFilter,
+	})
+	if err != nil {
+		log.Printf("Error getting containers: %s", err)
+		return
+	}
+	for _, container := range containers {
+		if config.NotifyContainersSignal == -1 {
+			if err := g.Client.RestartContainer(container.ID, 10); err != nil {
+				log.Printf("Error sending restarting container: %s", err)
+			}
+		} else {
+			killOpts := docker.KillContainerOptions{
+				ID:     container.ID,
+				Signal: docker.Signal(config.NotifyContainersSignal),
+			}
+			if err := g.Client.KillContainer(killOpts); err != nil {
+				log.Printf("Error sending signal to container: %s", err)
+			}
 		}
 	}
 }

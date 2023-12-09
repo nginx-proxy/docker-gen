@@ -26,10 +26,13 @@ RUN apt-get update \
     && apt-get clean \
     && rm -r /var/lib/apt/lists/*
 
+# Copy the entrypoint script
+COPY /app/docker-entrypoint.sh /app/docker-entrypoint.sh
+
 # Install docker-gen from build stage
 COPY --from=go-builder /build/docker-gen /usr/local/bin/docker-gen
 
 # Copy the license
 COPY LICENSE /usr/local/share/doc/docker-gen/
 
-ENTRYPOINT ["/usr/local/bin/docker-gen"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

@@ -373,6 +373,15 @@ func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
 		return nil, err
 	}
 
+	apiNetworks, err := g.Client.ListNetworks()
+	if err != nil {
+		return nil, err
+	}
+	networks := make(map[string]docker.Network)
+	for _, apiNetwork := range apiNetworks {
+		networks[apiNetwork.Name] = apiNetwork
+	}
+
 	containers := []*context.RuntimeContainer{}
 	for _, apiContainer := range apiContainers {
 		opts := docker.InspectContainerOptions{ID: apiContainer.ID}
@@ -433,6 +442,7 @@ func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
 				MacAddress:          v.MacAddress,
 				GlobalIPv6PrefixLen: v.GlobalIPv6PrefixLen,
 				IPPrefixLen:         v.IPPrefixLen,
+				Internal:            networks[k].Internal,
 			}
 
 			runtimeContainer.Networks = append(runtimeContainer.Networks,

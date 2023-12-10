@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -20,9 +21,9 @@ import (
 )
 
 func TestGenerateFromEvents(t *testing.T) {
-	log.SetOutput(ioutil.Discard)
+	log.SetOutput(io.Discard)
 	containerID := "8dfafdbc3a40"
-	counter := 0
+	var counter atomic.Int32
 
 	eventsResponse := `
 {"status":"start","id":"8dfafdbc3a40","from":"base:latest","time":1374067924}
@@ -38,7 +39,7 @@ func TestGenerateFromEvents(t *testing.T) {
 		for rsc.Scan() {
 			w.Write([]byte(rsc.Text()))
 			w.(http.Flusher).Flush()
-			time.Sleep(15 * time.Millisecond)
+			time.Sleep(150 * time.Millisecond)
 		}
 		time.Sleep(500 * time.Millisecond)
 	}))
@@ -67,7 +68,7 @@ func TestGenerateFromEvents(t *testing.T) {
 		json.NewEncoder(w).Encode(result)
 	}))
 	server.CustomHandler(fmt.Sprintf("/containers/%s/json", containerID), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		counter++
+		counter := counter.Add(1)
 		container := docker.Container{
 			Name:    "docker-gen-test",
 			ID:      containerID,
@@ -116,7 +117,7 @@ func TestGenerateFromEvents(t *testing.T) {
 	}
 	client.SkipServerVersionCheck = true
 
-	tmplFile, err := ioutil.TempFile(os.TempDir(), "docker-gen-tmpl")
+	tmplFile, err := os.CreateTemp(os.TempDir(), "docker-gen-tmpl")
 	if err != nil {
 		t.Errorf("Failed to create temp file: %v\n", err)
 	}
@@ -124,14 +125,14 @@ func TestGenerateFromEvents(t *testing.T) {
 		tmplFile.Close()
 		os.Remove(tmplFile.Name())
 	}()
-	err = ioutil.WriteFile(tmplFile.Name(), []byte("{{range $key, $value := .}}{{$value.ID}}.{{$value.Env.COUNTER}}{{end}}"), 0644)
+	err = os.WriteFile(tmplFile.Name(), []byte("{{range $key, $value := .}}{{$value.ID}}.{{$value.Env.COUNTER}}{{end}}"), 0644)
 	if err != nil {
 		t.Errorf("Failed to write to temp file: %v\n", err)
 	}
 
 	var destFiles []*os.File
 	for i := 0; i < 4; i++ {
-		destFile, err := ioutil.TempFile(os.TempDir(), "docker-gen-out")
+		destFile, err := os.CreateTemp(os.TempDir(), "docker-gen-out")
 		if err != nil {
 			t.Errorf("Failed to create temp file: %v\n", err)
 		}
@@ -170,13 +171,13 @@ func TestGenerateFromEvents(t *testing.T) {
 					Template: tmplFile.Name(),
 					Dest:     destFiles[2].Name(),
 					Watch:    true,
-					Wait:     &config.Wait{Min: 20 * time.Millisecond, Max: 25 * time.Millisecond},
+					Wait:     &config.Wait{Min: 200 * time.Millisecond, Max: 250 * time.Millisecond},
 				},
 				{
 					Template: tmplFile.Name(),
 					Dest:     destFiles[3].Name(),
 					Watch:    true,
-					Wait:     &config.Wait{Min: 25 * time.Millisecond, Max: 100 * time.Millisecond},
+					Wait:     &config.Wait{Min: 250 * time.Millisecond, Max: 1 * time.Second},
 				},
 			},
 		},
@@ -193,12 +194,12 @@ func TestGenerateFromEvents(t *testing.T) {
 
 	// The counter is incremented in each output file in the following sequence:
 	//
-	//       init   0ms    5ms    10ms   15ms   20ms   25ms   30ms   35ms   40ms   45ms   50ms   55ms
+	//       init   150ms  200ms  250ms  300ms  350ms  400ms  450ms  500ms  550ms  600ms  650ms  700ms
 	//       ├──────╫──────┼──────┼──────╫──────┼──────┼──────╫──────┼──────┼──────┼──────┼──────┤
 	// File0 ├─ 1   ║                    ║                    ║
 	// File1 ├─ 1   ╟─ 2                 ╟─ 3                 ╟─ 5
-	// File2 ├─ 1   ╟───── max (25ms) ───║───────────> 4      ╟─────── min (20ms) ──────> 6
-	// File3 └─ 1   ╟──────────────────> ╟──────────────────> ╟─────────── min (25ms) ─────────> 7
+	// File2 ├─ 1   ╟───── max (250ms) ──║───────────> 4      ╟─────── min (200ms) ─────> 6
+	// File3 └─ 1   ╟──────────────────> ╟──────────────────> ╟─────────── min (250ms) ────────> 7
 	//          ┌───╨───┐            ┌───╨──┐             ┌───╨───┐
 	//          │ start │            │ stop │             │ start │
 	//          └───────┘            └──────┘             └───────┘
@@ -206,7 +207,7 @@ func TestGenerateFromEvents(t *testing.T) {
 	expectedCounters := []int{1, 5, 6, 7}
 
 	for i, counter := range expectedCounters {
-		value, _ = ioutil.ReadFile(destFiles[i].Name())
+		value, _ = os.ReadFile(destFiles[i].Name())
 		expected = fmt.Sprintf("%s.%d", containerID, counter)
 		if string(value) != expected {
 			t.Errorf("expected: %s. got: %s", expected, value)

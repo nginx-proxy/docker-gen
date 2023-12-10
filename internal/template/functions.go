@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
+	"os"
 	"reflect"
 	"strings"
 )
@@ -104,7 +104,7 @@ func arrayClosest(values []string, input string) string {
 // dirList returns a list of files in the specified path
 func dirList(path string) ([]string, error) {
 	names := []string{}
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
 		log.Printf("Template error: %v", err)
 		return names, nil

@@ -1,7 +1,7 @@
 ARG DOCKER_GEN_VERSION=main
 
 # Build docker-gen from scratch
-FROM golang:1.19.4-alpine as go-builder
+FROM golang:1.20.12-alpine as go-builder
 
 ARG DOCKER_GEN_VERSION
 WORKDIR /build
@@ -13,7 +13,7 @@ RUN go mod download
 # Build the docker-gen executable
 RUN GOOS=linux CGO_ENABLED=0 go build -ldflags "-X main.buildVersion=${DOCKER_GEN_VERSION}" -o docker-gen ./cmd/docker-gen
 
-FROM alpine:3.17.0
+FROM alpine:3.19.0
 
 ARG DOCKER_GEN_VERSION
 ENV DOCKER_GEN_VERSION=${DOCKER_GEN_VERSION} \
@@ -22,10 +22,13 @@ ENV DOCKER_GEN_VERSION=${DOCKER_GEN_VERSION} \
 # Install packages required by the image
 RUN apk add --no-cache --virtual .bin-deps openssl
 
+# Copy the entrypoint script
+COPY /app/docker-entrypoint.sh /app/docker-entrypoint.sh
+
 # Install docker-gen from build stage
 COPY --from=go-builder /build/docker-gen /usr/local/bin/docker-gen
 
 # Copy the license
 COPY LICENSE /usr/local/share/doc/docker-gen/
 
-ENTRYPOINT ["/usr/local/bin/docker-gen"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

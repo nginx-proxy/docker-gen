@@ -71,6 +71,7 @@ type Network struct {
 	MacAddress          string
 	GlobalIPv6PrefixLen int
 	IPPrefixLen         int
+	Internal            bool
 }
 
 type Volume struct {

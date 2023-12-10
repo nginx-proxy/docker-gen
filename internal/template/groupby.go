@@ -2,7 +2,6 @@ package template
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/nginx-proxy/docker-gen/internal/context"
@@ -18,7 +17,7 @@ func generalizedGroupBy(funcName string, entries interface{}, getValue func(inte
 
 	groups := make(map[string][]interface{})
 	for i := 0; i < entriesVal.Len(); i++ {
-		v := reflect.Indirect(entriesVal.Index(i)).Interface()
+		v := entriesVal.Index(i).Interface()
 		value, err := getValue(v)
 		if err != nil {
 			return nil, err
@@ -73,13 +72,13 @@ func groupByKeys(entries interface{}, key string) ([]string, error) {
 // groupByLabel is the same as groupBy but over a given label
 func groupByLabel(entries interface{}, label string) (map[string][]interface{}, error) {
 	getLabel := func(v interface{}) (interface{}, error) {
-		if container, ok := v.(context.RuntimeContainer); ok {
+		if container, ok := v.(*context.RuntimeContainer); ok {
 			if value, ok := container.Labels[label]; ok {
 				return value, nil
 			}
 			return nil, nil
 		}
-		return nil, fmt.Errorf("must pass an array or slice of RuntimeContainer to 'groupByLabel'; received %v", v)
+		return nil, fmt.Errorf("must pass an array or slice of *RuntimeContainer to 'groupByLabel'; received %v", v)
 	}
 	return generalizedGroupBy("groupByLabel", entries, getLabel, func(groups map[string][]interface{}, value interface{}, v interface{}) {
 		groups[value.(string)] = append(groups[value.(string)], v)

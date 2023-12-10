@@ -76,6 +76,12 @@ $ docker run -d --name nginx-gen --volumes-from nginx \
    -t nginxproxy/docker-gen -notify-sighup nginx -watch -only-exposed /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
 ```
 
+Start a container, taking note of any Environment variables a container expects. See the top of a template for details.
+
+```
+$ docker run --env VIRTUAL_HOST='example.com' --env VIRTUAL_PORT=80 ...
+```
+
 ===
 
 ### Usage
@@ -206,7 +212,7 @@ e75a60548dc9 = 1  # a key can be either container name (nginx) or ID
 
 ### Templating
 
-The templates used by docker-gen are written using the Go [text/template](http://golang.org/pkg/text/template/) language. In addition to the [built-in functions](http://golang.org/pkg/text/template/#hdr-Functions) supplied by Go, docker-gen uses [sprig](https://masterminds.github.io/sprig/) and some additional functions to make it simpler (or possible) to generate your desired output.
+The templates used by docker-gen are written using the Go [text/template](http://golang.org/pkg/text/template/) language. In addition to the [built-in functions](http://golang.org/pkg/text/template/#hdr-Functions) supplied by Go, docker-gen uses [sprig](https://masterminds.github.io/sprig/) and some additional functions to make it simpler (or possible) to generate your desired output. Some templates rely on environment variables within the container to make decisions on what to generate from the template.
 
 #### Emit Structure
 
@@ -252,6 +258,7 @@ type Network struct {
     MacAddress          string
     GlobalIPv6PrefixLen int
     IPPrefixLen         int
+    Internal            bool
 }
 
 type DockerImage struct {
@@ -366,6 +373,7 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 * *`contains $map $key`*: Returns `true` if `$map` contains `$key`. Takes maps from `string` to any type.
 * *`dir $path`*: Returns an array of filenames in the specified `$path`.
 * *`exists $path`*: Returns `true` if `$path` refers to an existing file or directory. Takes a string.
+* *`eval $templateName [$data]`*: Evaluates the named template like Go's built-in `template` action, but instead of writing out the result it returns the result as a string so that it can be post-processed.  The `$data` argument may be omitted, which is equivalent to passing `nil`.
 * *`groupBy $containers $fieldPath`*: Groups an array of `RuntimeContainer` instances based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value, which must be a string. Returns a map from the value of the field path expression to an array of containers having that value. Containers that do not have a value for the field path in question are omitted.
 * *`groupByKeys $containers $fieldPath`*: Returns the same as `groupBy` but only returns the keys of the map.
 * *`groupByMulti $containers $fieldPath $sep`*: Like `groupBy`, but the string value specified by `$fieldPath` is first split by `$sep` into a list of strings. A container whose `$fieldPath` value contains a list of strings will show up in the map output under each of those strings.
@@ -415,10 +423,10 @@ Start nginx-proxy:
 $ docker run -d -p 80:80 -v /var/run/docker.sock:/tmp/docker.sock -t nginxproxy/nginx-proxy
 ```
 
-Then start containers with a VIRTUAL_HOST env variable:
+Then start containers with a VIRTUAL_HOST (and the VIRTUAL_PORT if more than one port is exposed) env variable:
 
 ```
-$ docker run -e VIRTUAL_HOST=foo.bar.com -t ...
+$ docker run -e VIRTUAL_HOST=foo.bar.com -e VIRTUAL_PORT=80 -t ...
 ```
 
 If you wanted to run docker-gen directly on the host, you could do it with:

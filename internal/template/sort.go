@@ -47,7 +47,7 @@ func (s *sortableByKey) set(funcName string, entries interface{}) (err error) {
 	}
 	s.data = make([]interface{}, entriesVal.Len())
 	for i := 0; i < entriesVal.Len(); i++ {
-		s.data[i] = reflect.Indirect(entriesVal.Index(i)).Interface()
+		s.data[i] = entriesVal.Index(i).Interface()
 	}
 	return
 }

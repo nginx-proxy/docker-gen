@@ -19,6 +19,12 @@ upstream {{ $host }} {
 	{{ $addrLen := len $value.Addresses }}
 	{{ $network := index $value.Networks 0 }}
 
+	{{ if $value.State.Health.Status }}
+		{{ if ne $value.State.Health.Status "healthy" }}
+			{{ continue }}
+		{{ end }}
+	{{ end }}
+	
 	{{/* If only 1 port exposed, use that */}}
 	{{ if eq $addrLen 1 }}
 		{{ with $address := index $value.Addresses 0 }}

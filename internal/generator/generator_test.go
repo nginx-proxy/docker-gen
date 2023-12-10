@@ -88,6 +88,11 @@ func TestGenerateFromEvents(t *testing.T) {
 				Pid:       400,
 				ExitCode:  0,
 				StartedAt: time.Now(),
+				Health: docker.Health{
+					Status:        "healthy",
+					FailingStreak: 5,
+					Log:           []docker.HealthCheck{},
+				},
 			},
 			Image: "0ff407d5a7d9ed36acdf3e75de8cc127afecc9af234d05486be2981cdc01a38d",
 			NetworkSettings: &docker.NetworkSettings{

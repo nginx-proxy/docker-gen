@@ -289,7 +289,12 @@ type SwarmNode struct {
 }
 
 type State struct {
-  Running bool
+	Running bool
+	Health  Health
+}
+
+type Health struct {
+	Status string
 }
 
 // Accessible from the root in templates as .Docker

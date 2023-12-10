@@ -278,7 +278,7 @@ func (g *generator) generateFromEvents() {
 						time.Sleep(10 * time.Second)
 						break
 					}
-					if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
+					if event.Status == "start" || event.Status == "stop" || event.Status == "die" || strings.Index(event.Status, "health_status:") != -1 {
 						log.Printf("Received event %s for container %s", event.Status, event.ID[:12])
 						// fanout event to all watchers
 						for _, watcher := range watchers {
@@ -401,6 +401,9 @@ func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
 			},
 			State: context.State{
 				Running: container.State.Running,
+				Health: context.Health{
+					Status: container.State.Health.Status,
+				},
 			},
 			Name:         strings.TrimLeft(container.Name, "/"),
 			Hostname:     container.Config.Hostname,

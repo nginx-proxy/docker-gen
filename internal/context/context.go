@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"sync"
+	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/nginx-proxy/docker-gen/internal/utils"
@@ -91,6 +92,7 @@ type Health struct {
 
 type RuntimeContainer struct {
 	ID           string
+	Created      time.Time
 	Addresses    []Address
 	Networks     []Network
 	Gateway      string

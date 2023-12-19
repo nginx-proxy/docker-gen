@@ -393,7 +393,8 @@ func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
 
 		registry, repository, tag := dockerclient.SplitDockerImage(container.Config.Image)
 		runtimeContainer := &context.RuntimeContainer{
-			ID: container.ID,
+			ID:      container.ID,
+			Created: container.Created,
 			Image: context.DockerImage{
 				Registry:   registry,
 				Repository: repository,

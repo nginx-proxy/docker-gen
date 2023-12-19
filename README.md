@@ -36,10 +36,10 @@ Linux/OSX binaries for release [0.9.0](https://github.com/nginx-proxy/docker-gen
 
 Download the version you need, untar, and install to your PATH.
 
-```
-$ wget https://github.com/nginx-proxy/docker-gen/releases/download/0.9.0/docker-gen-linux-amd64-0.9.0.tar.gz
-$ tar xvzf docker-gen-linux-amd64-0.9.0.tar.gz
-$ ./docker-gen
+```console
+wget https://github.com/nginx-proxy/docker-gen/releases/download/0.9.0/docker-gen-linux-amd64-0.9.0.tar.gz
+tar xvzf docker-gen-linux-amd64-0.9.0.tar.gz
+./docker-gen
 ```
 
 #### Bundled Container Install
@@ -62,15 +62,15 @@ this to prevent having the docker socket bound to a publicly exposed container s
 
 Start nginx with a shared volume:
 
-```
-$ docker run -d -p 80:80 --name nginx -v /tmp/nginx:/etc/nginx/conf.d -t nginx
+```console
+docker run -d -p 80:80 --name nginx -v /tmp/nginx:/etc/nginx/conf.d -t nginx
 ```
 
 Fetch the template and start the docker-gen container with the shared volume:
-```
-$ mkdir -p /tmp/templates && cd /tmp/templates
-$ curl -o nginx.tmpl https://raw.githubusercontent.com/nginx-proxy/docker-gen/main/templates/nginx.tmpl
-$ docker run -d --name nginx-gen --volumes-from nginx \
+```console
+mkdir -p /tmp/templates && cd /tmp/templates
+curl -o nginx.tmpl https://raw.githubusercontent.com/nginx-proxy/docker-gen/main/templates/nginx.tmpl
+docker run -d --name nginx-gen --volumes-from nginx \
    -v /var/run/docker.sock:/tmp/docker.sock:rw \
    -v /tmp/templates:/etc/docker-gen/templates \
    -t nginxproxy/docker-gen -notify-sighup nginx -watch -only-exposed /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
@@ -78,8 +78,8 @@ $ docker run -d --name nginx-gen --volumes-from nginx \
 
 Start a container, taking note of any Environment variables a container expects. See the top of a template for details.
 
-```
-$ docker run --env VIRTUAL_HOST='example.com' --env VIRTUAL_PORT=80 ...
+```console
+docker run --env VIRTUAL_HOST='example.com' --env VIRTUAL_PORT=80 ...
 ```
 
 ===
@@ -152,40 +152,40 @@ Using the -config flag from above you can tell docker-gen to use the specified c
 An example configuration file, **docker-gen.cfg** can be found in the examples folder.
 
 #### Configuration File Syntax
-```
+```ini
 [[config]]
-Starts a configuration section
+# Starts a configuration section
 
 dest = "path/to/a/file"
-path to write the template. If not specfied, STDOUT is used
+# path to write the template. If not specfied, STDOUT is used
 
 notifycmd = "/etc/init.d/foo reload"
-run command after template is regenerated (e.g restart xyz)
+# run command after template is regenerated (e.g restart xyz)
 
 onlyexposed = true
-only include containers with exposed ports
+# only include containers with exposed ports
 
 template = "/path/to/a/template/file.tmpl"
-path to a template to generate
+# path to a template to generate
 
 watch = true
-watch for container changes
+# watch for container changes
 
 wait = "500ms:2s"
-debounce changes with a min:max duration. Only applicable if watch = true
+# debounce changes with a min:max duration. Only applicable if watch = true
 
 
 [config.NotifyContainers]
-Starts a notify container section
+# Starts a notify container section
 
 containername = 1
-container name followed by the signal to send
+# container name followed by the signal to send
 
 container_id = 1
-or the container id can be used followed by the signal to send
+# or the container id can be used followed by the signal to send
 ```
 Putting it all together here is an example configuration file.
-```
+```ini
 [[config]]
 template = "/etc/nginx/nginx.conf.tmpl"
 dest = "/etc/nginx/sites-available/default"
@@ -221,6 +221,7 @@ Within the templates, the object emitted by docker-gen will be a structure consi
 ```go
 type RuntimeContainer struct {
     ID           string
+    Created      time.Time
     Addresses    []Address
     Networks     []Network
     Gateway      string
@@ -311,7 +312,6 @@ type Docker struct {
 }
 
 // Host environment variables accessible from root in templates as .Env
-
 ```
 
 For example, this is a JSON version of an emitted RuntimeContainer struct:
@@ -419,20 +419,20 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 
 Start nginx-proxy:
 
-```
-$ docker run -d -p 80:80 -v /var/run/docker.sock:/tmp/docker.sock -t nginxproxy/nginx-proxy
+```console
+docker run -d -p 80:80 -v /var/run/docker.sock:/tmp/docker.sock -t nginxproxy/nginx-proxy
 ```
 
 Then start containers with a VIRTUAL_HOST (and the VIRTUAL_PORT if more than one port is exposed) env variable:
 
-```
-$ docker run -e VIRTUAL_HOST=foo.bar.com -e VIRTUAL_PORT=80 -t ...
+```console
+docker run -e VIRTUAL_HOST=foo.bar.com -e VIRTUAL_PORT=80 -t ...
 ```
 
 If you wanted to run docker-gen directly on the host, you could do it with:
 
-```
-$ docker-gen -only-published -watch -notify "/etc/init.d/nginx reload" templates/nginx.tmpl /etc/nginx/sites-enabled/default
+```console
+docker-gen -only-published -watch -notify "/etc/init.d/nginx reload" templates/nginx.tmpl /etc/nginx/sites-enabled/default
 ```
 
 #### Fluentd Log Management
@@ -440,8 +440,8 @@ $ docker-gen -only-published -watch -notify "/etc/init.d/nginx reload" templates
 This template generate a fluentd.conf file used by fluentd. It would then ship log files off
 the host.
 
-```
-$ docker-gen -watch -notify "restart fluentd" templates/fluentd.tmpl /etc/fluent/fluent.conf
+```console
+docker-gen -watch -notify "restart fluentd" templates/fluentd.tmpl /etc/fluent/fluent.conf
 ```
 
 #### Service Discovery in Etcd
@@ -450,8 +450,8 @@ $ docker-gen -watch -notify "restart fluentd" templates/fluentd.tmpl /etc/fluent
 This template is an example of generating a script that is then executed. This template generates
 a python script that is then executed which register containers in Etcd using its HTTP API.
 
-```
-$ docker-gen -notify "/bin/bash /tmp/etcd.sh" -interval 10 templates/etcd.tmpl /tmp/etcd.sh
+```console
+docker-gen -notify "/bin/bash /tmp/etcd.sh" -interval 10 templates/etcd.tmpl /tmp/etcd.sh
 ```
 
 
@@ -463,11 +463,11 @@ This means that at least `go 1.11` is required.
 For `go 1.11` and `go 1.12` it is additionally required to manually enable support by setting `GO111MODULE=on`. 
 For later versions, this is not required. 
 
-```
-$ git clone <your fork>
-$ cd <your fork>
-$ make get-deps
-$ make
+```console
+git clone <your fork>
+cd <your fork>
+make get-deps
+make
 ```
 
 ### TODO

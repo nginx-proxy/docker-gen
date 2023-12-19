@@ -1,9 +1,0 @@
-language: go
-go:
-- "1.9"
-- "1.10"
-- "1.11"
-install:
-- make get-deps
-script:
-- make all check-gofmt test

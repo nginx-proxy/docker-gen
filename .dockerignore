@@ -1,4 +1,9 @@
 .git
+.github
 docker-gen
 dist
+examples
+Makefile
+README.md
+templates
 *.gz

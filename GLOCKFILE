@@ -1,6 +1,0 @@
-github.com/BurntSushi/toml 056c9bc7be7190eaa7715723883caffa5f8fa3e4
-github.com/docker/docker f2afa26235941fd79f40eb1e572e19e4ac2b9bbe
-github.com/docker/go-units 0dadbb0345b35ec7ef35e228dabb8de89a65bf52
-github.com/fsouza/go-dockerclient d2a6d0596004cc01062a2a068540b817f911e6dc
-github.com/gorilla/mux d391bea3118c9fc17a88d62c9189bb791255e0ef
-golang.org/x/net a04bdaca5b32abe1c069418fb7088ae607de5bd0

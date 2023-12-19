@@ -1,0 +1,38 @@
+ARG DOCKER_GEN_VERSION=main
+
+# Build docker-gen from scratch
+FROM golang:1.20.12 as go-builder
+
+ARG DOCKER_GEN_VERSION
+
+WORKDIR /build
+
+# Install the dependencies
+COPY . .
+RUN go mod download
+
+# Build the docker-gen executable
+RUN GOOS=linux CGO_ENABLED=0 go build -ldflags "-X main.buildVersion=${DOCKER_GEN_VERSION}" -o docker-gen ./cmd/docker-gen
+
+FROM debian:12.4-slim
+
+ARG VERSION
+ENV DOCKER_GEN_VERSION=${VERSION} \
+    DOCKER_HOST=unix:///tmp/docker.sock
+
+# Install packages required by the image
+RUN apt-get update \
+    && apt-get install -y -q --no-install-recommends openssl \
+    && apt-get clean \
+    && rm -r /var/lib/apt/lists/*
+
+# Copy the entrypoint script
+COPY /app/docker-entrypoint.sh /app/docker-entrypoint.sh
+
+# Install docker-gen from build stage
+COPY --from=go-builder /build/docker-gen /usr/local/bin/docker-gen
+
+# Copy the license
+COPY LICENSE /usr/local/share/doc/docker-gen/
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

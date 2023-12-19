@@ -5,38 +5,39 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
-	"sync"
+	"syscall"
 
 	"github.com/BurntSushi/toml"
 	docker "github.com/fsouza/go-dockerclient"
-	"github.com/jwilder/docker-gen"
+	"github.com/nginx-proxy/docker-gen/internal/config"
+	"github.com/nginx-proxy/docker-gen/internal/generator"
 )
 
 type stringslice []string
 
 var (
-	buildVersion            string
-	version                 bool
-	watch                   bool
-	wait                    string
-	notifyCmd               string
-	notifyOutput            bool
-	notifySigHUPContainerID string
-	onlyExposed             bool
-	onlyPublished           bool
-	includeStopped          bool
-	configFiles             stringslice
-	configs                 dockergen.ConfigFile
-	interval                int
-	keepBlankLines          bool
-	endpoint                string
-	tlsCert                 string
-	tlsKey                  string
-	tlsCaCert               string
-	tlsVerify               bool
-	tlsCertPath             string
-	wg                      sync.WaitGroup
+	buildVersion          string
+	version               bool
+	watch                 bool
+	wait                  string
+	notifyCmd             string
+	notifyOutput          bool
+	notifyContainerID     string
+	notifyContainerSignal int
+	onlyExposed           bool
+	onlyPublished         bool
+	includeStopped        bool
+	configFiles           stringslice
+	configs               config.ConfigFile
+	interval              int
+	keepBlankLines        bool
+	endpoint              string
+	tlsCert               string
+	tlsKey                string
+	tlsCaCert             string
+	tlsVerify             bool
 )
 
 func (strings *stringslice) String() string {
@@ -68,7 +69,7 @@ Environment Variables:
   DOCKER_CERT_PATH - directory path containing key.pem, cert.pem and ca.pem
   DOCKER_TLS_VERIFY - enable client TLS verification
 `)
-	println(`For more information, see https://github.com/jwilder/docker-gen`)
+	println(`For more information, see https://github.com/nginx-proxy/docker-gen`)
 }
 
 func loadConfig(file string) error {
@@ -95,8 +96,12 @@ func initFlags() {
 	flag.BoolVar(&includeStopped, "include-stopped", false, "include stopped containers")
 	flag.BoolVar(&notifyOutput, "notify-output", false, "log the output(stdout/stderr) of notify command")
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated (e.g `restart xyz`)")
-	flag.StringVar(&notifySigHUPContainerID, "notify-sighup", "",
+	flag.StringVar(&notifyContainerID, "notify-sighup", "",
 		"send HUP signal to container.  Equivalent to docker kill -s HUP `container-ID`")
+	flag.StringVar(&notifyContainerID, "notify-container", "",
+		"container to send a signal to")
+	flag.IntVar(&notifyContainerSignal, "notify-signal", int(docker.SIGHUP),
+		"signal to send to the notify-container. Defaults to SIGHUP")
 	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (secs)")
 	flag.BoolVar(&keepBlankLines, "keep-blank-lines", false, "keep blank lines in the output file")
@@ -111,6 +116,10 @@ func initFlags() {
 }
 
 func main() {
+	// SIGHUP is used to trigger generation but go programs call os.Exit(2) at default.
+	// Ignore the signal until the handler is registered:
+	signal.Ignore(syscall.SIGHUP)
+
 	initFlags()
 
 	if version {
@@ -131,29 +140,29 @@ func main() {
 			}
 		}
 	} else {
-		w, err := dockergen.ParseWait(wait)
+		w, err := config.ParseWait(wait)
 		if err != nil {
 			log.Fatalf("Error parsing wait interval: %s\n", err)
 		}
-		config := dockergen.Config{
+		cfg := config.Config{
 			Template:         flag.Arg(0),
 			Dest:             flag.Arg(1),
 			Watch:            watch,
 			Wait:             w,
 			NotifyCmd:        notifyCmd,
 			NotifyOutput:     notifyOutput,
-			NotifyContainers: make(map[string]docker.Signal),
+			NotifyContainers: make(map[string]int),
 			OnlyExposed:      onlyExposed,
 			OnlyPublished:    onlyPublished,
 			IncludeStopped:   includeStopped,
 			Interval:         interval,
 			KeepBlankLines:   keepBlankLines,
 		}
-		if notifySigHUPContainerID != "" {
-			config.NotifyContainers[notifySigHUPContainerID] = docker.SIGHUP
+		if notifyContainerID != "" {
+			cfg.NotifyContainers[notifyContainerID] = notifyContainerSignal
 		}
-		configs = dockergen.ConfigFile{
-			Config: []dockergen.Config{config}}
+		configs = config.ConfigFile{
+			Config: []config.Config{cfg}}
 	}
 
 	all := true
@@ -163,7 +172,7 @@ func main() {
 		}
 	}
 
-	generator, err := dockergen.NewGenerator(dockergen.GeneratorConfig{
+	generator, err := generator.NewGenerator(generator.GeneratorConfig{
 		Endpoint:   endpoint,
 		TLSKey:     tlsKey,
 		TLSCert:    tlsCert,

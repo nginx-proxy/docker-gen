@@ -1,11 +1,9 @@
-package dockergen
+package config
 
 import (
 	"errors"
 	"strings"
 	"time"
-
-	"github.com/fsouza/go-dockerclient"
 )
 
 type Config struct {
@@ -15,7 +13,7 @@ type Config struct {
 	Wait             *Wait
 	NotifyCmd        string
 	NotifyOutput     bool
-	NotifyContainers map[string]docker.Signal
+	NotifyContainers map[string]int
 	OnlyExposed      bool
 	OnlyPublished    bool
 	IncludeStopped   bool
@@ -75,7 +73,7 @@ func ParseWait(s string) (*Wait, error) {
 			return nil, err
 		}
 		if max < min {
-			return nil, errors.New("Invalid wait interval: max must be larger than min")
+			return nil, errors.New("invalid wait interval: max must be larger than min")
 		}
 	} else {
 		max = 4 * min

@@ -1,17 +1,20 @@
 docker-gen
 =====
 
-![latest 0.7.3](https://img.shields.io/badge/latest-0.7.3-green.svg?style=flat)
-[![Build Status](https://travis-ci.org/jwilder/docker-gen.svg?branch=master)](https://travis-ci.org/jwilder/docker-gen)
-![License MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)
+
+[![Tests](https://github.com/nginx-proxy/docker-gen/actions/workflows/tests.yml/badge.svg)](https://github.com/nginx-proxy/docker-gen/actions/workflows/tests.yml)
+[![GitHub release](https://img.shields.io/github/v/release/nginx-proxy/docker-gen)](https://github.com/nginx-proxy/docker-gen/releases)
+[![Docker Image Size](https://img.shields.io/docker/image-size/nginxproxy/docker-gen?sort=semver)](https://hub.docker.com/r/nginxproxy/docker-gen "Click to view the image on Docker Hub")
+[![Docker stars](https://img.shields.io/docker/stars/nginxproxy/docker-gen.svg)](https://hub.docker.com/r/nginxproxy/docker-gen 'DockerHub')
+[![Docker pulls](https://img.shields.io/docker/pulls/nginxproxy/docker-gen.svg)](https://hub.docker.com/r/nginxproxy/docker-gen 'DockerHub')
 
 `docker-gen` is a file generator that renders templates using docker container meta-data.
 
 It can be used to generate various kinds of files for:
 
- * **Centralized logging** - [fluentd](https://github.com/jwilder/docker-gen/blob/master/templates/fluentd.conf.tmpl), logstash or other centralized logging tools that tail the containers JSON log file or files within the container.
- * **Log Rotation** - [logrotate](https://github.com/jwilder/docker-gen/blob/master/templates/logrotate.tmpl) files to rotate container JSON log files
- * **Reverse Proxy Configs** - [nginx](https://github.com/jwilder/docker-gen/blob/master/templates/nginx.tmpl), [haproxy](https://github.com/jwilder/docker-discover), etc. reverse proxy configs to route requests from the host to containers
+ * **Centralized logging** - [fluentd](https://github.com/nginx-proxy/docker-gen/blob/main/templates/fluentd.conf.tmpl), logstash or other centralized logging tools that tail the containers JSON log file or files within the container.
+ * **Log Rotation** - [logrotate](https://github.com/nginx-proxy/docker-gen/blob/main/templates/logrotate.tmpl) files to rotate container JSON log files
+ * **Reverse Proxy Configs** - [nginx](https://github.com/nginx-proxy/docker-gen/blob/main/templates/nginx.tmpl), [haproxy](https://github.com/jwilder/docker-discover), etc. reverse proxy configs to route requests from the host to containers
  * **Service Discovery** - Scripts (python, bash, etc..) to register containers within [etcd](https://github.com/jwilder/docker-register), hipache, etc..
 
 ===
@@ -25,17 +28,17 @@ There are three common ways to run docker-gen:
 
 #### Host Install
 
-Linux/OSX binaries for release [0.7.3](https://github.com/jwilder/docker-gen/releases)
+Linux/OSX binaries for release [0.9.0](https://github.com/nginx-proxy/docker-gen/releases)
 
-* [amd64](https://github.com/jwilder/docker-gen/releases/download/0.7.3/docker-gen-linux-amd64-0.7.3.tar.gz)
-* [i386](https://github.com/jwilder/docker-gen/releases/download/0.7.3/docker-gen-linux-i386-0.7.3.tar.gz)
-* [alpine-linux](https://github.com/jwilder/docker-gen/releases/download/0.7.3/docker-gen-alpine-linux-amd64-0.7.3.tar.gz)
+* [amd64](https://github.com/nginx-proxy/docker-gen/releases/download/0.9.0/docker-gen-linux-amd64-0.9.0.tar.gz)
+* [i386](https://github.com/nginx-proxy/docker-gen/releases/download/0.9.0/docker-gen-linux-i386-0.9.0.tar.gz)
+* [alpine-linux](https://github.com/nginx-proxy/docker-gen/releases/download/0.9.0/docker-gen-alpine-linux-amd64-0.9.0.tar.gz)
 
 Download the version you need, untar, and install to your PATH.
 
 ```
-$ wget https://github.com/jwilder/docker-gen/releases/download/0.7.3/docker-gen-linux-amd64-0.7.3.tar.gz
-$ tar xvzf docker-gen-linux-amd64-0.7.3.tar.gz
+$ wget https://github.com/nginx-proxy/docker-gen/releases/download/0.9.0/docker-gen-linux-amd64-0.9.0.tar.gz
+$ tar xvzf docker-gen-linux-amd64-0.9.0.tar.gz
 $ ./docker-gen
 ```
 
@@ -43,14 +46,14 @@ $ ./docker-gen
 
 Docker-gen can be bundled inside of a container along-side applications.
 
-[jwilder/nginx-proxy](https://index.docker.io/u/jwilder/nginx-proxy/) trusted build is an example of
+[nginx-proxy/nginx-proxy](https://hub.docker.com/r/nginxproxy/nginx-proxy) trusted build is an example of
 running docker-gen within a container along-side nginx.
 [jwilder/docker-register](https://github.com/jwilder/docker-register) is an example of running
 docker-gen within a container to do service registration with etcd.
 
 #### Separate Container Install
 
-It can also be run as two separate containers using the [jwilder/docker-gen](https://index.docker.io/u/jwilder/docker-gen/)
+It can also be run as two separate containers using the [nginx-proxy/docker-gen](https://hub.docker.com/r/nginxproxy/docker-gen)
 image, together with virtually any other image.
 
 This is how you could run the official [nginx](https://registry.hub.docker.com/_/nginx/) image and
@@ -66,11 +69,17 @@ $ docker run -d -p 80:80 --name nginx -v /tmp/nginx:/etc/nginx/conf.d -t nginx
 Fetch the template and start the docker-gen container with the shared volume:
 ```
 $ mkdir -p /tmp/templates && cd /tmp/templates
-$ curl -o nginx.tmpl https://raw.githubusercontent.com/jwilder/docker-gen/master/templates/nginx.tmpl
+$ curl -o nginx.tmpl https://raw.githubusercontent.com/nginx-proxy/docker-gen/main/templates/nginx.tmpl
 $ docker run -d --name nginx-gen --volumes-from nginx \
-   -v /var/run/docker.sock:/tmp/docker.sock:ro \
+   -v /var/run/docker.sock:/tmp/docker.sock:rw \
    -v /tmp/templates:/etc/docker-gen/templates \
-   -t jwilder/docker-gen -notify-sighup nginx -watch -only-exposed /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
+   -t nginxproxy/docker-gen -notify-sighup nginx -watch -only-exposed /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default.conf
+```
+
+Start a container, taking note of any Environment variables a container expects. See the top of a template for details.
+
+```
+$ docker run --env VIRTUAL_HOST='example.com' --env VIRTUAL_PORT=80 ...
 ```
 
 ===
@@ -95,8 +104,13 @@ Options:
       run command after template is regenerated (e.g restart xyz)
   -notify-output
       log the output(stdout/stderr) of notify command
+  -notify-container container-ID
+      container to send a signal to
+  -notify-signal signal
+      signal to send to the -notify-container. -1 to call docker restart. Defaults to 1 aka. HUP.
+      All available signals available on the [dockerclient](https://github.com/fsouza/go-dockerclient/blob/01804dec8a84d0a77e63611f2b62d33e9bb2b64a/signal.go)
   -notify-sighup container-ID
-      send HUP signal to container.  Equivalent to 'docker kill -s HUP container-ID'
+      send HUP signal to container.  Equivalent to 'docker kill -s HUP container-ID', or `-notify-container container-ID -notify-signal 1`
   -only-exposed
       only include containers with exposed ports
   -only-published
@@ -120,7 +134,7 @@ Options:
 
 Arguments:
   template - path to a template to generate
-  dest - path to a write the template. If not specfied, STDOUT is used
+  dest - path to write the template. If not specfied, STDOUT is used
 
 Environment Variables:
   DOCKER_HOST - default value for -endpoint
@@ -143,7 +157,7 @@ An example configuration file, **docker-gen.cfg** can be found in the examples f
 Starts a configuration section
 
 dest = "path/to/a/file"
-path to a write the template. If not specfied, STDOUT is used
+path to write the template. If not specfied, STDOUT is used
 
 notifycmd = "/etc/init.d/foo reload"
 run command after template is regenerated (e.g restart xyz)
@@ -198,7 +212,7 @@ e75a60548dc9 = 1  # a key can be either container name (nginx) or ID
 
 ### Templating
 
-The templates used by docker-gen are written using the Go [text/template](http://golang.org/pkg/text/template/) language. In addition to the [built-in functions](http://golang.org/pkg/text/template/#hdr-Functions) supplied by Go, docker-gen provides a number of additional functions to make it simpler (or possible) to generate your desired output.
+The templates used by docker-gen are written using the Go [text/template](http://golang.org/pkg/text/template/) language. In addition to the [built-in functions](http://golang.org/pkg/text/template/#hdr-Functions) supplied by Go, docker-gen uses [sprig](https://masterminds.github.io/sprig/) and some additional functions to make it simpler (or possible) to generate your desired output. Some templates rely on environment variables within the container to make decisions on what to generate from the template.
 
 #### Emit Structure
 
@@ -244,6 +258,7 @@ type Network struct {
     MacAddress          string
     GlobalIPv6PrefixLen int
     IPPrefixLen         int
+    Internal            bool
 }
 
 type DockerImage struct {
@@ -274,7 +289,12 @@ type SwarmNode struct {
 }
 
 type State struct {
-  Running bool
+	Running bool
+	Health  Health
+}
+
+type Health struct {
+	Status string
 }
 
 // Accessible from the root in templates as .Docker
@@ -346,31 +366,34 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 
 #### Functions
 
+* [Functions from Go](https://pkg.go.dev/text/template#hdr-Functions)
+* [Functions from Sprig v3](https://masterminds.github.io/sprig/), except for those that have the same name as one of the following functions.
 * *`closest $array $value`*: Returns the longest matching substring in `$array` that matches `$value`
 * *`coalesce ...`*: Returns the first non-nil argument.
-* *`contains $map $key`*: Returns `true` if `$map` contains `$key`. Takes maps from `string` to `string`.
-* *`dict $key $value ...`*: Creates a map from a list of pairs. Each `$key` value must be a `string`, but the `$value` can be any type (or `nil`). Useful for passing more than one value as a pipeline context to subtemplates.
+* *`contains $map $key`*: Returns `true` if `$map` contains `$key`. Takes maps from `string` to any type.
 * *`dir $path`*: Returns an array of filenames in the specified `$path`.
 * *`exists $path`*: Returns `true` if `$path` refers to an existing file or directory. Takes a string.
-* *`first $array`*: Returns the first value of an array or nil if the arry is nil or empty.
+* *`eval $templateName [$data]`*: Evaluates the named template like Go's built-in `template` action, but instead of writing out the result it returns the result as a string so that it can be post-processed.  The `$data` argument may be omitted, which is equivalent to passing `nil`.
 * *`groupBy $containers $fieldPath`*: Groups an array of `RuntimeContainer` instances based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value, which must be a string. Returns a map from the value of the field path expression to an array of containers having that value. Containers that do not have a value for the field path in question are omitted.
 * *`groupByKeys $containers $fieldPath`*: Returns the same as `groupBy` but only returns the keys of the map.
 * *`groupByMulti $containers $fieldPath $sep`*: Like `groupBy`, but the string value specified by `$fieldPath` is first split by `$sep` into a list of strings. A container whose `$fieldPath` value contains a list of strings will show up in the map output under each of those strings.
 * *`groupByLabel $containers $label`*: Returns the same as `groupBy` but grouping by the given label's value.
-* *`hasPrefix $prefix $string`*: Returns whether `$prefix` is a prefix of `$string`.
-* *`hasSuffix $suffix $string`*: Returns whether `$suffix` is a suffix of `$string`.
 * *`intersect $slice1 $slice2`*: Returns the strings that exist in both string slices.
 * *`json $value`*: Returns the JSON representation of `$value` as a `string`.
 * *`keys $map`*: Returns the keys from `$map`. If `$map` is `nil`, a `nil` is returned. If `$map` is not a `map`, an error will be thrown.
-* *`last $array`*: Returns the last value of an array.
 * *`parseBool $string`*: parseBool returns the boolean value represented by the string. It accepts 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False. Any other value returns an error. Alias for [`strconv.ParseBool`](http://golang.org/pkg/strconv/#ParseBool) 
 * *`replace $string $old $new $count`*: Replaces up to `$count` occurences of `$old` with `$new` in `$string`. Alias for [`strings.Replace`](http://golang.org/pkg/strings/#Replace)
 * *`sha1 $string`*: Returns the hexadecimal representation of the SHA1 hash of `$string`.
 * *`split $string $sep`*: Splits `$string` into a slice of substrings delimited by `$sep`. Alias for [`strings.Split`](http://golang.org/pkg/strings/#Split)
 * *`splitN $string $sep $count`*: Splits `$string` into a slice of substrings delimited by `$sep`, with number of substrings returned determined by `$count`. Alias for [`strings.SplitN`](https://golang.org/pkg/strings/#SplitN)
+* *`sortStringsAsc $strings`: Returns a slice of strings `$strings` sorted in ascending order.
+* *`sortStringsDesc $strings`: Returns a slice of strings `$strings` sorted in descending (reverse) order.
+* *`sortObjectsByKeysAsc $objects $fieldPath`: Returns the array `$objects`, sorted in ascending order based on the values of a field path expression `$fieldPath`.
+* *`sortObjectsByKeysDesc $objects $fieldPath`: Returns the array `$objects`, sorted in descending (reverse) order based on the values of a field path expression `$fieldPath`.
 * *`trimPrefix $prefix $string`*: If `$prefix` is a prefix of `$string`, return `$string` with `$prefix` trimmed from the beginning. Otherwise, return `$string` unchanged.
 * *`trimSuffix $suffix $string`*: If `$suffix` is a suffix of `$string`, return `$string` with `$suffix` trimmed from the end. Otherwise, return `$string` unchanged.
-* *`trim $string`*: Removes whitespace from both sides of `$string`.
+* *`toLower $string`*: Replace capital letters in `$string` to lowercase.
+* *`toUpper $string`*: Replace lowercase letters in `$string` to uppercase.
 * *`when $condition $trueValue $falseValue`*: Returns the `$trueValue` when the `$condition` is `true` and the `$falseValue` otherwise
 * *`where $items $fieldPath $value`*: Filters an array or slice based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value. Returns an array of items having that value.
 * *`whereNot $items $fieldPath $value`*: Filters an array or slice based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value. Returns an array of items **not** having that value.
@@ -392,18 +415,18 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 
 #### NGINX Reverse Proxy Config
 
-[jwilder/nginx-proxy](https://index.docker.io/u/jwilder/nginx-proxy/) trusted build.
+[nginxproxy/nginx-proxy](https://hub.docker.com/r/nginxproxy/nginx-proxy) trusted build.
 
 Start nginx-proxy:
 
 ```
-$ docker run -d -p 80:80 -v /var/run/docker.sock:/tmp/docker.sock -t jwilder/nginx-proxy
+$ docker run -d -p 80:80 -v /var/run/docker.sock:/tmp/docker.sock -t nginxproxy/nginx-proxy
 ```
 
-Then start containers with a VIRTUAL_HOST env variable:
+Then start containers with a VIRTUAL_HOST (and the VIRTUAL_PORT if more than one port is exposed) env variable:
 
 ```
-$ docker run -e VIRTUAL_HOST=foo.bar.com -t ...
+$ docker run -e VIRTUAL_HOST=foo.bar.com -e VIRTUAL_PORT=80 -t ...
 ```
 
 If you wanted to run docker-gen directly on the host, you could do it with:
@@ -434,8 +457,11 @@ $ docker-gen -notify "/bin/bash /tmp/etcd.sh" -interval 10 templates/etcd.tmpl /
 
 ### Development
 
-This project uses [glock](https://github.com/robfig/glock) for managing 3rd party dependencies.
-You'll need to install glock into your workspace before hacking on docker-gen.
+This project uses [Go Modules](https://golang.org/ref/mod) for managing 3rd party dependencies.
+This means that at least `go 1.11` is required. 
+
+For `go 1.11` and `go 1.12` it is additionally required to manually enable support by setting `GO111MODULE=on`. 
+For later versions, this is not required. 
 
 ```
 $ git clone <your fork>

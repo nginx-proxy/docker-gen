@@ -84,7 +84,9 @@ jobs:
           build-args: DOCKER_GEN_VERSION=${{ steps.docker-gen_version.outputs.VERSION }}
           platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64,linux/ppc64le,linux/s390x
           file: Dockerfile.${{ matrix.base }}
+          sbom: true
           push: true
+          provenance: mode=max
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
           cache-from: type=gha

@@ -13,7 +13,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"syscall"
 	"text/template"
 	"unicode"
 
@@ -195,12 +194,13 @@ func GenerateFile(config config.Config, containers context.Context) bool {
 					fi, _ = os.Stat(config.Dest)
 				}
 			}
+
 			if err := dest.Chmod(fi.Mode()); err != nil {
 				log.Fatalf("Unable to chmod temp file: %s\n", err)
 			}
-			if err := dest.Chown(int(fi.Sys().(*syscall.Stat_t).Uid), int(fi.Sys().(*syscall.Stat_t).Gid)); err != nil {
-				log.Fatalf("Unable to chown temp file: %s\n", err)
-			}
+
+			chown(dest, fi)
+
 			oldContents, err = os.ReadFile(config.Dest)
 			if err != nil {
 				log.Fatalf("Unable to compare current file contents: %s: %s\n", config.Dest, err)

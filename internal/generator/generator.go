@@ -420,22 +420,10 @@ func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
 			IP6LinkLocal: container.NetworkSettings.LinkLocalIPv6Address,
 			IP6Global:    container.NetworkSettings.GlobalIPv6Address,
 		}
-		for k, v := range container.NetworkSettings.Ports {
-			address := context.Address{
-				IP:           container.NetworkSettings.IPAddress,
-				IP6LinkLocal: container.NetworkSettings.LinkLocalIPv6Address,
-				IP6Global:    container.NetworkSettings.GlobalIPv6Address,
-				Port:         k.Port(),
-				Proto:        k.Proto(),
-			}
-			if len(v) > 0 {
-				address.HostPort = v[0].HostPort
-				address.HostIP = v[0].HostIP
-			}
-			runtimeContainer.Addresses = append(runtimeContainer.Addresses,
-				address)
 
-		}
+		adresses := context.GetContainerAddresses(container)
+		runtimeContainer.Addresses = append(runtimeContainer.Addresses, adresses...)
+
 		for k, v := range container.NetworkSettings.Networks {
 			network := context.Network{
 				IP:                  v.IPAddress,
@@ -453,6 +441,7 @@ func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
 			runtimeContainer.Networks = append(runtimeContainer.Networks,
 				network)
 		}
+
 		for k, v := range container.Volumes {
 			runtimeContainer.Volumes[k] = context.Volume{
 				Path:      k,

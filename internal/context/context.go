@@ -52,16 +52,6 @@ func SetDockerEnv(d *docker.Env) {
 	dockerEnv = d
 }
 
-type Address struct {
-	IP           string
-	IP6LinkLocal string
-	IP6Global    string
-	Port         string
-	HostPort     string
-	Proto        string
-	HostIP       string
-}
-
 type Network struct {
 	IP                  string
 	Name                string

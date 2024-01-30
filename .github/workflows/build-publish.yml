@@ -12,7 +12,7 @@ on:
     paths:
       - ".dockerignore"
       - ".github/workflows/build-publish.yml"
-      - "Dockerfile"
+      - "Dockerfile.alpine"
       - "Dockerfile.debian"
       - "go.mod"
       - "go.sum"

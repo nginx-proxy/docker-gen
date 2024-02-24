@@ -93,53 +93,55 @@ Generate files from docker container meta-data
 
 Options:
   -config value
-      config files with template directives. Config files will be merged if this option is specified multiple times. (default [])
+    	config files with template directives. Config files will be merged if this option is specified multiple times.
   -endpoint string
-      docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock
-  -interval int
-      notify command interval (secs)
-  -keep-blank-lines
-      keep blank lines in the output file
-  -notify restart xyz
-      run command after template is regenerated (e.g restart xyz)
-  -notify-output
-      log the output(stdout/stderr) of notify command
-  -notify-container container-ID
-      container to send a signal to
-  -notify-signal signal
-      signal to send to the -notify-container. -1 to call docker restart. Defaults to 1 aka. HUP.
-      All available signals available on the [dockerclient](https://github.com/fsouza/go-dockerclient/blob/01804dec8a84d0a77e63611f2b62d33e9bb2b64a/signal.go)
-  -notify-sighup container-ID
-      send HUP signal to container.  Equivalent to 'docker kill -s HUP container-ID', or `-notify-container container-ID -notify-signal 1`
-  -only-exposed
-      only include containers with exposed ports
-  -only-published
-      only include containers with published ports (implies -only-exposed)
+    	docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock
   -include-stopped
-      include stopped containers
+    	include stopped containers
+  -interval int
+    	notify command interval (secs)
+  -keep-blank-lines
+    	keep blank lines in the output file
+  -notify restart xyz
+    	run command after template is regenerated (e.g restart xyz)
+  -notify-container string
+    	container to send a signal to
+  -notify-output
+    	log the output(stdout/stderr) of notify command
+  -notify-sighup container-ID
+    	send HUP signal to container.  Equivalent to docker kill -s HUP container-ID
+  -notify-signal int
+    	signal to send to the notify-container. Defaults to SIGHUP (default 1)
+  -only-exposed
+    	only include containers with exposed ports
+  -only-published
+    	only include containers with published ports (implies -only-exposed)
   -tlscacert string
-      path to TLS CA certificate file (default "/Users/jason/.docker/machine/machines/default/ca.pem")
+    	path to TLS CA certificate file (default "/root/.docker/ca.pem")
   -tlscert string
-      path to TLS client certificate file (default "/Users/jason/.docker/machine/machines/default/cert.pem")
+    	path to TLS client certificate file (default "/root/.docker/cert.pem")
   -tlskey string
-      path to TLS client key file (default "/Users/jason/.docker/machine/machines/default/key.pem")
+    	path to TLS client key file (default "/root/.docker/key.pem")
   -tlsverify
-      verify docker daemon's TLS certicate (default true)
+    	verify docker daemon's TLS certicate
   -version
-      show version
+    	show version
+  -wait string
+    	minimum and maximum durations to wait (e.g. "500ms:2s") before triggering generate
+  -wasmcache string
+    	path to cache directory for compiled wasm modules (default "/tmp/docker-gen-wasm-cache")
   -watch
-      watch for container changes
-  -wait
-      minimum (and/or maximum) duration to wait after each container change before triggering
+    	watch for container changes
 
 Arguments:
   template - path to a template to generate
-  dest - path to write the template. If not specfied, STDOUT is used
+  dest - path to a write the template.  If not specfied, STDOUT is used
 
 Environment Variables:
   DOCKER_HOST - default value for -endpoint
-  DOCKER_CERT_PATH - directory path containing key.pem, cert.pm and ca.pem
-  DOCKER_TLS_VERIFY - enable client TLS verification]
+  DOCKER_CERT_PATH - directory path containing key.pem, cert.pem and ca.pem
+  DOCKER_TLS_VERIFY - enable client TLS verification
+  WASM_CACHE_DIR - path to cache directory for compiled wasm modules, default for -wasmcache
 ```
 
 If no `<dest>` file is specified, the output is sent to stdout. Mainly useful for debugging.
@@ -404,6 +406,67 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 * *`whereLabelExists $containers $label`*: Filters a slice of containers based on the existence of the label `$label`.
 * *`whereLabelDoesNotExist $containers $label`*: Filters a slice of containers based on the non-existence of the label `$label`.
 * *`whereLabelValueMatches $containers $label $pattern`*: Filters a slice of containers based on the existence of the label `$label` with values matching the regular expression `$pattern`.
+ 
+===
+
+### Templating via WASM modules
+
+`docker-gen` can run arbitrary Webassembly (WASI) modules. The module takes json-serialized representation of docker containers on its standard input (`os.Stdin`), emits a file on standard output (`os.Stdout`) and can output messages direcly on `docker-gen`'s standatd error stream (`os.Stderr`). You can develop your own wasm module using `github.com/nginx-proxy/docker-gen/plugin` library. It automates parsing operations and emits output and errors. It also configures Go's standard `log` module to output on `os.Stderr`, so it can be used to show errors and warnings. WASM plugin module receives the following data structure:
+
+```go
+type PluginContext struct {
+    Containers []*RuntimeContainer
+    Env        map[string]string
+    Docker     Docker
+}
+```
+
+All other structures are the same as shown for the templates.
+
+Here is a simple example of a plugin module:
+
+
+```go
+// file main.go
+package main
+
+import (
+    "bytes"
+    "fmt"
+
+    "github.com/nginx-proxy/docker-gen/plugin"
+)
+
+
+func main() {
+    plugin.Main(func(in *plugin.PluginContext) ([]byte, error) {
+        bout := bytes.Buffer{}
+        for _, container := range in.Containers {
+            bout.WriteString(fmt.Sprintf(
+                "Container %s is runnning: %t(%s)\n", 
+                container.Name, 
+                container.State.Running,
+                container.State.Health.Status))
+        }
+        return bout.Bytes(), nil
+    })
+}
+```
+
+You can compile it to webassembly with tinygo:
+
+```shell
+tinygo build -o ./docker-ps-like.wasm -target wasi main.go
+```
+
+After compilation you can use the compiled plugin as a template:
+
+```shell
+docker-gen ./docker-ps-like.wasm
+```
+
+A more sophisticated example of a webassembly plugin module can be found [here](/examples/nginx-wasm-example/). It outputs the same content as [`nginx.tmpl`](/templates/nginx.tmpl), but provides several warnings on misconfiguration of `VIRTUAL_HOST` and `VIRTUAL_PORT` variables on standart errors (`os.Stderr`).
+
 
 ===
 

@@ -6,8 +6,12 @@ require (
 	github.com/BurntSushi/toml v1.3.2
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/fsouza/go-dockerclient v1.10.2
+	github.com/nginx-proxy/docker-gen/plugin v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.8.4
+	github.com/tetratelabs/wazero v1.6.0
 )
+
+replace github.com/nginx-proxy/docker-gen/plugin => ./plugin
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
@@ -25,8 +29,10 @@ require (
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/huandu/xstrings v1.3.3 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
+	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.0 // indirect
 	github.com/moby/patternmatcher v0.6.0 // indirect

@@ -1,0 +1,5 @@
+go 1.21
+
+use .
+use plugin
+use examples/nginx-wasm-example

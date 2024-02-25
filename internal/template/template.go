@@ -69,6 +69,7 @@ func newTemplate(name string) *template.Template {
 		"groupByMulti":           groupByMulti,
 		"groupByLabel":           groupByLabel,
 		"json":                   marshalJson,
+		"include":                include,
 		"intersect":              intersect,
 		"keys":                   keys,
 		"replace":                strings.Replace,
@@ -223,13 +224,14 @@ func GenerateFile(config config.Config, containers context.Context) bool {
 }
 
 func executeTemplate(templatePath string, containers context.Context) []byte {
-	tmpl, err := newTemplate(filepath.Base(templatePath)).ParseFiles(templatePath)
+	templatePathList := strings.Split(templatePath, ";")
+	tmpl, err := newTemplate(filepath.Base(templatePath)).ParseFiles(templatePathList...)
 	if err != nil {
 		log.Fatalf("Unable to parse template: %s", err)
 	}
 
 	buf := new(bytes.Buffer)
-	err = tmpl.ExecuteTemplate(buf, filepath.Base(templatePath), &containers)
+	err = tmpl.ExecuteTemplate(buf, filepath.Base(templatePathList[0]), &containers)
 	if err != nil {
 		log.Fatalf("Template error: %s\n", err)
 	}

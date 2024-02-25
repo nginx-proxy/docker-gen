@@ -211,7 +211,15 @@ e75a60548dc9 = 1  # a key can be either container name (nginx) or ID
 
 The templates used by docker-gen are written using the Go [text/template](http://golang.org/pkg/text/template/) language. In addition to the [built-in functions](http://golang.org/pkg/text/template/#hdr-Functions) supplied by Go, docker-gen uses [sprig](https://masterminds.github.io/sprig/) and some additional functions to make it simpler (or possible) to generate your desired output. Some templates rely on environment variables within the container to make decisions on what to generate from the template.
 
-For parsing several templates, split path with `;` (for example `template = "nginx.tmpl;header.tmpl"`). This makes possible to use go nested templates through standard `template` function.
+Several templates may be parsed at once by using a semicolon (`;`) to delimit the `template` value. This can be used as a proxy for Golang's nested template functionality. In all cases, the main rendered template should go first.
+
+```
+[[config]]
+template = "/etc/docker-gen/templates/nginx.tmpl;/etc/docker-gen/templates/header.tmpl"
+dest = "/etc/nginx/conf.d/default.conf"
+watch = true
+wait = "500ms:2s"
+```
 
 #### Emit Structure
 

@@ -13,6 +13,7 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/nginx-proxy/docker-gen/internal/config"
 	"github.com/nginx-proxy/docker-gen/internal/generator"
+	"github.com/nginx-proxy/docker-gen/internal/template"
 )
 
 type stringslice []string
@@ -38,6 +39,7 @@ var (
 	tlsKey                string
 	tlsCaCert             string
 	tlsVerify             bool
+	wasmCacheDir          *string = &template.WasmCacheDir
 )
 
 func (strings *stringslice) String() string {
@@ -68,6 +70,7 @@ Environment Variables:
   DOCKER_HOST - default value for -endpoint
   DOCKER_CERT_PATH - directory path containing key.pem, cert.pem and ca.pem
   DOCKER_TLS_VERIFY - enable client TLS verification
+  WASM_CACHE_DIR - path to cache directory for compiled wasm modules, default for -wasmcache
 `)
 	println(`For more information, see https://github.com/nginx-proxy/docker-gen`)
 }
@@ -109,6 +112,11 @@ func initFlags() {
 	flag.StringVar(&tlsCert, "tlscert", filepath.Join(certPath, "cert.pem"), "path to TLS client certificate file")
 	flag.StringVar(&tlsKey, "tlskey", filepath.Join(certPath, "key.pem"), "path to TLS client key file")
 	flag.StringVar(&tlsCaCert, "tlscacert", filepath.Join(certPath, "ca.pem"), "path to TLS CA certificate file")
+	wasmCacheEnv := os.Getenv("WASM_CACHE_DIR")
+	if wasmCacheEnv != "" {
+		*wasmCacheDir = wasmCacheEnv
+	}
+	flag.StringVar(wasmCacheDir, "wasmcache", *wasmCacheDir, "path to cache directory for compiled wasm modules")
 	flag.BoolVar(&tlsVerify, "tlsverify", os.Getenv("DOCKER_TLS_VERIFY") != "", "verify docker daemon's TLS certicate")
 
 	flag.Usage = usage

@@ -162,7 +162,12 @@ func GenerateFile(config config.Config, containers context.Context) bool {
 		filteredContainers = filteredRunningContainers
 	}
 
-	contents := executeTemplate(config.Template, filteredContainers)
+	var contents []byte
+	if filepath.Ext(config.Template) == ".wasm" {
+		contents = executeWasm(config.Template, filteredContainers)
+	} else {
+		contents = executeTemplate(config.Template, filteredContainers)
+	}
 
 	if !config.KeepBlankLines {
 		buf := new(bytes.Buffer)

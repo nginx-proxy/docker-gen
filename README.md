@@ -386,6 +386,8 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 - _`include $file`_: Returns content of `$file`, and empty string if file reading error.
 - _`intersect $slice1 $slice2`_: Returns the strings that exist in both string slices.
 - _`json $value`_: Returns the JSON representation of `$value` as a `string`.
+- _`fromYaml $string` / `mustFromYaml $string`_: Similar to [Sprig's `fromJson` / `mustFromJson`](https://github.com/Masterminds/sprig/blob/master/docs/defaults.md#fromjson-mustfromjson), but for YAML.
+- _`toYaml $dict` / `mustToYaml $dict`_: Similar to [Sprig's `toJson` / `mustToJson`](https://github.com/Masterminds/sprig/blob/master/docs/defaults.md#tojson-musttojson), but for YAML.
 - _`keys $map`_: Returns the keys from `$map`. If `$map` is `nil`, a `nil` is returned. If `$map` is not a `map`, an error will be thrown.
 - _`parseBool $string`_: parseBool returns the boolean value represented by the string. It accepts 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False. Any other value returns an error. Alias for [`strconv.ParseBool`](http://golang.org/pkg/strconv/#ParseBool)
 - _`replace $string $old $new $count`_: Replaces up to `$count` occurences of `$old` with `$new` in `$string`. Alias for [`strings.Replace`](http://golang.org/pkg/strings/#Replace)

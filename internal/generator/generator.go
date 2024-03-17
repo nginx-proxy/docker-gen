@@ -288,7 +288,7 @@ func (g *generator) generateFromEvents() {
 						}
 						time.Sleep(10 * time.Second)
 					}
-					if event.Status == "start" || event.Status == "stop" || event.Status == "die" {
+					if event.Status == "start" || event.Status == "stop" || event.Status == "die" || strings.Index(event.Status, "health_status:") != -1 {
 						log.Printf("Received event %s for container %s", event.Status, event.ID[:12])
 						// fanout event to all watchers
 						eventChan <- event
@@ -401,6 +401,7 @@ func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
 	}
 
 	containers := []*context.RuntimeContainer{}
+	networks := make(map[string]docker.Network)
 	for _, client := range g.SwarmClients {
 		apiContainers, err := client.ListContainers(docker.ListContainersOptions{
 			All:  g.All,
@@ -408,6 +409,14 @@ func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
 		})
 		if err != nil {
 			return nil, err
+		}
+
+		apiNetworks, err := client.ListNetworks()
+		if err != nil {
+			return nil, err
+		}
+		for _, apiNetwork := range apiNetworks {
+			networks[apiNetwork.Name] = apiNetwork
 		}
 
 		for _, apiContainer := range apiContainers {
@@ -420,7 +429,8 @@ func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
 
 			registry, repository, tag := dockerclient.SplitDockerImage(container.Config.Image)
 			runtimeContainer := &context.RuntimeContainer{
-				ID: container.ID,
+				ID:      container.ID,
+				Created: container.Created,
 				Image: context.DockerImage{
 					Registry:   registry,
 					Repository: repository,
@@ -428,10 +438,14 @@ func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
 				},
 				State: context.State{
 					Running: container.State.Running,
+					Health: context.Health{
+						Status: container.State.Health.Status,
+					},
 				},
 				Name:         strings.TrimLeft(container.Name, "/"),
 				Hostname:     container.Config.Hostname,
 				Gateway:      container.NetworkSettings.Gateway,
+				NetworkMode:  container.HostConfig.NetworkMode,
 				Addresses:    []context.Address{},
 				Networks:     []context.Network{},
 				Env:          make(map[string]string),
@@ -442,22 +456,10 @@ func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
 				IP6LinkLocal: container.NetworkSettings.LinkLocalIPv6Address,
 				IP6Global:    container.NetworkSettings.GlobalIPv6Address,
 			}
-			for k, v := range container.NetworkSettings.Ports {
-				address := context.Address{
-					IP:           container.NetworkSettings.IPAddress,
-					IP6LinkLocal: container.NetworkSettings.LinkLocalIPv6Address,
-					IP6Global:    container.NetworkSettings.GlobalIPv6Address,
-					Port:         k.Port(),
-					Proto:        k.Proto(),
-				}
-				if len(v) > 0 {
-					address.HostPort = v[0].HostPort
-					address.HostIP = v[0].HostIP
-				}
-				runtimeContainer.Addresses = append(runtimeContainer.Addresses,
-					address)
 
-			}
+			adresses := context.GetContainerAddresses(container)
+			runtimeContainer.Addresses = append(runtimeContainer.Addresses, adresses...)
+
 			for k, v := range container.NetworkSettings.Networks {
 				network := context.Network{
 					IP:                  v.IPAddress,
@@ -469,11 +471,13 @@ func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
 					MacAddress:          v.MacAddress,
 					GlobalIPv6PrefixLen: v.GlobalIPv6PrefixLen,
 					IPPrefixLen:         v.IPPrefixLen,
+					Internal:            networks[k].Internal,
 				}
 
 				runtimeContainer.Networks = append(runtimeContainer.Networks,
 					network)
 			}
+
 			for k, v := range container.Volumes {
 				runtimeContainer.Volumes[k] = context.Volume{
 					Path:      k,

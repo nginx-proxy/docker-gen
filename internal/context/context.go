@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"sync"
+	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/nginx-proxy/docker-gen/internal/utils"
@@ -51,16 +52,6 @@ func SetDockerEnv(d *docker.Env) {
 	dockerEnv = d
 }
 
-type Address struct {
-	IP           string
-	IP6LinkLocal string
-	IP6Global    string
-	Port         string
-	HostPort     string
-	Proto        string
-	HostIP       string
-}
-
 type Network struct {
 	IP                  string
 	Name                string
@@ -71,6 +62,7 @@ type Network struct {
 	MacAddress          string
 	GlobalIPv6PrefixLen int
 	IPPrefixLen         int
+	Internal            bool
 }
 
 type Volume struct {
@@ -81,15 +73,22 @@ type Volume struct {
 
 type State struct {
 	Running bool
+	Health  Health
+}
+
+type Health struct {
+	Status string
 }
 
 type RuntimeContainer struct {
 	ID           string
+	Created      time.Time
 	Addresses    []Address
 	Networks     []Network
 	Gateway      string
 	Name         string
 	Hostname     string
+	NetworkMode  string
 	Image        DockerImage
 	Env          map[string]string
 	Volumes      map[string]Volume

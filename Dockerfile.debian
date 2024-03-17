@@ -1,9 +1,12 @@
 ARG DOCKER_GEN_VERSION=main
 
 # Build docker-gen from scratch
-FROM golang:1.20.7 as go-builder
+FROM --platform=$BUILDPLATFORM golang:1.22.1 as go-builder
 
-ARG DOCKER_GEN_VERSION
+ENV CGO_ENABLED=0
+
+ARG DOCKER_GEN_VERSION TARGETOS TARGETARCH TARGETVARIANT
+ENV GOOS=$TARGETOS GOARCH=$TARGETARCH VARIANT=$TARGETVARIANT
 
 WORKDIR /build
 
@@ -12,12 +15,19 @@ COPY . .
 RUN go mod download
 
 # Build the docker-gen executable
-RUN GOOS=linux CGO_ENABLED=0 go build -ldflags "-X main.buildVersion=${DOCKER_GEN_VERSION}" -o docker-gen ./cmd/docker-gen
+RUN set -eux; \
+	case "$GOARCH" in \
+		arm) export GOARM="${VARIANT#v}" ;; \
+		amd64) export GOAMD64="$VARIANT" ;; \
+		*) [ -z "$VARIANT" ] ;; \
+	esac; \
+	go env | grep -E 'OS=|ARCH=|ARM=|AMD64='; \
+    go build -ldflags "-X main.buildVersion=${DOCKER_GEN_VERSION}" -o docker-gen ./cmd/docker-gen
 
-FROM debian:12.1-slim
+FROM --platform=$TARGETPLATFORM debian:12.5-slim
 
-ARG VERSION
-ENV DOCKER_GEN_VERSION=${VERSION} \
+ARG DOCKER_GEN_VERSION
+ENV DOCKER_GEN_VERSION=${DOCKER_GEN_VERSION} \
     DOCKER_HOST=unix:///tmp/docker.sock
 
 # Install packages required by the image
@@ -26,10 +36,13 @@ RUN apt-get update \
     && apt-get clean \
     && rm -r /var/lib/apt/lists/*
 
+# Copy the entrypoint script
+COPY /app/docker-entrypoint.sh /app/docker-entrypoint.sh
+
 # Install docker-gen from build stage
 COPY --from=go-builder /build/docker-gen /usr/local/bin/docker-gen
 
 # Copy the license
 COPY LICENSE /usr/local/share/doc/docker-gen/
 
-ENTRYPOINT ["/usr/local/bin/docker-gen"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

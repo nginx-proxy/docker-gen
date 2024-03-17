@@ -3,6 +3,8 @@ package template
 import (
 	"reflect"
 	"sort"
+	"strconv"
+	"time"
 )
 
 // sortStrings returns a sorted array of strings in increasing order
@@ -52,15 +54,43 @@ func (s *sortableByKey) set(funcName string, entries interface{}) (err error) {
 	return
 }
 
+func getFieldAsString(item interface{}, path string) string {
+	// Mostly inspired by https://stackoverflow.com/a/47739620
+	e := deepGet(item, path)
+	r := reflect.ValueOf(e)
+
+	if r.Kind() == reflect.Invalid {
+		return ""
+	}
+
+	fieldValue := r.Interface()
+
+	switch v := fieldValue.(type) {
+	case int:
+		return strconv.FormatInt(int64(v), 10)
+	case int32:
+		return strconv.FormatInt(int64(v), 10)
+	case int64:
+		return strconv.FormatInt(v, 10)
+	case string:
+		return v
+	case bool:
+		if v {
+			return "true"
+		}
+		return "false"
+	case time.Time:
+		return v.String()
+	default:
+		return ""
+	}
+}
+
 // method required to implement sort.Interface
 func (s sortableByKey) Less(i, j int) bool {
-	values := map[int]string{i: "", j: ""}
-	for k := range values {
-		if v := reflect.ValueOf(deepGet(s.data[k], s.key)); v.Kind() != reflect.Invalid {
-			values[k] = v.Interface().(string)
-		}
-	}
-	return values[i] < values[j]
+	dataI := getFieldAsString(s.data[i], s.key)
+	dataJ := getFieldAsString(s.data[j], s.key)
+	return dataI < dataJ
 }
 
 // Generalized SortBy function

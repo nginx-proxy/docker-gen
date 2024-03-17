@@ -31,6 +31,14 @@ func keys(input interface{}) (interface{}, error) {
 	return k, nil
 }
 
+func include(file string) string {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return ""
+	}
+	return string(data)
+}
+
 func intersect(l1, l2 []string) []string {
 	m := make(map[string]bool)
 	m2 := make(map[string]bool)

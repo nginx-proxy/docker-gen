@@ -13,7 +13,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"syscall"
 	"text/template"
 	"unicode"
 
@@ -70,11 +69,16 @@ func newTemplate(name string) *template.Template {
 		"groupByMulti":           groupByMulti,
 		"groupByLabel":           groupByLabel,
 		"json":                   marshalJson,
+		"include":                include,
 		"intersect":              intersect,
 		"keys":                   keys,
 		"replace":                strings.Replace,
 		"parseBool":              strconv.ParseBool,
 		"parseJson":              unmarshalJson,
+		"fromYaml":               fromYaml,
+		"toYaml":                 toYaml,
+		"mustFromYaml":           mustFromYaml,
+		"mustToYaml":             mustToYaml,
 		"queryEscape":            url.QueryEscape,
 		"sha1":                   hashSha1,
 		"split":                  strings.Split,
@@ -195,12 +199,13 @@ func GenerateFile(config config.Config, containers context.Context) bool {
 					fi, _ = os.Stat(config.Dest)
 				}
 			}
+
 			if err := dest.Chmod(fi.Mode()); err != nil {
 				log.Fatalf("Unable to chmod temp file: %s\n", err)
 			}
-			if err := dest.Chown(int(fi.Sys().(*syscall.Stat_t).Uid), int(fi.Sys().(*syscall.Stat_t).Gid)); err != nil {
-				log.Fatalf("Unable to chown temp file: %s\n", err)
-			}
+
+			chown(dest, fi)
+
 			oldContents, err = os.ReadFile(config.Dest)
 			if err != nil {
 				log.Fatalf("Unable to compare current file contents: %s: %s\n", config.Dest, err)
@@ -223,13 +228,14 @@ func GenerateFile(config config.Config, containers context.Context) bool {
 }
 
 func executeTemplate(templatePath string, containers context.Context) []byte {
-	tmpl, err := newTemplate(filepath.Base(templatePath)).ParseFiles(templatePath)
+	templatePathList := strings.Split(templatePath, ";")
+	tmpl, err := newTemplate(filepath.Base(templatePath)).ParseFiles(templatePathList...)
 	if err != nil {
 		log.Fatalf("Unable to parse template: %s", err)
 	}
 
 	buf := new(bytes.Buffer)
-	err = tmpl.ExecuteTemplate(buf, filepath.Base(templatePath), &containers)
+	err = tmpl.ExecuteTemplate(buf, filepath.Base(templatePathList[0]), &containers)
 	if err != nil {
 		log.Fatalf("Template error: %s\n", err)
 	}

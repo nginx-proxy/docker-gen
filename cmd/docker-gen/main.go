@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/BurntSushi/toml"
@@ -16,6 +17,7 @@ import (
 )
 
 type stringslice []string
+type notifyfilter map[string][]string
 
 var (
 	buildVersion          string
@@ -26,6 +28,7 @@ var (
 	notifyOutput          bool
 	notifyContainerID     string
 	notifyContainerSignal int
+	notifyContainerFilter notifyfilter = make(notifyfilter)
 	onlyExposed           bool
 	onlyPublished         bool
 	includeStopped        bool
@@ -47,6 +50,16 @@ func (strings *stringslice) String() string {
 func (strings *stringslice) Set(value string) error {
 	// TODO: Throw an error for duplicate `dest`
 	*strings = append(*strings, value)
+	return nil
+}
+
+func (filter *notifyfilter) String() string {
+	return "[string][]string"
+}
+
+func (filter *notifyfilter) Set(value string) error {
+	name, value, _ := strings.Cut(value, "=")
+	(*filter)[name] = append((*filter)[name], value)
 	return nil
 }
 
@@ -102,6 +115,8 @@ func initFlags() {
 		"container to send a signal to")
 	flag.IntVar(&notifyContainerSignal, "notify-signal", int(docker.SIGHUP),
 		"signal to send to the notify-container. Defaults to SIGHUP")
+	flag.Var(&notifyContainerFilter, "notify-filter",
+		"container filter for notification (e.g -notify-filter name=foo). You can have multiple of these. https://docs.docker.com/engine/reference/commandline/ps/#filter")
 	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (secs)")
 	flag.BoolVar(&keepBlankLines, "keep-blank-lines", false, "keep blank lines in the output file")
@@ -160,6 +175,10 @@ func main() {
 		}
 		if notifyContainerID != "" {
 			cfg.NotifyContainers[notifyContainerID] = notifyContainerSignal
+		}
+		if len(notifyContainerFilter) > 0 {
+			cfg.NotifyContainersFilter = notifyContainerFilter
+			cfg.NotifyContainersSignal = notifyContainerSignal
 		}
 		configs = config.ConfigFile{
 			Config: []config.Config{cfg}}

@@ -65,6 +65,7 @@ func newTemplate(name string) *template.Template {
 		"eval":                   eval,
 		"exists":                 utils.PathExists,
 		"groupBy":                groupBy,
+		"groupByWithDefault":     groupByWithDefault,
 		"groupByKeys":            groupByKeys,
 		"groupByMulti":           groupByMulti,
 		"groupByLabel":           groupByLabel,

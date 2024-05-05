@@ -52,6 +52,20 @@ func groupBy(entries interface{}, key string) (map[string][]interface{}, error) 
 	})
 }
 
+// groupByWithDefault is the same as groupBy but allows a default value to be set
+func groupByWithDefault(entries interface{}, key string, defaultValue string) (map[string][]interface{}, error) {
+	getValueWithDefault := func(v interface{}) (interface{}, error) {
+		value := deepGet(v, key)
+		if value == nil {
+			return defaultValue, nil
+		}
+		return value, nil
+	}
+	return generalizedGroupBy("groupByWithDefault", entries, getValueWithDefault, func(groups map[string][]interface{}, value interface{}, v interface{}) {
+		groups[value.(string)] = append(groups[value.(string)], v)
+	})
+}
+
 // groupByKeys is the same as groupBy but only returns a list of keys
 func groupByKeys(entries interface{}, key string) ([]string, error) {
 	keys, err := generalizedGroupByKey("groupByKeys", entries, key, func(groups map[string][]interface{}, value interface{}, v interface{}) {
@@ -81,6 +95,22 @@ func groupByLabel(entries interface{}, label string) (map[string][]interface{}, 
 		return nil, fmt.Errorf("must pass an array or slice of *RuntimeContainer to 'groupByLabel'; received %v", v)
 	}
 	return generalizedGroupBy("groupByLabel", entries, getLabel, func(groups map[string][]interface{}, value interface{}, v interface{}) {
+		groups[value.(string)] = append(groups[value.(string)], v)
+	})
+}
+
+// groupByLabelWithDefault is the same as groupByLabel but allows a default value to be set
+func groupByLabelWithDefault(entries interface{}, label string, defaultValue string) (map[string][]interface{}, error) {
+	getLabel := func(v interface{}) (interface{}, error) {
+		if container, ok := v.(*context.RuntimeContainer); ok {
+			if value, ok := container.Labels[label]; ok {
+				return value, nil
+			}
+			return defaultValue, nil
+		}
+		return nil, fmt.Errorf("must pass an array or slice of *RuntimeContainer to 'groupByLabel'; received %v", v)
+	}
+	return generalizedGroupBy("groupByLabelWithDefault", entries, getLabel, func(groups map[string][]interface{}, value interface{}, v interface{}) {
 		groups[value.(string)] = append(groups[value.(string)], v)
 	})
 }

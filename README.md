@@ -382,9 +382,11 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 - _`exists $path`_: Returns `true` if `$path` refers to an existing file or directory. Takes a string.
 - _`eval $templateName [$data]`_: Evaluates the named template like Go's built-in `template` action, but instead of writing out the result it returns the result as a string so that it can be post-processed. The `$data` argument may be omitted, which is equivalent to passing `nil`.
 - _`groupBy $containers $fieldPath`_: Groups an array of `RuntimeContainer` instances based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value, which must be a string. Returns a map from the value of the field path expression to an array of containers having that value. Containers that do not have a value for the field path in question are omitted.
+- _`groupByWithDefault $containers $fieldPath $defaultValue`_: Returns the same as `groupBy`, but containers that do not have a value for the field path are instead included in the map under the `$defaultValue` key.
 - _`groupByKeys $containers $fieldPath`_: Returns the same as `groupBy` but only returns the keys of the map.
 - _`groupByMulti $containers $fieldPath $sep`_: Like `groupBy`, but the string value specified by `$fieldPath` is first split by `$sep` into a list of strings. A container whose `$fieldPath` value contains a list of strings will show up in the map output under each of those strings.
-- _`groupByLabel $containers $label`_: Returns the same as `groupBy` but grouping by the given label's value.
+- _`groupByLabel $containers $label`_: Returns the same as `groupBy` but grouping by the given label's value. Containers that do not have the `$label` set are omitted.
+- _`groupByLabelWithDefault $containers $label $defaultValue`_: Returns the same as `groupBy` but grouping by the given label's value. Containers that do not have the `$label` set are included in the map under the `$defaultValue` key.
 - _`include $file`_: Returns content of `$file`, and empty string if file reading error.
 - _`intersect $slice1 $slice2`_: Returns the strings that exist in both string slices.
 - _`json $value`_: Returns the JSON representation of `$value` as a `string`.

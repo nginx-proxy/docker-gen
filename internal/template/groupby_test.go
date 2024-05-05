@@ -7,29 +7,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGroupByExistingKey(t *testing.T) {
-	containers := []*context.RuntimeContainer{
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "demo1.localhost",
-			},
-			ID: "1",
+var groupByContainers = []*context.RuntimeContainer{
+	{
+		Env: map[string]string{
+			"VIRTUAL_HOST": "demo1.localhost",
+			"EXTERNAL":     "true",
 		},
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "demo1.localhost",
-			},
-			ID: "2",
+		ID: "1",
+	},
+	{
+		Env: map[string]string{
+			"VIRTUAL_HOST": "demo1.localhost",
 		},
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "demo2.localhost",
-			},
-			ID: "3",
+		ID: "2",
+	},
+	{
+		Env: map[string]string{
+			"VIRTUAL_HOST": "demo2.localhost",
+			"EXTERNAL":     "true",
 		},
-	}
+		ID: "3",
+	},
+	{
+		ID: "4",
+	},
+}
 
-	groups, err := groupBy(containers, "Env.VIRTUAL_HOST")
+func TestGroupByExistingKey(t *testing.T) {
+	groups, err := groupBy(groupByContainers, "Env.VIRTUAL_HOST")
 
 	assert.NoError(t, err)
 	assert.Len(t, groups, 2)
@@ -39,30 +44,7 @@ func TestGroupByExistingKey(t *testing.T) {
 }
 
 func TestGroupByAfterWhere(t *testing.T) {
-	containers := []*context.RuntimeContainer{
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "demo1.localhost",
-				"EXTERNAL":     "true",
-			},
-			ID: "1",
-		},
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "demo1.localhost",
-			},
-			ID: "2",
-		},
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "demo2.localhost",
-				"EXTERNAL":     "true",
-			},
-			ID: "3",
-		},
-	}
-
-	filtered, _ := where(containers, "Env.EXTERNAL", "true")
+	filtered, _ := where(groupByContainers, "Env.EXTERNAL", "true")
 	groups, err := groupBy(filtered, "Env.VIRTUAL_HOST")
 
 	assert.NoError(t, err)
@@ -72,35 +54,25 @@ func TestGroupByAfterWhere(t *testing.T) {
 	assert.Equal(t, "3", groups["demo2.localhost"][0].(*context.RuntimeContainer).ID)
 }
 
-func TestGroupByKeys(t *testing.T) {
-	containers := []*context.RuntimeContainer{
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "demo1.localhost",
-			},
-			ID: "1",
-		},
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "demo1.localhost",
-			},
-			ID: "2",
-		},
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "demo2.localhost",
-			},
-			ID: "3",
-		},
-	}
+func TestGroupByWithDefault(t *testing.T) {
+	groups, err := groupByWithDefault(groupByContainers, "Env.VIRTUAL_HOST", "default.localhost")
 
+	assert.NoError(t, err)
+	assert.Len(t, groups, 3)
+	assert.Len(t, groups["demo1.localhost"], 2)
+	assert.Len(t, groups["demo2.localhost"], 1)
+	assert.Len(t, groups["default.localhost"], 1)
+	assert.Equal(t, "4", groups["default.localhost"][0].(*context.RuntimeContainer).ID)
+}
+
+func TestGroupByKeys(t *testing.T) {
 	expected := []string{"demo1.localhost", "demo2.localhost"}
-	groups, err := groupByKeys(containers, "Env.VIRTUAL_HOST")
+	groups, err := groupByKeys(groupByContainers, "Env.VIRTUAL_HOST")
 	assert.NoError(t, err)
 	assert.ElementsMatch(t, expected, groups)
 
-	expected = []string{"1", "2", "3"}
-	groups, err = groupByKeys(containers, "ID")
+	expected = []string{"1", "2", "3", "4"}
+	groups, err = groupByKeys(groupByContainers, "ID")
 	assert.NoError(t, err)
 	assert.ElementsMatch(t, expected, groups)
 }
@@ -111,38 +83,38 @@ func TestGeneralizedGroupByError(t *testing.T) {
 	assert.Nil(t, groups)
 }
 
-func TestGroupByLabel(t *testing.T) {
-	containers := []*context.RuntimeContainer{
-		{
-			Labels: map[string]string{
-				"com.docker.compose.project": "one",
-			},
-			ID: "1",
+var groupByLabelContainers = []*context.RuntimeContainer{
+	{
+		Labels: map[string]string{
+			"com.docker.compose.project": "one",
 		},
-		{
-			Labels: map[string]string{
-				"com.docker.compose.project": "two",
-			},
-			ID: "2",
+		ID: "1",
+	},
+	{
+		Labels: map[string]string{
+			"com.docker.compose.project": "two",
 		},
-		{
-			Labels: map[string]string{
-				"com.docker.compose.project": "one",
-			},
-			ID: "3",
+		ID: "2",
+	},
+	{
+		Labels: map[string]string{
+			"com.docker.compose.project": "one",
 		},
-		{
-			ID: "4",
+		ID: "3",
+	},
+	{
+		ID: "4",
+	},
+	{
+		Labels: map[string]string{
+			"com.docker.compose.project": "",
 		},
-		{
-			Labels: map[string]string{
-				"com.docker.compose.project": "",
-			},
-			ID: "5",
-		},
-	}
+		ID: "5",
+	},
+}
 
-	groups, err := groupByLabel(containers, "com.docker.compose.project")
+func TestGroupByLabel(t *testing.T) {
+	groups, err := groupByLabel(groupByLabelContainers, "com.docker.compose.project")
 
 	assert.NoError(t, err)
 	assert.Len(t, groups, 3)
@@ -155,6 +127,25 @@ func TestGroupByLabel(t *testing.T) {
 func TestGroupByLabelError(t *testing.T) {
 	strings := []string{"foo", "bar", "baz"}
 	groups, err := groupByLabel(strings, "")
+	assert.Error(t, err)
+	assert.Nil(t, groups)
+}
+
+func TestGroupByLabelWithDefault(t *testing.T) {
+	groups, err := groupByLabelWithDefault(groupByLabelContainers, "com.docker.compose.project", "default")
+
+	assert.NoError(t, err)
+	assert.Len(t, groups, 4)
+	assert.Len(t, groups["one"], 2)
+	assert.Len(t, groups["two"], 1)
+	assert.Len(t, groups[""], 1)
+	assert.Len(t, groups["default"], 1)
+	assert.Equal(t, "4", groups["default"][0].(*context.RuntimeContainer).ID)
+}
+
+func TestGroupByLabelWithDefaultError(t *testing.T) {
+	strings := []string{"foo", "bar", "baz"}
+	groups, err := groupByLabelWithDefault(strings, "", "")
 	assert.Error(t, err)
 	assert.Nil(t, groups)
 }

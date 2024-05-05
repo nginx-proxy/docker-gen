@@ -83,38 +83,38 @@ func TestGeneralizedGroupByError(t *testing.T) {
 	assert.Nil(t, groups)
 }
 
-func TestGroupByLabel(t *testing.T) {
-	containers := []*context.RuntimeContainer{
-		{
-			Labels: map[string]string{
-				"com.docker.compose.project": "one",
-			},
-			ID: "1",
+var groupByLabelContainers = []*context.RuntimeContainer{
+	{
+		Labels: map[string]string{
+			"com.docker.compose.project": "one",
 		},
-		{
-			Labels: map[string]string{
-				"com.docker.compose.project": "two",
-			},
-			ID: "2",
+		ID: "1",
+	},
+	{
+		Labels: map[string]string{
+			"com.docker.compose.project": "two",
 		},
-		{
-			Labels: map[string]string{
-				"com.docker.compose.project": "one",
-			},
-			ID: "3",
+		ID: "2",
+	},
+	{
+		Labels: map[string]string{
+			"com.docker.compose.project": "one",
 		},
-		{
-			ID: "4",
+		ID: "3",
+	},
+	{
+		ID: "4",
+	},
+	{
+		Labels: map[string]string{
+			"com.docker.compose.project": "",
 		},
-		{
-			Labels: map[string]string{
-				"com.docker.compose.project": "",
-			},
-			ID: "5",
-		},
-	}
+		ID: "5",
+	},
+}
 
-	groups, err := groupByLabel(containers, "com.docker.compose.project")
+func TestGroupByLabel(t *testing.T) {
+	groups, err := groupByLabel(groupByLabelContainers, "com.docker.compose.project")
 
 	assert.NoError(t, err)
 	assert.Len(t, groups, 3)
@@ -127,6 +127,25 @@ func TestGroupByLabel(t *testing.T) {
 func TestGroupByLabelError(t *testing.T) {
 	strings := []string{"foo", "bar", "baz"}
 	groups, err := groupByLabel(strings, "")
+	assert.Error(t, err)
+	assert.Nil(t, groups)
+}
+
+func TestGroupByLabelWithDefault(t *testing.T) {
+	groups, err := groupByLabelWithDefault(groupByLabelContainers, "com.docker.compose.project", "default")
+
+	assert.NoError(t, err)
+	assert.Len(t, groups, 4)
+	assert.Len(t, groups["one"], 2)
+	assert.Len(t, groups["two"], 1)
+	assert.Len(t, groups[""], 1)
+	assert.Len(t, groups["default"], 1)
+	assert.Equal(t, "4", groups["default"][0].(*context.RuntimeContainer).ID)
+}
+
+func TestGroupByLabelWithDefaultError(t *testing.T) {
+	strings := []string{"foo", "bar", "baz"}
+	groups, err := groupByLabelWithDefault(strings, "", "")
 	assert.Error(t, err)
 	assert.Nil(t, groups)
 }

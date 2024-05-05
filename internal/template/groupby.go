@@ -98,3 +98,19 @@ func groupByLabel(entries interface{}, label string) (map[string][]interface{}, 
 		groups[value.(string)] = append(groups[value.(string)], v)
 	})
 }
+
+// groupByLabelWithDefault is the same as groupByLabel but allows a default value to be set
+func groupByLabelWithDefault(entries interface{}, label string, defaultValue string) (map[string][]interface{}, error) {
+	getLabel := func(v interface{}) (interface{}, error) {
+		if container, ok := v.(*context.RuntimeContainer); ok {
+			if value, ok := container.Labels[label]; ok {
+				return value, nil
+			}
+			return defaultValue, nil
+		}
+		return nil, fmt.Errorf("must pass an array or slice of *RuntimeContainer to 'groupByLabel'; received %v", v)
+	}
+	return generalizedGroupBy("groupByLabelWithDefault", entries, getLabel, func(groups map[string][]interface{}, value interface{}, v interface{}) {
+		groups[value.(string)] = append(groups[value.(string)], v)
+	})
+}

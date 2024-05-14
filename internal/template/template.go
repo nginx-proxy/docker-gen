@@ -106,6 +106,13 @@ func newTemplate(name string) *template.Template {
 		"json":      sprigFuncMap["mustToJson"],
 		"parseJson": sprigFuncMap["mustFromJson"],
 		"sha1":      sprigFuncMap["sha1sum"],
+
+		// aliases to sprig template functions masked by docker-gen functions with the same name
+		"sprigContains": sprigFuncMap["contains"],
+		"sprigDir":      sprigFuncMap["dir"],
+		"sprigReplace":  sprigFuncMap["replace"],
+		"sprigSplit":    sprigFuncMap["split"],
+		"sprigSplitn":   sprigFuncMap["splitn"],
 	})
 }
 

@@ -415,6 +415,14 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 - _`whereLabelDoesNotExist $containers $label`_: Filters a slice of containers based on the non-existence of the label `$label`.
 - _`whereLabelValueMatches $containers $label $pattern`_: Filters a slice of containers based on the existence of the label `$label` with values matching the regular expression `$pattern`.
 
+Sprig functions that have the same name as docker-gen function (but different behaviour) are made available with the `sprig` prefix:
+
+- _`sprigContains $string $string`_: Alias for Sprig's [`contains`](https://masterminds.github.io/sprig/strings.html).
+- _`sprigDir $path`_: Alias for Sprig's [`dir`](https://masterminds.github.io/sprig/paths.html).
+- _`sprigReplace $old $new $string`_: Alias for Sprig's [`replace`](https://masterminds.github.io/sprig/strings.html).
+- _`sprigSplit $sep $string`_: Alias for Sprig's [`split`](https://masterminds.github.io/sprig/string_slice.html).
+- _`sprigSplitn $sep $count $string"`_: Alias for Sprig's [`splitn`](https://masterminds.github.io/sprig/string_slice.html).
+
 Some functions are aliases for Go's [`strings`](https://pkg.go.dev/strings) package functions:
 
 - _`parseBool $string`_: Alias for [`strconv.ParseBool`](http://golang.org/pkg/strconv/#ParseBool). Returns the boolean value represented by `$string`. It accepts 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False. Any other value returns an error.

@@ -57,7 +57,10 @@ func newTemplate(name string) *template.Template {
 		}
 		return buf.String(), nil
 	}
-	tmpl.Funcs(sprig.TxtFuncMap()).Funcs(template.FuncMap{
+
+	sprigFuncMap := sprig.TxtFuncMap()
+
+	return tmpl.Funcs(sprigFuncMap).Funcs(template.FuncMap{
 		"closest":                 arrayClosest,
 		"comment":                 comment,
 		"contains":                contains,
@@ -86,8 +89,6 @@ func newTemplate(name string) *template.Template {
 		"sortStringsDesc":         sortStringsDesc,
 		"sortObjectsByKeysAsc":    sortObjectsByKeysAsc,
 		"sortObjectsByKeysDesc":   sortObjectsByKeysDesc,
-		"trimPrefix":              trimPrefix,
-		"trimSuffix":              trimSuffix,
 		"toLower":                 strings.ToLower,
 		"toUpper":                 strings.ToUpper,
 		"when":                    when,
@@ -100,14 +101,12 @@ func newTemplate(name string) *template.Template {
 		"whereLabelExists":        whereLabelExists,
 		"whereLabelDoesNotExist":  whereLabelDoesNotExist,
 		"whereLabelValueMatches":  whereLabelValueMatches,
-	}).Funcs(template.FuncMap{
-		// docker-gen template function replaced by their Sprig clone
-		"coalesce":  coalesce,
-		"json":      marshalJson,
-		"parseJson": unmarshalJson,
-		"sha1":      hashSha1,
+
+		// docker-gen template function aliased to their Sprig clone
+		"json":      sprigFuncMap["mustToJson"],
+		"parseJson": sprigFuncMap["mustFromJson"],
+		"sha1":      sprigFuncMap["sha1sum"],
 	})
-	return tmpl
 }
 
 func isBlank(str string) bool {

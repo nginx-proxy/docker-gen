@@ -7,11 +7,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
-
-	"github.com/Masterminds/sprig/v3"
 )
-
-var sprigFuncMap = sprig.TxtFuncMap()
 
 func keys(input interface{}) (interface{}, error) {
 	if input == nil {
@@ -81,18 +77,6 @@ func contains(input interface{}, key interface{}) bool {
 	return false
 }
 
-func hashSha1(input string) string {
-	return sprigFuncMap["sha1sum"].(func(string) string)(input)
-}
-
-func marshalJson(input interface{}) (string, error) {
-	return sprigFuncMap["mustToJson"].(func(interface{}) (string, error))(input)
-}
-
-func unmarshalJson(input string) (interface{}, error) {
-	return sprigFuncMap["mustFromJson"].(func(string) (interface{}, error))(input)
-}
-
 // arrayClosest find the longest matching substring in values
 // that matches input
 func arrayClosest(values []string, input string) string {
@@ -117,21 +101,6 @@ func dirList(path string) ([]string, error) {
 		names = append(names, f.Name())
 	}
 	return names, nil
-}
-
-// coalesce returns the first non nil argument
-func coalesce(input ...interface{}) interface{} {
-	return sprigFuncMap["coalesce"].(func(...interface{}) interface{})(input...)
-}
-
-// trimPrefix returns a string without the prefix, if present
-func trimPrefix(prefix, s string) string {
-	return sprigFuncMap["trimPrefix"].(func(string, string) string)(prefix, s)
-}
-
-// trimSuffix returns a string without the suffix, if present
-func trimSuffix(suffix, s string) string {
-	return sprigFuncMap["trimSuffix"].(func(string, string) string)(suffix, s)
 }
 
 // when returns the trueValue when the condition is true and the falseValue otherwise

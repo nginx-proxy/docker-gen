@@ -165,7 +165,7 @@ func main() {
 			Config: []config.Config{cfg}}
 	}
 
-	all := true
+	all := false
 	for _, config := range configs.Config {
 		if config.IncludeStopped {
 			all = true

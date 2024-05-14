@@ -384,7 +384,6 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 - [Functions from Go](https://pkg.go.dev/text/template#hdr-Functions)
 - [Functions from Sprig v3](https://masterminds.github.io/sprig/), except for those that have the same name as one of the following functions.
 - _`closest $array $value`_: Returns the longest matching substring in `$array` that matches `$value`
-- _`coalesce ...`_: Returns the first non-nil argument.
 - _`comment $delimiter $string`_: Returns `$string` with each line prefixed by `$delimiter` (helpful for debugging combined with Sprig `toPrettyJson`: `{{ toPrettyJson $ | comment "#" }}`).
 - _`contains $map $key`_: Returns `true` if `$map` contains `$key`. Takes maps from `string` to any type.
 - _`dir $path`_: Returns an array of filenames in the specified `$path`.
@@ -398,23 +397,13 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 - _`groupByLabelWithDefault $containers $label $defaultValue`_: Returns the same as `groupBy` but grouping by the given label's value. Containers that do not have the `$label` set are included in the map under the `$defaultValue` key.
 - _`include $file`_: Returns content of `$file`, and empty string if file reading error.
 - _`intersect $slice1 $slice2`_: Returns the strings that exist in both string slices.
-- _`json $value`_: Returns the JSON representation of `$value` as a `string`.
 - _`fromYaml $string` / `mustFromYaml $string`_: Similar to [Sprig's `fromJson` / `mustFromJson`](https://github.com/Masterminds/sprig/blob/master/docs/defaults.md#fromjson-mustfromjson), but for YAML.
 - _`toYaml $dict` / `mustToYaml $dict`_: Similar to [Sprig's `toJson` / `mustToJson`](https://github.com/Masterminds/sprig/blob/master/docs/defaults.md#tojson-musttojson), but for YAML.
 - _`keys $map`_: Returns the keys from `$map`. If `$map` is `nil`, a `nil` is returned. If `$map` is not a `map`, an error will be thrown.
-- _`parseBool $string`_: parseBool returns the boolean value represented by the string. It accepts 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False. Any other value returns an error. Alias for [`strconv.ParseBool`](http://golang.org/pkg/strconv/#ParseBool)
-- _`replace $string $old $new $count`_: Replaces up to `$count` occurences of `$old` with `$new` in `$string`. Alias for [`strings.Replace`](http://golang.org/pkg/strings/#Replace)
-- _`sha1 $string`_: Returns the hexadecimal representation of the SHA1 hash of `$string`.
-- _`split $string $sep`_: Splits `$string` into a slice of substrings delimited by `$sep`. Alias for [`strings.Split`](http://golang.org/pkg/strings/#Split)
-- _`splitN $string $sep $count`_: Splits `$string` into a slice of substrings delimited by `$sep`, with number of substrings returned determined by `$count`. Alias for [`strings.SplitN`](https://golang.org/pkg/strings/#SplitN)
 - _`sortStringsAsc $strings`_: Returns a slice of strings `$strings` sorted in ascending order.
 - _`sortStringsDesc $strings`_: Returns a slice of strings `$strings` sorted in descending (reverse) order.
 - _`sortObjectsByKeysAsc $objects $fieldPath`_: Returns the array `$objects`, sorted in ascending order based on the values of a field path expression `$fieldPath`.
 - _`sortObjectsByKeysDesc $objects $fieldPath`_: Returns the array `$objects`, sorted in descending (reverse) order based on the values of a field path expression `$fieldPath`.
-- _`trimPrefix $prefix $string`_: If `$prefix` is a prefix of `$string`, return `$string` with `$prefix` trimmed from the beginning. Otherwise, return `$string` unchanged.
-- _`trimSuffix $suffix $string`_: If `$suffix` is a suffix of `$string`, return `$string` with `$suffix` trimmed from the end. Otherwise, return `$string` unchanged.
-- _`toLower $string`_: Replace capital letters in `$string` to lowercase.
-- _`toUpper $string`_: Replace lowercase letters in `$string` to uppercase.
 - _`when $condition $trueValue $falseValue`_: Returns the `$trueValue` when the `$condition` is `true` and the `$falseValue` otherwise
 - _`where $items $fieldPath $value`_: Filters an array or slice based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value. Returns an array of items having that value.
 - _`whereNot $items $fieldPath $value`_: Filters an array or slice based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value. Returns an array of items **not** having that value.
@@ -425,6 +414,21 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 - _`whereLabelExists $containers $label`_: Filters a slice of containers based on the existence of the label `$label`.
 - _`whereLabelDoesNotExist $containers $label`_: Filters a slice of containers based on the non-existence of the label `$label`.
 - _`whereLabelValueMatches $containers $label $pattern`_: Filters a slice of containers based on the existence of the label `$label` with values matching the regular expression `$pattern`.
+
+Some functions are aliases for Go's [`strings`](https://pkg.go.dev/strings) package functions:
+
+- _`parseBool $string`_: Alias for [`strconv.ParseBool`](http://golang.org/pkg/strconv/#ParseBool). Returns the boolean value represented by `$string`. It accepts 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False. Any other value returns an error.
+- _`replace $string $old $new $count`_: Alias for [`strings.Replace`](http://golang.org/pkg/strings/#Replace). Replaces up to `$count` occurences of `$old` with `$new` in `$string`.
+- _`split $string $sep`_: Alias for [`strings.Split`](http://golang.org/pkg/strings/#Split). Splits `$string` into a slice of substrings delimited by `$sep`.
+- _`splitN $string $sep $count`_: Alias for [`strings.SplitN`](https://golang.org/pkg/strings/#SplitN). Splits `$string` into a slice of substrings delimited by `$sep`, with number of substrings returned determined by `$count`.
+- _`toLower $string`_: Alias for [`strings.ToLower`](https://pkg.go.dev/strings#ToLower). Replace capital letters in `$string` to lowercase.
+- _`toUpper $string`_: Alias for [`strings.ToUpper`](https://pkg.go.dev/strings#ToUpper). Replace lowercase letters in `$string` to uppercase.
+
+Those have been aliased to Sprig functions with the same behaviour as the original docker-gen function:
+
+- _`json $value`_: Alias for Sprig's [`mustToJson`](https://masterminds.github.io/sprig/defaults.html)
+- _`parseJson $string`_: Alias for Sprig's [`mustFromJson`](https://masterminds.github.io/sprig/defaults.html).
+- _`sha1 $string`_: Alias for Sprig's [`sha1sum`](https://masterminds.github.io/sprig/crypto.html).
 
 ---
 

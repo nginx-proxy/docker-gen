@@ -102,7 +102,7 @@ func newTemplate(name string) *template.Template {
 		"whereLabelDoesNotExist":  whereLabelDoesNotExist,
 		"whereLabelValueMatches":  whereLabelValueMatches,
 
-		// docker-gen template function aliased to their Sprig clone
+		// legacy docker-gen template function aliased to their Sprig clone
 		"json":      sprigFuncMap["mustToJson"],
 		"parseJson": sprigFuncMap["mustFromJson"],
 		"sha1":      sprigFuncMap["sha1sum"],

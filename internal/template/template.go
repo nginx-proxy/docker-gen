@@ -59,7 +59,6 @@ func newTemplate(name string) *template.Template {
 	}
 	tmpl.Funcs(sprig.TxtFuncMap()).Funcs(template.FuncMap{
 		"closest":                 arrayClosest,
-		"coalesce":                coalesce,
 		"comment":                 comment,
 		"contains":                contains,
 		"dir":                     dirList,
@@ -71,19 +70,16 @@ func newTemplate(name string) *template.Template {
 		"groupByMulti":            groupByMulti,
 		"groupByLabel":            groupByLabel,
 		"groupByLabelWithDefault": groupByLabelWithDefault,
-		"json":                    marshalJson,
 		"include":                 include,
 		"intersect":               intersect,
 		"keys":                    keys,
 		"replace":                 strings.Replace,
 		"parseBool":               strconv.ParseBool,
-		"parseJson":               unmarshalJson,
 		"fromYaml":                fromYaml,
 		"toYaml":                  toYaml,
 		"mustFromYaml":            mustFromYaml,
 		"mustToYaml":              mustToYaml,
 		"queryEscape":             url.QueryEscape,
-		"sha1":                    hashSha1,
 		"split":                   strings.Split,
 		"splitN":                  strings.SplitN,
 		"sortStringsAsc":          sortStringsAsc,
@@ -92,8 +88,8 @@ func newTemplate(name string) *template.Template {
 		"sortObjectsByKeysDesc":   sortObjectsByKeysDesc,
 		"trimPrefix":              trimPrefix,
 		"trimSuffix":              trimSuffix,
-		"toLower":                 toLower,
-		"toUpper":                 toUpper,
+		"toLower":                 strings.ToLower,
+		"toUpper":                 strings.ToUpper,
 		"when":                    when,
 		"where":                   where,
 		"whereNot":                whereNot,
@@ -104,6 +100,12 @@ func newTemplate(name string) *template.Template {
 		"whereLabelExists":        whereLabelExists,
 		"whereLabelDoesNotExist":  whereLabelDoesNotExist,
 		"whereLabelValueMatches":  whereLabelValueMatches,
+	}).Funcs(template.FuncMap{
+		// docker-gen template function replaced by their Sprig clone
+		"coalesce":  coalesce,
+		"json":      marshalJson,
+		"parseJson": unmarshalJson,
+		"sha1":      hashSha1,
 	})
 	return tmpl
 }

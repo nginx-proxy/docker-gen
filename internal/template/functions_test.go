@@ -150,18 +150,6 @@ func TestTrimSuffix(t *testing.T) {
 	}
 }
 
-func TestToLower(t *testing.T) {
-	const str = ".RaNd0m StrinG_"
-	const lowered = ".rand0m string_"
-	assert.Equal(t, lowered, toLower(str), "Unexpected value from toLower()")
-}
-
-func TestToUpper(t *testing.T) {
-	const str = ".RaNd0m StrinG_"
-	const uppered = ".RAND0M STRING_"
-	assert.Equal(t, uppered, toUpper(str), "Unexpected value from toUpper()")
-}
-
 func TestSha1(t *testing.T) {
 	sum := hashSha1("/path")
 	if sum != "4f26609ad3f5185faaa9edf1e93aa131e2131352" {

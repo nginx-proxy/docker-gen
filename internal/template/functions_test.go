@@ -12,6 +12,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestComment(t *testing.T) {
+	env := map[string]string{
+		"bar": "baz",
+		"foo": "test",
+	}
+
+	expected := `# {
+#   "bar": "baz",
+#   "foo": "test"
+# }`
+
+	tests := templateTestList{
+		{`{{toPrettyJson . | comment "# "}}`, env, expected},
+	}
+
+	tests.run(t)
+}
+
 func TestContainsString(t *testing.T) {
 	env := map[string]string{
 		"PORT": "1234",

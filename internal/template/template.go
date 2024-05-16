@@ -60,6 +60,7 @@ func newTemplate(name string) *template.Template {
 	tmpl.Funcs(sprig.TxtFuncMap()).Funcs(template.FuncMap{
 		"closest":                 arrayClosest,
 		"coalesce":                coalesce,
+		"comment":                 comment,
 		"contains":                contains,
 		"dir":                     dirList,
 		"eval":                    eval,

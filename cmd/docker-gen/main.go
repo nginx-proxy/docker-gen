@@ -24,6 +24,7 @@ var (
 	wait                  string
 	notifyCmd             string
 	notifyOutput          bool
+	sighupContainerID     string
 	notifyContainerID     string
 	notifyContainerSignal int
 	onlyExposed           bool
@@ -96,7 +97,7 @@ func initFlags() {
 	flag.BoolVar(&includeStopped, "include-stopped", false, "include stopped containers")
 	flag.BoolVar(&notifyOutput, "notify-output", false, "log the output(stdout/stderr) of notify command")
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated (e.g `restart xyz`)")
-	flag.StringVar(&notifyContainerID, "notify-sighup", "",
+	flag.StringVar(&sighupContainerID, "notify-sighup", "",
 		"send HUP signal to container.  Equivalent to docker kill -s HUP `container-ID`")
 	flag.StringVar(&notifyContainerID, "notify-container", "",
 		"container to send a signal to")
@@ -157,6 +158,9 @@ func main() {
 			IncludeStopped:   includeStopped,
 			Interval:         interval,
 			KeepBlankLines:   keepBlankLines,
+		}
+		if sighupContainerID != "" {
+			cfg.NotifyContainers[sighupContainerID] = int(syscall.SIGHUP)
 		}
 		if notifyContainerID != "" {
 			cfg.NotifyContainers[notifyContainerID] = notifyContainerSignal

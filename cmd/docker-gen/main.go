@@ -115,10 +115,10 @@ func initFlags() {
 		"send HUP signal to container.  Equivalent to docker kill -s HUP `container-ID`")
 	flag.StringVar(&notifyContainerID, "notify-container", "",
 		"container to send a signal to")
-	flag.IntVar(&notifyContainerSignal, "notify-signal", int(docker.SIGHUP),
-		"signal to send to the notify-container. Defaults to SIGHUP")
 	flag.Var(&notifyContainerFilter, "notify-filter",
 		"container filter for notification (e.g -notify-filter name=foo). You can have multiple of these. https://docs.docker.com/engine/reference/commandline/ps/#filter")
+	flag.IntVar(&notifyContainerSignal, "notify-signal", int(docker.SIGHUP),
+		"signal to send to the notify-container and notify-filter. Defaults to SIGHUP")
 	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (secs)")
 	flag.BoolVar(&keepBlankLines, "keep-blank-lines", false, "keep blank lines in the output file")

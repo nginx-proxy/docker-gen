@@ -17,7 +17,7 @@ import (
 )
 
 type stringslice []string
-type notifyfilter map[string][]string
+type mapstringslice map[string][]string
 
 var (
 	buildVersion          string
@@ -28,7 +28,7 @@ var (
 	notifyOutput          bool
 	notifyContainerID     string
 	notifyContainerSignal int
-	notifyContainerFilter notifyfilter = make(notifyfilter)
+	notifyContainerFilter mapstringslice = make(mapstringslice)
 	onlyExposed           bool
 	onlyPublished         bool
 	includeStopped        bool
@@ -53,13 +53,15 @@ func (strings *stringslice) Set(value string) error {
 	return nil
 }
 
-func (filter *notifyfilter) String() string {
+func (filter *mapstringslice) String() string {
 	return "[string][]string"
 }
 
-func (filter *notifyfilter) Set(value string) error {
-	name, value, _ := strings.Cut(value, "=")
-	(*filter)[name] = append((*filter)[name], value)
+func (filter *mapstringslice) Set(value string) error {
+	name, value, found := strings.Cut(value, "=")
+	if found {
+		(*filter)[name] = append((*filter)[name], value)
+	}
 	return nil
 }
 

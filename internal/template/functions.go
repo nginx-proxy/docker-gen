@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 )
 
@@ -55,6 +56,12 @@ func intersect(l1, l2 []string) []string {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+// comment prefix each line of the source string with the provided comment delimiter string
+func comment(delimiter string, source string) string {
+	regexPattern := regexp.MustCompile(`(?m)^`)
+	return regexPattern.ReplaceAllString(source, delimiter)
 }
 
 func contains(input interface{}, key interface{}) bool {

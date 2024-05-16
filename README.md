@@ -377,6 +377,7 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 - [Functions from Sprig v3](https://masterminds.github.io/sprig/), except for those that have the same name as one of the following functions.
 - _`closest $array $value`_: Returns the longest matching substring in `$array` that matches `$value`
 - _`coalesce ...`_: Returns the first non-nil argument.
+- _`comment $delimiter $string`_: Returns `$string` with each line prefixed by `$delimiter` (helpful for debugging combined with Sprig `toPrettyJson`: `{{ toPrettyJson $ | comment "#" }}`).
 - _`contains $map $key`_: Returns `true` if `$map` contains `$key`. Takes maps from `string` to any type.
 - _`dir $path`_: Returns an array of filenames in the specified `$path`.
 - _`exists $path`_: Returns `true` if `$path` refers to an existing file or directory. Takes a string.

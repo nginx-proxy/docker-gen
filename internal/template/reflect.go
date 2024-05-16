@@ -1,12 +1,27 @@
 package template
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"reflect"
 	"strconv"
 	"strings"
 )
+
+func parseAllocateInt(desired string) (int, error) {
+	parsed, err := strconv.ParseInt(desired, 10, 32)
+	if err != nil {
+		return int(0), err
+	}
+	if parsed < 0 {
+		return int(0), fmt.Errorf("non-negative decimal number required for array/slice index, got %#v", desired)
+	}
+	if parsed <= math.MaxInt32 {
+		return int(parsed), nil
+	}
+	return math.MaxInt32, nil
+}
 
 func deepGetImpl(v reflect.Value, path []string) interface{} {
 	if !v.IsValid() {
@@ -28,15 +43,11 @@ func deepGetImpl(v reflect.Value, path []string) interface{} {
 	case reflect.Map:
 		return deepGetImpl(v.MapIndex(reflect.ValueOf(path[0])), path[1:])
 	case reflect.Slice, reflect.Array:
-		iu64, err := strconv.ParseUint(path[0], 10, 64)
+		i, err := parseAllocateInt(path[0])
 		if err != nil {
-			log.Printf("non-negative decimal number required for array/slice index, got %#v\n", path[0])
+			log.Println(err.Error())
 			return nil
 		}
-		if iu64 > math.MaxInt {
-			iu64 = math.MaxInt
-		}
-		i := int(iu64)
 		if i >= v.Len() {
 			log.Printf("index %v out of bounds", i)
 			return nil

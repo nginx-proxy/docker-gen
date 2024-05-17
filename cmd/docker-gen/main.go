@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 
@@ -26,8 +27,8 @@ var (
 	wait                  string
 	notifyCmd             string
 	notifyOutput          bool
-	sighupContainerID     string
-	notifyContainerID     string
+	sighupContainerID     stringslice
+	notifyContainerID     stringslice
 	notifyContainerSignal int
 	notifyContainerFilter mapstringslice = make(mapstringslice)
 	onlyExposed           bool
@@ -49,7 +50,6 @@ func (strings *stringslice) String() string {
 }
 
 func (strings *stringslice) Set(value string) error {
-	// TODO: Throw an error for duplicate `dest`
 	*strings = append(*strings, value)
 	return nil
 }
@@ -112,12 +112,12 @@ func initFlags() {
 	flag.BoolVar(&includeStopped, "include-stopped", false, "include stopped containers")
 	flag.BoolVar(&notifyOutput, "notify-output", false, "log the output(stdout/stderr) of notify command")
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated (e.g `restart xyz`)")
-	flag.StringVar(&sighupContainerID, "notify-sighup", "",
-		"send HUP signal to container.  Equivalent to docker kill -s HUP `container-ID`")
-	flag.StringVar(&notifyContainerID, "notify-container", "",
-		"container to send a signal to")
+	flag.Var(&sighupContainerID, "notify-sighup",
+		"send HUP signal to container. Equivalent to docker kill -s HUP `container-ID`. You can pass this option multiple times to send HUP to multiple containers.")
+	flag.Var(&notifyContainerID, "notify-container",
+		"send -notify-signal signal (defaults to 1 / HUP) to container. You can pass this option multiple times to notify multiple containers.")
 	flag.Var(&notifyContainerFilter, "notify-filter",
-		"container filter for notification (e.g -notify-filter name=foo). You can have multiple of these. https://docs.docker.com/engine/reference/commandline/ps/#filter")
+		"container filter for notification (e.g -notify-filter name=foo). You can pass this option multiple times to combine filters with AND. https://docs.docker.com/engine/reference/commandline/ps/#filter")
 	flag.IntVar(&notifyContainerSignal, "notify-signal", int(docker.SIGHUP),
 		"signal to send to the notify-container and notify-filter. Defaults to SIGHUP")
 	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
@@ -150,6 +150,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	slices.Sort(configFiles)
+	configFiles = slices.Compact(configFiles)
+
 	if len(configFiles) > 0 {
 		for _, configFile := range configFiles {
 			err := loadConfig(configFile)
@@ -176,18 +179,19 @@ func main() {
 			Interval:         interval,
 			KeepBlankLines:   keepBlankLines,
 		}
-		if sighupContainerID != "" {
-			cfg.NotifyContainers[sighupContainerID] = int(syscall.SIGHUP)
+		for _, id := range sighupContainerID {
+			cfg.NotifyContainers[id] = int(syscall.SIGHUP)
 		}
-		if notifyContainerID != "" {
-			cfg.NotifyContainers[notifyContainerID] = notifyContainerSignal
+		for _, id := range notifyContainerID {
+			cfg.NotifyContainers[id] = notifyContainerSignal
 		}
 		if len(notifyContainerFilter) > 0 {
 			cfg.NotifyContainersFilter = notifyContainerFilter
 			cfg.NotifyContainersSignal = notifyContainerSignal
 		}
 		configs = config.ConfigFile{
-			Config: []config.Config{cfg}}
+			Config: []config.Config{cfg},
+		}
 	}
 
 	all := false

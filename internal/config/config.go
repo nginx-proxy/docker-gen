@@ -18,7 +18,7 @@ type Config struct {
 	NotifyContainersSignal int
 	OnlyExposed            bool
 	OnlyPublished          bool
-	IncludeStopped         bool
+	ContainerFilter        map[string][]string
 	Interval               int
 	KeepBlankLines         bool
 }

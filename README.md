@@ -125,6 +125,11 @@ Options:
       only include containers with published ports (implies -only-exposed)
   -include-stopped
       include stopped containers
+  -container-filter
+      container filter for inclusion by docker-gen (e.g -container-filter status=running).
+      Using this option bypass the -include-stopped option and set it to true.
+      You can pass this option multiple times to combine filters with AND.
+      https://docs.docker.com/engine/reference/commandline/ps/#filter
   -tlscacert string
       path to TLS CA certificate file (default "~/.docker/machine/machines/default/ca.pem")
   -tlscert string

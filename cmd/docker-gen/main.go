@@ -34,6 +34,7 @@ var (
 	onlyExposed           bool
 	onlyPublished         bool
 	includeStopped        bool
+	containerFilter       mapstringslice = make(mapstringslice)
 	configFiles           stringslice
 	configs               config.ConfigFile
 	eventFilter           mapstringslice = mapstringslice{"event": {"start", "stop", "die", "health_status"}}
@@ -111,6 +112,8 @@ func initFlags() {
 	flag.BoolVar(&onlyPublished, "only-published", false,
 		"only include containers with published ports (implies -only-exposed)")
 	flag.BoolVar(&includeStopped, "include-stopped", false, "include stopped containers")
+	flag.Var(&containerFilter, "container-filter",
+		"container filter for inclusion by docker-gen. Using this option bypass the -include-stopped option and set it to true. You can pass this option multiple times to combine filters with AND. https://docs.docker.com/engine/reference/commandline/ps/#filter")
 	flag.BoolVar(&notifyOutput, "notify-output", false, "log the output(stdout/stderr) of notify command")
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated (e.g `restart xyz`)")
 	flag.Var(&sighupContainerID, "notify-sighup",
@@ -179,7 +182,7 @@ func main() {
 			NotifyContainers: make(map[string]int),
 			OnlyExposed:      onlyExposed,
 			OnlyPublished:    onlyPublished,
-			IncludeStopped:   includeStopped,
+			ContainerFilter:  containerFilter,
 			Interval:         interval,
 			KeepBlankLines:   keepBlankLines,
 		}
@@ -193,15 +196,11 @@ func main() {
 			cfg.NotifyContainersFilter = notifyContainerFilter
 			cfg.NotifyContainersSignal = notifyContainerSignal
 		}
+		if len(containerFilter) == 0 && !includeStopped {
+			cfg.ContainerFilter = map[string][]string{"status": {"running"}}
+		}
 		configs = config.ConfigFile{
 			Config: []config.Config{cfg},
-		}
-	}
-
-	all := false
-	for _, config := range configs.Config {
-		if config.IncludeStopped {
-			all = true
 		}
 	}
 
@@ -211,7 +210,6 @@ func main() {
 		TLSCert:     tlsCert,
 		TLSCACert:   tlsCaCert,
 		TLSVerify:   tlsVerify,
-		All:         all,
 		EventFilter: eventFilter,
 		ConfigFile:  configs,
 	})

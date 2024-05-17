@@ -481,10 +481,6 @@ make get-deps
 make
 ```
 
-### TODO
-
-- Add event status for handling start and stop events differently
-
 ### License
 
 MIT

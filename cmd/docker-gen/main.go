@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/BurntSushi/toml"
@@ -16,6 +17,7 @@ import (
 )
 
 type stringslice []string
+type mapstringslice map[string][]string
 
 var (
 	buildVersion          string
@@ -27,6 +29,7 @@ var (
 	sighupContainerID     string
 	notifyContainerID     string
 	notifyContainerSignal int
+	notifyContainerFilter mapstringslice = make(mapstringslice)
 	onlyExposed           bool
 	onlyPublished         bool
 	includeStopped        bool
@@ -48,6 +51,18 @@ func (strings *stringslice) String() string {
 func (strings *stringslice) Set(value string) error {
 	// TODO: Throw an error for duplicate `dest`
 	*strings = append(*strings, value)
+	return nil
+}
+
+func (filter *mapstringslice) String() string {
+	return "[string][]string"
+}
+
+func (filter *mapstringslice) Set(value string) error {
+	name, value, found := strings.Cut(value, "=")
+	if found {
+		(*filter)[name] = append((*filter)[name], value)
+	}
 	return nil
 }
 
@@ -101,8 +116,10 @@ func initFlags() {
 		"send HUP signal to container.  Equivalent to docker kill -s HUP `container-ID`")
 	flag.StringVar(&notifyContainerID, "notify-container", "",
 		"container to send a signal to")
+	flag.Var(&notifyContainerFilter, "notify-filter",
+		"container filter for notification (e.g -notify-filter name=foo). You can have multiple of these. https://docs.docker.com/engine/reference/commandline/ps/#filter")
 	flag.IntVar(&notifyContainerSignal, "notify-signal", int(docker.SIGHUP),
-		"signal to send to the notify-container. Defaults to SIGHUP")
+		"signal to send to the notify-container and notify-filter. Defaults to SIGHUP")
 	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
 	flag.IntVar(&interval, "interval", 0, "notify command interval (secs)")
 	flag.BoolVar(&keepBlankLines, "keep-blank-lines", false, "keep blank lines in the output file")
@@ -164,6 +181,10 @@ func main() {
 		}
 		if notifyContainerID != "" {
 			cfg.NotifyContainers[notifyContainerID] = notifyContainerSignal
+		}
+		if len(notifyContainerFilter) > 0 {
+			cfg.NotifyContainersFilter = notifyContainerFilter
+			cfg.NotifyContainersSignal = notifyContainerSignal
 		}
 		configs = config.ConfigFile{
 			Config: []config.Config{cfg}}

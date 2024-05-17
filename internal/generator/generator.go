@@ -132,7 +132,8 @@ func (g *generator) generateFromContainers() {
 			continue
 		}
 		g.runNotifyCmd(config)
-		g.sendSignalToContainer(config)
+		g.sendSignalToContainers(config)
+		g.sendSignalToFilteredContainers(config)
 	}
 }
 
@@ -162,7 +163,8 @@ func (g *generator) generateAtInterval() {
 					// ignore changed return value. always run notify command
 					template.GenerateFile(cfg, containers)
 					g.runNotifyCmd(cfg)
-					g.sendSignalToContainer(cfg)
+					g.sendSignalToContainers(cfg)
+					g.sendSignalToFilteredContainers(cfg)
 				case sig := <-sigChan:
 					log.Printf("Received signal: %s\n", sig)
 					switch sig {
@@ -210,7 +212,8 @@ func (g *generator) generateFromEvents() {
 					continue
 				}
 				g.runNotifyCmd(cfg)
-				g.sendSignalToContainer(cfg)
+				g.sendSignalToContainers(cfg)
+				g.sendSignalToFilteredContainers(cfg)
 			}
 		}(cfg)
 	}
@@ -332,28 +335,50 @@ func (g *generator) runNotifyCmd(config config.Config) {
 	}
 }
 
-func (g *generator) sendSignalToContainer(config config.Config) {
+func (g *generator) sendSignalToContainer(container string, signal int) {
+	log.Printf("Sending container '%s' signal '%v'", container, signal)
+
+	if signal == -1 {
+		if err := g.Client.RestartContainer(container, 10); err != nil {
+			log.Printf("Error sending restarting container: %s", err)
+		}
+		return
+	}
+
+	killOpts := docker.KillContainerOptions{
+		ID:     container,
+		Signal: docker.Signal(signal),
+	}
+	if err := g.Client.KillContainer(killOpts); err != nil {
+		log.Printf("Error sending signal to container: %s", err)
+	}
+}
+
+func (g *generator) sendSignalToContainers(config config.Config) {
 	if len(config.NotifyContainers) < 1 {
 		return
 	}
 
 	for container, signal := range config.NotifyContainers {
-		log.Printf("Sending container '%s' signal '%v'", container, signal)
+		g.sendSignalToContainer(container, signal)
+	}
+}
 
-		if signal == -1 {
-			if err := g.Client.RestartContainer(container, 10); err != nil {
-				log.Printf("Error sending restarting container: %s", err)
-			}
-			return
-		}
+func (g *generator) sendSignalToFilteredContainers(config config.Config) {
+	if len(config.NotifyContainersFilter) < 1 {
+		return
+	}
 
-		killOpts := docker.KillContainerOptions{
-			ID:     container,
-			Signal: docker.Signal(signal),
-		}
-		if err := g.Client.KillContainer(killOpts); err != nil {
-			log.Printf("Error sending signal to container: %s", err)
-		}
+	containers, err := g.Client.ListContainers(docker.ListContainersOptions{
+		Filters: config.NotifyContainersFilter,
+	})
+	if err != nil {
+		log.Printf("Error getting containers: %s", err)
+		return
+	}
+
+	for _, container := range containers {
+		g.sendSignalToContainer(container.ID, config.NotifyContainersSignal)
 	}
 }
 

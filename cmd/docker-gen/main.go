@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 
@@ -49,7 +50,6 @@ func (strings *stringslice) String() string {
 }
 
 func (strings *stringslice) Set(value string) error {
-	// TODO: Throw an error for duplicate `dest`
 	*strings = append(*strings, value)
 	return nil
 }
@@ -150,6 +150,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	slices.Sort(configFiles)
+	configFiles = slices.Compact(configFiles)
+
 	if len(configFiles) > 0 {
 		for _, configFile := range configFiles {
 			err := loadConfig(configFile)
@@ -187,7 +190,8 @@ func main() {
 			cfg.NotifyContainersSignal = notifyContainerSignal
 		}
 		configs = config.ConfigFile{
-			Config: []config.Config{cfg}}
+			Config: []config.Config{cfg},
+		}
 	}
 
 	all := false

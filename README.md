@@ -108,12 +108,12 @@ Options:
       You can pass this option multiple times to notify multiple containers.
   -notify-filter key=value
       container filter for notification (e.g -notify-filter name=foo).
-      You can have multiple of these.
+      You can pass this option multiple times to combine filters with AND.
       https://docs.docker.com/engine/reference/commandline/ps/#filter
   -notify-signal signal
       signal to send to the -notify-container and -notify-filter. -1 to call docker restart. Defaults to 1 aka. HUP.
       All available signals available on the dockerclient
-      https://github.com/fsouza/go-dockerclient/blob/01804dec8a84d0a77e63611f2b62d33e9bb2b64a/signal.go
+      https://github.com/fsouza/go-dockerclient/blob/main/signal.go
   -only-exposed
       only include containers with exposed ports
   -only-published
@@ -121,11 +121,11 @@ Options:
   -include-stopped
       include stopped containers
   -tlscacert string
-      path to TLS CA certificate file (default "/Users/jason/.docker/machine/machines/default/ca.pem")
+      path to TLS CA certificate file (default "~/.docker/machine/machines/default/ca.pem")
   -tlscert string
-      path to TLS client certificate file (default "/Users/jason/.docker/machine/machines/default/cert.pem")
+      path to TLS client certificate file (default "~/.docker/machine/machines/default/cert.pem")
   -tlskey string
-      path to TLS client key file (default "/Users/jason/.docker/machine/machines/default/key.pem")
+      path to TLS client key file (default "~/.docker/machine/machines/default/key.pem")
   -tlsverify
       verify docker daemon's TLS certicate (default true)
   -version

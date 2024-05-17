@@ -117,7 +117,7 @@ func initFlags() {
 	flag.Var(&notifyContainerID, "notify-container",
 		"send -notify-signal signal (defaults to 1 / HUP) to container. You can pass this option multiple times to notify multiple containers.")
 	flag.Var(&notifyContainerFilter, "notify-filter",
-		"container filter for notification (e.g -notify-filter name=foo). You can have multiple of these. https://docs.docker.com/engine/reference/commandline/ps/#filter")
+		"container filter for notification (e.g -notify-filter name=foo). You can pass this option multiple times to combine filters with AND. https://docs.docker.com/engine/reference/commandline/ps/#filter")
 	flag.IntVar(&notifyContainerSignal, "notify-signal", int(docker.SIGHUP),
 		"signal to send to the notify-container and notify-filter. Defaults to SIGHUP")
 	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")

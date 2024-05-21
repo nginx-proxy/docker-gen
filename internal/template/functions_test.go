@@ -236,3 +236,11 @@ func TestDirList(t *testing.T) {
 	filesList, _ = dirList("/wrong/path")
 	assert.Equal(t, []string{}, filesList)
 }
+
+func TestCoalesce(t *testing.T) {
+	v := coalesce(nil, "second", "third")
+	assert.Equal(t, "second", v, "Expected second value")
+
+	v = coalesce(nil, nil, nil)
+	assert.Nil(t, v, "Expected nil value")
+}

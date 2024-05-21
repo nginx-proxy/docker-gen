@@ -103,6 +103,16 @@ func dirList(path string) ([]string, error) {
 	return names, nil
 }
 
+// coalesce returns the first non nil argument
+func coalesce(input ...interface{}) interface{} {
+	for _, v := range input {
+		if v != nil {
+			return v
+		}
+	}
+	return nil
+}
+
 // when returns the trueValue when the condition is true and the falseValue otherwise
 func when(condition bool, trueValue, falseValue interface{}) interface{} {
 	if condition {

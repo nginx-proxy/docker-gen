@@ -60,8 +60,9 @@ func newTemplate(name string) *template.Template {
 
 	sprigFuncMap := sprig.TxtFuncMap()
 
-	return tmpl.Funcs(sprigFuncMap).Funcs(template.FuncMap{
+	tmpl.Funcs(sprigFuncMap).Funcs(template.FuncMap{
 		"closest":                 arrayClosest,
+		"coalesce":                coalesce,
 		"comment":                 comment,
 		"contains":                contains,
 		"dir":                     dirList,
@@ -108,12 +109,15 @@ func newTemplate(name string) *template.Template {
 		"sha1":      sprigFuncMap["sha1sum"],
 
 		// aliases to sprig template functions masked by docker-gen functions with the same name
+		"sprigCoalesce": sprigFuncMap["coalesce"],
 		"sprigContains": sprigFuncMap["contains"],
 		"sprigDir":      sprigFuncMap["dir"],
 		"sprigReplace":  sprigFuncMap["replace"],
 		"sprigSplit":    sprigFuncMap["split"],
 		"sprigSplitn":   sprigFuncMap["splitn"],
 	})
+
+	return tmpl
 }
 
 func isBlank(str string) bool {

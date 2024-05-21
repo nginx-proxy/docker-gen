@@ -384,6 +384,7 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 - [Functions from Go](https://pkg.go.dev/text/template#hdr-Functions)
 - [Functions from Sprig v3](https://masterminds.github.io/sprig/), except for those that have the same name as one of the following functions.
 - _`closest $array $value`_: Returns the longest matching substring in `$array` that matches `$value`
+- _`coalesce ...`_: Returns the first non-nil argument.
 - _`comment $delimiter $string`_: Returns `$string` with each line prefixed by `$delimiter` (helpful for debugging combined with Sprig `toPrettyJson`: `{{ toPrettyJson $ | comment "#" }}`).
 - _`contains $map $key`_: Returns `true` if `$map` contains `$key`. Takes maps from `string` to any type.
 - _`dir $path`_: Returns an array of filenames in the specified `$path`.
@@ -417,6 +418,7 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 
 Sprig functions that have the same name as docker-gen function (but different behaviour) are made available with the `sprig` prefix:
 
+- _`sprigCoalesce ...`_: Alias for Sprig's [`coalesce`](https://masterminds.github.io/sprig/defaults.html).
 - _`sprigContains $string $string`_: Alias for Sprig's [`contains`](https://masterminds.github.io/sprig/strings.html).
 - _`sprigDir $path`_: Alias for Sprig's [`dir`](https://masterminds.github.io/sprig/paths.html).
 - _`sprigReplace $old $new $string`_: Alias for Sprig's [`replace`](https://masterminds.github.io/sprig/strings.html).

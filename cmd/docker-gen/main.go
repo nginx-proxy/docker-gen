@@ -180,8 +180,6 @@ func main() {
 			NotifyCmd:        notifyCmd,
 			NotifyOutput:     notifyOutput,
 			NotifyContainers: make(map[string]int),
-			OnlyExposed:      onlyExposed,
-			OnlyPublished:    onlyPublished,
 			ContainerFilter:  containerFilter,
 			Interval:         interval,
 			KeepBlankLines:   keepBlankLines,
@@ -196,8 +194,25 @@ func main() {
 			cfg.NotifyContainersFilter = notifyContainerFilter
 			cfg.NotifyContainersSignal = notifyContainerSignal
 		}
-		if len(containerFilter) == 0 && !includeStopped {
-			cfg.ContainerFilter = map[string][]string{"status": {"running"}}
+		if len(cfg.ContainerFilter["status"]) == 0 {
+			if includeStopped {
+				cfg.ContainerFilter["status"] = []string{
+					"created",
+					"restarting",
+					"running",
+					"removing",
+					"paused",
+					"exited",
+					"dead",
+				}
+			} else {
+				cfg.ContainerFilter["status"] = []string{"running"}
+			}
+		}
+		if onlyPublished && len(cfg.ContainerFilter["publish"]) == 0 {
+			cfg.ContainerFilter["publish"] = []string{"1-65535"}
+		} else if onlyExposed && len(cfg.ContainerFilter["expose"]) == 0 {
+			cfg.ContainerFilter["expose"] = []string{"1-65535"}
 		}
 		configs = config.ConfigFile{
 			Config: []config.Config{cfg},

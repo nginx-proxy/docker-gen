@@ -87,27 +87,29 @@ Usage: docker-gen [options] template [dest]
 Generate files from docker container meta-data
 
 Options:
-  -config value
-      config files with template directives. Config files will be merged if this option is specified multiple times. (default [])
+  -config path
+      config files with template directives.
+      Config files will be merged if this option is specified multiple times. (default [])
+  -container-filter key=value
+      container filter for inclusion by docker-gen.
+      You can pass this option multiple times to combine filters with AND.
+      https://docs.docker.com/engine/reference/commandline/ps/#filter
   -endpoint string
       docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock
-  -event-filter value
+  -event-filter key=value
       additional filter for event watched by docker-gen (e.g -event-filter event=connect -event-filter event=disconnect).
       You can pass this option multiple times to combine filters.
       By default docker-gen listen for container events start, stop, die and health_status.
       https://docs.docker.com/engine/reference/commandline/events/#filtering-events
+  -include-stopped
+      include stopped containers.
+      Bypassed when providing a container status filter (-container-filter status=foo).
   -interval int
       notify command interval (secs)
   -keep-blank-lines
       keep blank lines in the output file
   -notify restart xyz
       run command after template is regenerated (e.g restart xyz)
-  -notify-output
-      log the output(stdout/stderr) of notify command
-  -notify-sighup container-ID
-      send HUP signal to container.
-      Equivalent to 'docker kill -s HUP container-ID', or `-notify-container container-ID -notify-signal 1`.
-      You can pass this option multiple times to send HUP to multiple containers.
   -notify-container container-ID
       send -notify-signal signal (defaults to 1 / HUP) to container.
       You can pass this option multiple times to notify multiple containers.
@@ -115,44 +117,45 @@ Options:
       container filter for notification (e.g -notify-filter name=foo).
       You can pass this option multiple times to combine filters with AND.
       https://docs.docker.com/engine/reference/commandline/ps/#filter
+  -notify-output
+      log the output(stdout/stderr) of notify command
+  -notify-sighup container-ID
+      send HUP signal to container.
+      Equivalent to 'docker kill -s HUP container-ID', or `-notify-container container-ID -notify-signal 1`.
+      You can pass this option multiple times to send HUP to multiple containers.
   -notify-signal signal
       signal to send to the -notify-container and -notify-filter. -1 to call docker restart. Defaults to 1 aka. HUP.
       All available signals available on the dockerclient
       https://github.com/fsouza/go-dockerclient/blob/main/signal.go
   -only-exposed
-      only include containers with exposed ports
+      only include containers with exposed ports.
+      Bypassed when using the exposed filter with (-container-filter exposed=foo).
   -only-published
-      only include containers with published ports (implies -only-exposed)
-  -include-stopped
-      include stopped containers
-  -container-filter
-      container filter for inclusion by docker-gen (e.g -container-filter status=running).
-      Using this option bypass the -include-stopped option and set it to true.
-      You can pass this option multiple times to combine filters with AND.
-      https://docs.docker.com/engine/reference/commandline/ps/#filter
+      only include containers with published ports (implies -only-exposed).
+      Bypassed when providing a container published filter (-container-filter published=foo).
   -tlscacert string
-      path to TLS CA certificate file (default "~/.docker/machine/machines/default/ca.pem")
+      path to TLS CA certificate file (default "~/.docker/ca.pem")
   -tlscert string
-      path to TLS client certificate file (default "~/.docker/machine/machines/default/cert.pem")
+      path to TLS client certificate file (default "~/.docker/cert.pem")
   -tlskey string
-      path to TLS client key file (default "~/.docker/machine/machines/default/key.pem")
+      path to TLS client key file (default "~/.docker/key.pem")
   -tlsverify
-      verify docker daemon's TLS certicate (default true)
+      verify docker daemon's TLS certicate
   -version
       show version
+  -wait string
+      minimum and maximum durations to wait (e.g. "500ms:2s") before triggering generate
   -watch
       watch for container changes
-  -wait
-      minimum (and/or maximum) duration to wait after each container change before triggering
 
 Arguments:
   template - path to a template to generate
-  dest - path to write the template. If not specfied, STDOUT is used
+  dest - path to write the template to. If not specfied, STDOUT is used
 
 Environment Variables:
   DOCKER_HOST - default value for -endpoint
-  DOCKER_CERT_PATH - directory path containing key.pem, cert.pm and ca.pem
-  DOCKER_TLS_VERIFY - enable client TLS verification]
+  DOCKER_CERT_PATH - directory path containing key.pem, cert.pem and ca.pem
+  DOCKER_TLS_VERIFY - enable client TLS verification
 ```
 
 If no `<dest>` file is specified, the output is sent to stdout. Mainly useful for debugging.

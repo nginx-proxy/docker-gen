@@ -150,24 +150,7 @@ func removeBlankLines(reader io.Reader, writer io.Writer) {
 }
 
 func GenerateFile(config config.Config, containers context.Context) bool {
-	filteredContainers := context.Context{}
-	if config.OnlyPublished {
-		for _, container := range containers {
-			if len(container.PublishedAddresses()) > 0 {
-				filteredContainers = append(filteredContainers, container)
-			}
-		}
-	} else if config.OnlyExposed {
-		for _, container := range containers {
-			if len(container.Addresses) > 0 {
-				filteredContainers = append(filteredContainers, container)
-			}
-		}
-	} else {
-		filteredContainers = containers
-	}
-
-	contents := executeTemplate(config.Template, filteredContainers)
+	contents := executeTemplate(config.Template, containers)
 
 	if !config.KeepBlankLines {
 		buf := new(bytes.Buffer)
@@ -186,8 +169,7 @@ func GenerateFile(config config.Config, containers context.Context) bool {
 			if err != nil {
 				log.Fatalf("Unable to write to dest file %s: %s\n", config.Dest, err)
 			}
-
-			log.Printf("Generated '%s' from %d containers", config.Dest, len(filteredContainers))
+			log.Printf("Generated '%s' from %d containers", config.Dest, len(containers))
 			return true
 		}
 		return false

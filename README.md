@@ -1,6 +1,7 @@
 # docker-gen
 
 [![Tests](https://github.com/nginx-proxy/docker-gen/actions/workflows/tests.yml/badge.svg)](https://github.com/nginx-proxy/docker-gen/actions/workflows/tests.yml)
+[![GitHub pulls](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fipitio%2Fghcr-pulls%2Fmaster%2Findex.json&query=%24%5B%3F(%40.owner%3D%3D%22nginx-proxy%22%20%26%26%20%40.repo%3D%3D%22docker-gen%22%20%26%26%20%40.image%3D%3D%22docker-gen%22)%5D.pulls&logo=github&label=Pulls)](https://github.com/nginx-proxy/docker-gen/pkgs/container/docker-gen)
 [![GitHub release](https://img.shields.io/github/v/release/nginx-proxy/docker-gen)](https://github.com/nginx-proxy/docker-gen/releases)
 [![Docker Image Size](https://img.shields.io/docker/image-size/nginxproxy/docker-gen?sort=semver)](https://hub.docker.com/r/nginxproxy/docker-gen "Click to view the image on Docker Hub")
 [![Docker stars](https://img.shields.io/docker/stars/nginxproxy/docker-gen.svg)](https://hub.docker.com/r/nginxproxy/docker-gen "DockerHub")

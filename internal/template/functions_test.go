@@ -1,14 +1,11 @@
 package template
 
 import (
-	"bytes"
-	"encoding/json"
 	"os"
 	"path"
 	"reflect"
 	"testing"
 
-	"github.com/nginx-proxy/docker-gen/internal/context"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -128,85 +125,6 @@ func TestSplitN(t *testing.T) {
 	}
 
 	tests.run(t)
-}
-
-func TestTrimPrefix(t *testing.T) {
-	const prefix = "tcp://"
-	const str = "tcp://127.0.0.1:2375"
-	const trimmed = "127.0.0.1:2375"
-	got := trimPrefix(prefix, str)
-	if got != trimmed {
-		t.Fatalf("expected trimPrefix(%s,%s) to be %s, got %s", prefix, str, trimmed, got)
-	}
-}
-
-func TestTrimSuffix(t *testing.T) {
-	const suffix = ".local"
-	const str = "myhost.local"
-	const trimmed = "myhost"
-	got := trimSuffix(suffix, str)
-	if got != trimmed {
-		t.Fatalf("expected trimSuffix(%s,%s) to be %s, got %s", suffix, str, trimmed, got)
-	}
-}
-
-func TestToLower(t *testing.T) {
-	const str = ".RaNd0m StrinG_"
-	const lowered = ".rand0m string_"
-	assert.Equal(t, lowered, toLower(str), "Unexpected value from toLower()")
-}
-
-func TestToUpper(t *testing.T) {
-	const str = ".RaNd0m StrinG_"
-	const uppered = ".RAND0M STRING_"
-	assert.Equal(t, uppered, toUpper(str), "Unexpected value from toUpper()")
-}
-
-func TestSha1(t *testing.T) {
-	sum := hashSha1("/path")
-	if sum != "4f26609ad3f5185faaa9edf1e93aa131e2131352" {
-		t.Fatal("Incorrect SHA1 sum")
-	}
-}
-
-func TestJson(t *testing.T) {
-	containers := []*context.RuntimeContainer{
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "demo1.localhost",
-			},
-			ID: "1",
-		},
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "demo1.localhost,demo3.localhost",
-			},
-			ID: "2",
-		},
-		{
-			Env: map[string]string{
-				"VIRTUAL_HOST": "demo2.localhost",
-			},
-			ID: "3",
-		},
-	}
-	output, err := marshalJson(containers)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	buf := bytes.NewBufferString(output)
-	dec := json.NewDecoder(buf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var decoded []*context.RuntimeContainer
-	if err := dec.Decode(&decoded); err != nil {
-		t.Fatal(err)
-	}
-	if len(decoded) != len(containers) {
-		t.Fatalf("Incorrect unmarshaled container count. Expected %d, got %d.", len(containers), len(decoded))
-	}
 }
 
 func TestParseJson(t *testing.T) {

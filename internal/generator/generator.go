@@ -38,7 +38,6 @@ type GeneratorConfig struct {
 	TLSKey    string
 	TLSCACert string
 	TLSVerify bool
-	All       bool
 
 	ConfigFile config.ConfigFile
 }
@@ -69,7 +68,6 @@ func NewGenerator(gc GeneratorConfig) (*generator, error) {
 		TLSCert:   gc.TLSCert,
 		TLSCaCert: gc.TLSCACert,
 		TLSKey:    gc.TLSKey,
-		All:       gc.All,
 		Configs:   gc.ConfigFile,
 		retry:     true,
 	}, nil
@@ -120,12 +118,13 @@ func (g *generator) generateFromSignals() {
 }
 
 func (g *generator) generateFromContainers() {
-	containers, err := g.getContainers()
-	if err != nil {
-		log.Printf("Error listing containers: %s\n", err)
-		return
-	}
 	for _, config := range g.Configs.Config {
+		containers, err := g.getContainers(config)
+		if err != nil {
+			log.Printf("Error listing containers: %s\n", err)
+			return
+		}
+
 		changed := template.GenerateFile(config, containers)
 		if !changed {
 			log.Printf("Contents of %s did not change. Skipping notification '%s'", config.Dest, config.NotifyCmd)
@@ -155,7 +154,7 @@ func (g *generator) generateAtInterval() {
 			for {
 				select {
 				case <-ticker.C:
-					containers, err := g.getContainers()
+					containers, err := g.getContainers(cfg)
 					if err != nil {
 						log.Printf("Error listing containers: %s\n", err)
 						continue
@@ -201,7 +200,7 @@ func (g *generator) generateFromEvents() {
 			defer g.wg.Done()
 			debouncedChan := newDebounceChannel(watcher, cfg.Wait)
 			for range debouncedChan {
-				containers, err := g.getContainers()
+				containers, err := g.getContainers(cfg)
 				if err != nil {
 					log.Printf("Error listing containers: %s\n", err)
 					continue
@@ -382,7 +381,7 @@ func (g *generator) sendSignalToFilteredContainers(config config.Config) {
 	}
 }
 
-func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
+func (g *generator) getContainers(config config.Config) ([]*context.RuntimeContainer, error) {
 	apiInfo, err := g.Client.Info()
 	if err != nil {
 		log.Printf("Error retrieving docker server info: %s\n", err)
@@ -391,8 +390,9 @@ func (g *generator) getContainers() ([]*context.RuntimeContainer, error) {
 	}
 
 	apiContainers, err := g.Client.ListContainers(docker.ListContainersOptions{
-		All:  g.All,
-		Size: false,
+		All:     true,
+		Size:    false,
+		Filters: config.ContainerFilter,
 	})
 	if err != nil {
 		return nil, err

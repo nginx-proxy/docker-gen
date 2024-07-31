@@ -26,12 +26,12 @@ func TestGenerateFromEvents(t *testing.T) {
 	var counter atomic.Int32
 
 	eventsResponse := `
-{"status":"start","id":"8dfafdbc3a40","from":"base:latest","time":1374067924}
-{"status":"stop","id":"8dfafdbc3a40","from":"base:latest","time":1374067966}
-{"status":"start","id":"8dfafdbc3a40","from":"base:latest","time":1374067970}
-{"status":"destroy","id":"8dfafdbc3a40","from":"base:latest","time":1374067990}`
+{"Type":"container","Action":"start","Actor": {"ID":"8dfafdbc3a40"},"Time":1374067924}
+{"Type":"container","Action":"stop","Actor": {"ID":"8dfafdbc3a40"},"Time":1374067966}
+{"Type":"container","Action":"start","Actor": {"ID":"8dfafdbc3a40"},"Time":1374067970}
+{"Type":"container","Action":"destroy","Actor": {"ID":"8dfafdbc3a40"},"Time":1374067990}`
 	infoResponse := `{"Containers":1,"Images":1,"Debug":0,"NFd":11,"NGoroutines":21,"MemoryLimit":1,"SwapLimit":0}`
-	versionResponse := `{"Version":"1.8.0","Os":"Linux","KernelVersion":"3.18.5-tinycore64","GoVersion":"go1.4.1","GitCommit":"a8a31ef","Arch":"amd64","ApiVersion":"1.19"}`
+	versionResponse := `{"Version":"19.03.12","Os":"Linux","KernelVersion":"4.19.76-linuxkit","GoVersion":"go1.13.14","GitCommit":"48a66213fe","Arch":"amd64","ApiVersion":"1.40"}`
 
 	server, _ := dockertest.NewServer("127.0.0.1:0", nil, nil)
 	server.CustomHandler("/events", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

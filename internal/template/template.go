@@ -57,7 +57,10 @@ func newTemplate(name string) *template.Template {
 		}
 		return buf.String(), nil
 	}
-	tmpl.Funcs(sprig.TxtFuncMap()).Funcs(template.FuncMap{
+
+	sprigFuncMap := sprig.TxtFuncMap()
+
+	tmpl.Funcs(sprigFuncMap).Funcs(template.FuncMap{
 		"closest":                 arrayClosest,
 		"coalesce":                coalesce,
 		"comment":                 comment,
@@ -71,29 +74,24 @@ func newTemplate(name string) *template.Template {
 		"groupByMulti":            groupByMulti,
 		"groupByLabel":            groupByLabel,
 		"groupByLabelWithDefault": groupByLabelWithDefault,
-		"json":                    marshalJson,
 		"include":                 include,
 		"intersect":               intersect,
 		"keys":                    keys,
 		"replace":                 strings.Replace,
 		"parseBool":               strconv.ParseBool,
-		"parseJson":               unmarshalJson,
 		"fromYaml":                fromYaml,
 		"toYaml":                  toYaml,
 		"mustFromYaml":            mustFromYaml,
 		"mustToYaml":              mustToYaml,
 		"queryEscape":             url.QueryEscape,
-		"sha1":                    hashSha1,
 		"split":                   strings.Split,
 		"splitN":                  strings.SplitN,
 		"sortStringsAsc":          sortStringsAsc,
 		"sortStringsDesc":         sortStringsDesc,
 		"sortObjectsByKeysAsc":    sortObjectsByKeysAsc,
 		"sortObjectsByKeysDesc":   sortObjectsByKeysDesc,
-		"trimPrefix":              trimPrefix,
-		"trimSuffix":              trimSuffix,
-		"toLower":                 toLower,
-		"toUpper":                 toUpper,
+		"toLower":                 strings.ToLower,
+		"toUpper":                 strings.ToUpper,
 		"when":                    when,
 		"where":                   where,
 		"whereNot":                whereNot,
@@ -104,7 +102,21 @@ func newTemplate(name string) *template.Template {
 		"whereLabelExists":        whereLabelExists,
 		"whereLabelDoesNotExist":  whereLabelDoesNotExist,
 		"whereLabelValueMatches":  whereLabelValueMatches,
+
+		// legacy docker-gen template function aliased to their Sprig clone
+		"json":      sprigFuncMap["mustToJson"],
+		"parseJson": sprigFuncMap["mustFromJson"],
+		"sha1":      sprigFuncMap["sha1sum"],
+
+		// aliases to sprig template functions masked by docker-gen functions with the same name
+		"sprigCoalesce": sprigFuncMap["coalesce"],
+		"sprigContains": sprigFuncMap["contains"],
+		"sprigDir":      sprigFuncMap["dir"],
+		"sprigReplace":  sprigFuncMap["replace"],
+		"sprigSplit":    sprigFuncMap["split"],
+		"sprigSplitn":   sprigFuncMap["splitn"],
 	})
+
 	return tmpl
 }
 

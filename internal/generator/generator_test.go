@@ -16,8 +16,6 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 	dockertest "github.com/fsouza/go-dockerclient/testing"
 	"github.com/nginx-proxy/docker-gen/internal/config"
-	"github.com/nginx-proxy/docker-gen/internal/context"
-	"github.com/nginx-proxy/docker-gen/internal/dockerclient"
 )
 
 func TestGenerateFromEvents(t *testing.T) {
@@ -114,11 +112,6 @@ func TestGenerateFromEvents(t *testing.T) {
 	}))
 
 	serverURL := fmt.Sprintf("tcp://%s", strings.TrimRight(strings.TrimPrefix(server.URL(), "http://"), "/"))
-	client, err := dockerclient.NewDockerClient(serverURL, false, "", "", "")
-	if err != nil {
-		t.Errorf("Failed to create client: %s", err)
-	}
-	client.SkipServerVersionCheck = true
 
 	tmplFile, err := os.CreateTemp(os.TempDir(), "docker-gen-tmpl")
 	if err != nil {
@@ -148,16 +141,10 @@ func TestGenerateFromEvents(t *testing.T) {
 		}
 	}()
 
-	apiVersion, err := client.Version()
-	if err != nil {
-		t.Errorf("Failed to retrieve docker server version info: %v\n", err)
-	}
-	context.SetDockerEnv(apiVersion) // prevents a panic
-
-	generator := &generator{
-		Client:   client,
-		Endpoint: serverURL,
-		Configs: config.ConfigFile{
+	generator, err := NewGenerator(GeneratorConfig{
+		Endpoint:  serverURL,
+		TLSVerify: false,
+		ConfigFile: config.ConfigFile{
 			Config: []config.Config{
 				{
 					Template: tmplFile.Name(),
@@ -184,8 +171,12 @@ func TestGenerateFromEvents(t *testing.T) {
 				},
 			},
 		},
-		retry: false,
+	})
+	if err != nil {
+		t.Errorf("Error creating generator: %v\n", err)
 	}
+
+	generator.retry = false
 
 	generator.generateFromEvents()
 	generator.wg.Wait()

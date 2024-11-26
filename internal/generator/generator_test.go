@@ -207,7 +207,7 @@ func TestGenerateFromEvents(t *testing.T) {
 	//          │ start │            │ stop │             │ start │
 	//          └───────┘            └──────┘             └───────┘
 
-	expectedCounters := []int{1, 5, 6, 7}
+	expectedCounters := []int{1, 8, 9, 10}
 
 	for i, counter := range expectedCounters {
 		value, _ = os.ReadFile(destFiles[i].Name())

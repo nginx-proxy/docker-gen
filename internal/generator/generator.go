@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"slices"
 	"strings"
 	"sync"
 	"syscall"
@@ -281,8 +282,20 @@ func (g *generator) generateFromEvents() {
 						time.Sleep(10 * time.Second)
 						break
 					}
-					if event.Status == "start" || event.Status == "stop" || event.Status == "die" || strings.Index(event.Status, "health_status:") != -1 {
-						log.Printf("Received event %s for container %s", event.Status, event.ID[:12])
+
+					watchedEvent := false
+
+					switch event.Type {
+					case "container":
+						watchedContainerActions := []string{"start", "stop", "die", "health_status"}
+						watchedEvent = slices.Contains(watchedContainerActions, event.Action)
+					case "network":
+						watchedNetworkActions := []string{"connect", "disconnect"}
+						watchedEvent = slices.Contains(watchedNetworkActions, event.Action)
+					}
+
+					if watchedEvent {
+						log.Printf("Received event %s for %s %s", event.Action, event.Type, event.Actor.ID[:12])
 						// fanout event to all watchers
 						for _, watcher := range watchers {
 							watcher <- event

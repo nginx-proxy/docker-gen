@@ -503,6 +503,6 @@ make get-deps
 make
 ```
 
-### License
+### Powered by 
 
-MIT
+[![GoLand logo](https://resources.jetbrains.com/storage/products/company/brand/logos/GoLand_icon.svg)](https://www.jetbrains.com/go/)

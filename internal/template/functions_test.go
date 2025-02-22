@@ -96,10 +96,28 @@ func TestInclude(t *testing.T) {
 	data := include("some_random_file")
 	assert.Equal(t, "", data)
 
-	_ = os.WriteFile("/tmp/docker-gen-test-temp-file", []byte("some string"), 0o777)
-	data = include("/tmp/docker-gen-test-temp-file")
+	f, err := os.CreateTemp("", "docker-gen-test-temp-file")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		f.Close()
+		os.Remove(f.Name())
+	}()
+
+	err = f.Chmod(0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = f.WriteString("some string")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data = include(f.Name())
 	assert.Equal(t, "some string", data)
-	_ = os.Remove("/tmp/docker-gen-test-temp-file")
 }
 
 func TestIntersect(t *testing.T) {

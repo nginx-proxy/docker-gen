@@ -2,7 +2,7 @@ package template
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -243,9 +243,9 @@ func TestDirList(t *testing.T) {
 	}
 
 	expected := []string{
-		path.Base(files["aaa"]),
-		path.Base(files["bbb"]),
-		path.Base(files["ccc"]),
+		filepath.Base(files["aaa"]),
+		filepath.Base(files["bbb"]),
+		filepath.Base(files["ccc"]),
 	}
 
 	filesList, _ := dirList(dir)

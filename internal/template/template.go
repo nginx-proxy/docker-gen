@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/url"
 	"os"
@@ -191,7 +192,7 @@ func GenerateFile(config config.Config, containers context.Context) bool {
 
 	if config.Dest != "" {
 		oldContents, err := os.ReadFile(config.Dest)
-		if err != nil && !os.IsNotExist(err) {
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
 			log.Fatalf("Unable to compare current file contents: %s: %s\n", config.Dest, err)
 		}
 

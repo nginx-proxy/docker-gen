@@ -30,7 +30,7 @@ func TestGenerateFromEvents(t *testing.T) {
 {"status":"stop","id":"8dfafdbc3a40","from":"base:latest","time":1374067966}
 {"status":"start","id":"8dfafdbc3a40","from":"base:latest","time":1374067970}
 {"status":"destroy","id":"8dfafdbc3a40","from":"base:latest","time":1374067990}`
-	infoResponse := `{"Containers":1,"Images":1,"Debug":0,"NFd":11,"NGoroutines":21,"MemoryLimit":1,"SwapLimit":0}`
+	infoResponse := `{"Containers":1,"Images":1,"Debug":false,"NFd":11,"NGoroutines":21,"MemoryLimit":true,"SwapLimit":false}`
 	versionResponse := `{"Version":"1.8.0","Os":"Linux","KernelVersion":"3.18.5-tinycore64","GoVersion":"go1.4.1","GitCommit":"a8a31ef","Arch":"amd64","ApiVersion":"1.19"}`
 
 	server, _ := dockertest.NewServer("127.0.0.1:0", nil, nil)

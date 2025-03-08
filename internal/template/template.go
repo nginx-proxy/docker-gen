@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/url"
 	"os"
@@ -190,48 +191,17 @@ func GenerateFile(config config.Config, containers context.Context) bool {
 	}
 
 	if config.Dest != "" {
-		dest, err := os.CreateTemp(filepath.Dir(config.Dest), "docker-gen")
-		defer func() {
-			dest.Close()
-			os.Remove(dest.Name())
-		}()
-		if err != nil {
-			log.Fatalf("Unable to create temp file: %s\n", err)
-		}
-
-		if n, err := dest.Write(contents); n != len(contents) || err != nil {
-			log.Fatalf("Failed to write to temp file: wrote %d, exp %d, err=%v", n, len(contents), err)
-		}
-
-		oldContents := []byte{}
-		if fi, err := os.Stat(config.Dest); err == nil || os.IsNotExist(err) {
-			if err != nil && os.IsNotExist(err) {
-				emptyFile, err := os.Create(config.Dest)
-				if err != nil {
-					log.Fatalf("Unable to create empty destination file: %s\n", err)
-				} else {
-					emptyFile.Close()
-					fi, _ = os.Stat(config.Dest)
-				}
-			}
-
-			if err := dest.Chmod(fi.Mode()); err != nil {
-				log.Fatalf("Unable to chmod temp file: %s\n", err)
-			}
-
-			chown(dest, fi)
-
-			oldContents, err = os.ReadFile(config.Dest)
-			if err != nil {
-				log.Fatalf("Unable to compare current file contents: %s: %s\n", config.Dest, err)
-			}
+		oldContents, err := os.ReadFile(config.Dest)
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			log.Fatalf("Unable to compare current file contents: %s: %s\n", config.Dest, err)
 		}
 
 		if !bytes.Equal(oldContents, contents) {
-			err = os.Rename(dest.Name(), config.Dest)
+			err := os.WriteFile(config.Dest, contents, 0644)
 			if err != nil {
-				log.Fatalf("Unable to create dest file %s: %s\n", config.Dest, err)
+				log.Fatalf("Unable to write to dest file %s: %s\n", config.Dest, err)
 			}
+
 			log.Printf("Generated '%s' from %d containers", config.Dest, len(filteredContainers))
 			return true
 		}

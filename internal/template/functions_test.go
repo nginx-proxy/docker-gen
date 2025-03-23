@@ -2,7 +2,7 @@ package template
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -96,10 +96,28 @@ func TestInclude(t *testing.T) {
 	data := include("some_random_file")
 	assert.Equal(t, "", data)
 
-	_ = os.WriteFile("/tmp/docker-gen-test-temp-file", []byte("some string"), 0o777)
-	data = include("/tmp/docker-gen-test-temp-file")
+	f, err := os.CreateTemp("", "docker-gen-test-temp-file")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		f.Close()
+		os.Remove(f.Name())
+	}()
+
+	err = f.Chmod(0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = f.WriteString("some string")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data = include(f.Name())
 	assert.Equal(t, "some string", data)
-	_ = os.Remove("/tmp/docker-gen-test-temp-file")
 }
 
 func TestIntersect(t *testing.T) {
@@ -225,9 +243,9 @@ func TestDirList(t *testing.T) {
 	}
 
 	expected := []string{
-		path.Base(files["aaa"]),
-		path.Base(files["bbb"]),
-		path.Base(files["ccc"]),
+		filepath.Base(files["aaa"]),
+		filepath.Base(files["bbb"]),
+		filepath.Base(files["ccc"]),
 	}
 
 	filesList, _ := dirList(dir)

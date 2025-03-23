@@ -13,8 +13,19 @@ on:
 
 jobs:
   unit:
-    name: Unit Tests
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version:
+          - "1.23"
+          - "1.24"
+        os:
+          - macos
+          - ubuntu
+          - windows
+      fail-fast: false
+
+    name: Unit Tests (${{ matrix.os }}/go-${{ matrix.go-version }})
+    runs-on: ${{ matrix.os }}-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +34,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: ${{ matrix.go-version }}
 
       - name: Install dependencies
         run: make get-deps
@@ -32,7 +43,8 @@ jobs:
         run: make docker-gen
 
       - name: Check code formatting
+        if: runner.os != 'Windows'
         run: make check-gofmt
 
       - name: Run tests
-        run: go test -race -v ./internal/...
+        run: make test

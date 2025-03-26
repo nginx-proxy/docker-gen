@@ -3,7 +3,7 @@ module github.com/nginx-proxy/docker-gen
 go 1.23.0
 
 require (
-	github.com/BurntSushi/toml v1.3.2
+	github.com/BurntSushi/toml v1.5.0
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/fsouza/go-dockerclient v1.12.1
 	github.com/stretchr/testify v1.10.0

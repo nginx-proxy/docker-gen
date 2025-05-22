@@ -24,7 +24,7 @@ RUN set -eux; \
 	go env | grep -E 'OS=|ARCH=|ARM=|AMD64='; \
     go build -ldflags "-X main.buildVersion=${DOCKER_GEN_VERSION}" -o docker-gen ./cmd/docker-gen
 
-FROM debian:12.10-slim
+FROM debian:12.11-slim
 
 ARG DOCKER_GEN_VERSION
 ENV DOCKER_GEN_VERSION=${DOCKER_GEN_VERSION} \

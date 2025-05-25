@@ -28,8 +28,7 @@ func TestGenerateFromEvents(t *testing.T) {
 	eventsResponse := `
 {"Type":"container","Action":"start","Actor": {"ID":"8dfafdbc3a40"},"Time":1374067924}
 {"Type":"container","Action":"stop","Actor": {"ID":"8dfafdbc3a40"},"Time":1374067966}
-{"Type":"container","Action":"start","Actor": {"ID":"8dfafdbc3a40"},"Time":1374067970}
-{"Type":"container","Action":"destroy","Actor": {"ID":"8dfafdbc3a40"},"Time":1374067990}`
+{"Type":"container","Action":"start","Actor": {"ID":"8dfafdbc3a40"},"Time":1374067970}`
 	infoResponse := `{"Containers":1,"Images":1,"Debug":false,"NFd":11,"NGoroutines":21,"MemoryLimit":true,"SwapLimit":false}`
 	versionResponse := `{"Version":"19.03.12","Os":"Linux","KernelVersion":"4.19.76-linuxkit","GoVersion":"go1.13.14","GitCommit":"48a66213fe","Arch":"amd64","ApiVersion":"1.40"}`
 

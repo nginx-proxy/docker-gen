@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"slices"
 	"strings"
 	"sync"
 	"syscall"
@@ -250,7 +249,14 @@ func (g *generator) generateFromEvents() {
 					break
 				}
 				if !watching {
-					err := client.AddEventListener(eventChan)
+					options := docker.EventsOptions{
+						Filters: map[string][]string{
+							"event": {"start", "stop", "die", "health_status", "connect", "disconnect"},
+							"type":  {"container", "network"},
+						},
+					}
+
+					err := client.AddEventListenerWithOptions(options, eventChan)
 					if err != nil && err != docker.ErrListenerAlreadyExists {
 						log.Printf("Error registering docker event listener: %s", err)
 						time.Sleep(10 * time.Second)
@@ -283,23 +289,10 @@ func (g *generator) generateFromEvents() {
 						break
 					}
 
-					watchedEvent := false
-
-					switch event.Type {
-					case "container":
-						watchedContainerActions := []string{"start", "stop", "die", "health_status"}
-						watchedEvent = slices.Contains(watchedContainerActions, event.Action)
-					case "network":
-						watchedNetworkActions := []string{"connect", "disconnect"}
-						watchedEvent = slices.Contains(watchedNetworkActions, event.Action)
-					}
-
-					if watchedEvent {
-						log.Printf("Received event %s for %s %s", event.Action, event.Type, event.Actor.ID[:12])
-						// fanout event to all watchers
-						for _, watcher := range watchers {
-							watcher <- event
-						}
+					log.Printf("Received event %s for %s %s", event.Action, event.Type, event.Actor.ID[:12])
+					// fanout event to all watchers
+					for _, watcher := range watchers {
+						watcher <- event
 					}
 				case <-time.After(10 * time.Second):
 					// check for docker liveness

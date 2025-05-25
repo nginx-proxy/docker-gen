@@ -36,6 +36,7 @@ var (
 	includeStopped        bool
 	configFiles           stringslice
 	configs               config.ConfigFile
+	eventFilter           mapstringslice = mapstringslice{"event": {"start", "stop", "die", "health_status"}}
 	interval              int
 	keepBlankLines        bool
 	endpoint              string
@@ -129,6 +130,9 @@ func initFlags() {
 	flag.StringVar(&tlsCaCert, "tlscacert", filepath.Join(certPath, "ca.pem"), "path to TLS CA certificate file")
 	flag.BoolVar(&tlsVerify, "tlsverify", os.Getenv("DOCKER_TLS_VERIFY") != "", "verify docker daemon's TLS certicate")
 
+	flag.Var(&eventFilter, "event-filter",
+		"additional filter for event watched by docker-gen (e.g -event-filter event=connect -event-filter event=disconnect). You can pass this option multiple times to combine filters. By default docker-gen listen for container events start, stop, die and health_status. https://docs.docker.com/engine/reference/commandline/events/#filtering-events")
+
 	flag.Usage = usage
 	flag.Parse()
 }
@@ -202,13 +206,14 @@ func main() {
 	}
 
 	generator, err := generator.NewGenerator(generator.GeneratorConfig{
-		Endpoint:   endpoint,
-		TLSKey:     tlsKey,
-		TLSCert:    tlsCert,
-		TLSCACert:  tlsCaCert,
-		TLSVerify:  tlsVerify,
-		All:        all,
-		ConfigFile: configs,
+		Endpoint:    endpoint,
+		TLSKey:      tlsKey,
+		TLSCert:     tlsCert,
+		TLSCACert:   tlsCaCert,
+		TLSVerify:   tlsVerify,
+		All:         all,
+		EventFilter: eventFilter,
+		ConfigFile:  configs,
 	})
 
 	if err != nil {

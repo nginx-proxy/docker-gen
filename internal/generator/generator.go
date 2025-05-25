@@ -26,6 +26,7 @@ type generator struct {
 	TLSVerify                  bool
 	TLSCert, TLSCaCert, TLSKey string
 	All                        bool
+	EventFilter                map[string][]string
 
 	wg    sync.WaitGroup
 	retry bool
@@ -39,6 +40,8 @@ type GeneratorConfig struct {
 	TLSCACert string
 	TLSVerify bool
 	All       bool
+
+	EventFilter map[string][]string
 
 	ConfigFile config.ConfigFile
 }
@@ -63,15 +66,16 @@ func NewGenerator(gc GeneratorConfig) (*generator, error) {
 	context.SetDockerEnv(apiVersion)
 
 	return &generator{
-		Client:    client,
-		Endpoint:  gc.Endpoint,
-		TLSVerify: gc.TLSVerify,
-		TLSCert:   gc.TLSCert,
-		TLSCaCert: gc.TLSCACert,
-		TLSKey:    gc.TLSKey,
-		All:       gc.All,
-		Configs:   gc.ConfigFile,
-		retry:     true,
+		Client:      client,
+		Endpoint:    gc.Endpoint,
+		TLSVerify:   gc.TLSVerify,
+		TLSCert:     gc.TLSCert,
+		TLSCaCert:   gc.TLSCACert,
+		TLSKey:      gc.TLSKey,
+		All:         gc.All,
+		EventFilter: gc.EventFilter,
+		Configs:     gc.ConfigFile,
+		retry:       true,
 	}, nil
 }
 
@@ -249,7 +253,11 @@ func (g *generator) generateFromEvents() {
 					break
 				}
 				if !watching {
-					err := client.AddEventListener(eventChan)
+					options := docker.EventsOptions{
+						Filters: g.EventFilter,
+					}
+
+					err := client.AddEventListenerWithOptions(options, eventChan)
 					if err != nil && err != docker.ErrListenerAlreadyExists {
 						log.Printf("Error registering docker event listener: %s", err)
 						time.Sleep(10 * time.Second)
@@ -281,12 +289,11 @@ func (g *generator) generateFromEvents() {
 						time.Sleep(10 * time.Second)
 						break
 					}
-					if event.Status == "start" || event.Status == "stop" || event.Status == "die" || strings.Contains(event.Status, "health_status:") {
-						log.Printf("Received event %s for container %s", event.Status, event.ID[:12])
-						// fanout event to all watchers
-						for _, watcher := range watchers {
-							watcher <- event
-						}
+
+					log.Printf("Received event %s for %s %s", event.Action, event.Type, event.Actor.ID[:12])
+					// fanout event to all watchers
+					for _, watcher := range watchers {
+						watcher <- event
 					}
 				case <-time.After(10 * time.Second):
 					// check for docker liveness

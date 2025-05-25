@@ -26,6 +26,7 @@ type generator struct {
 	TLSVerify                  bool
 	TLSCert, TLSCaCert, TLSKey string
 	All                        bool
+	EventFilter                map[string][]string
 
 	wg    sync.WaitGroup
 	retry bool
@@ -39,6 +40,8 @@ type GeneratorConfig struct {
 	TLSCACert string
 	TLSVerify bool
 	All       bool
+
+	EventFilter map[string][]string
 
 	ConfigFile config.ConfigFile
 }
@@ -63,15 +66,16 @@ func NewGenerator(gc GeneratorConfig) (*generator, error) {
 	context.SetDockerEnv(apiVersion)
 
 	return &generator{
-		Client:    client,
-		Endpoint:  gc.Endpoint,
-		TLSVerify: gc.TLSVerify,
-		TLSCert:   gc.TLSCert,
-		TLSCaCert: gc.TLSCACert,
-		TLSKey:    gc.TLSKey,
-		All:       gc.All,
-		Configs:   gc.ConfigFile,
-		retry:     true,
+		Client:      client,
+		Endpoint:    gc.Endpoint,
+		TLSVerify:   gc.TLSVerify,
+		TLSCert:     gc.TLSCert,
+		TLSCaCert:   gc.TLSCACert,
+		TLSKey:      gc.TLSKey,
+		All:         gc.All,
+		EventFilter: gc.EventFilter,
+		Configs:     gc.ConfigFile,
+		retry:       true,
 	}, nil
 }
 
@@ -250,10 +254,7 @@ func (g *generator) generateFromEvents() {
 				}
 				if !watching {
 					options := docker.EventsOptions{
-						Filters: map[string][]string{
-							"event": {"start", "stop", "die", "health_status", "connect", "disconnect"},
-							"type":  {"container", "network"},
-						},
+						Filters: g.EventFilter,
 					}
 
 					err := client.AddEventListenerWithOptions(options, eventChan)

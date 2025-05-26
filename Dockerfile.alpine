@@ -1,7 +1,7 @@
 ARG DOCKER_GEN_VERSION=main
 
 # Build docker-gen from scratch
-FROM --platform=$BUILDPLATFORM golang:1.22.1-alpine as go-builder
+FROM --platform=$BUILDPLATFORM golang:1.24.3-alpine AS go-builder
 
 ENV CGO_ENABLED=0
 
@@ -24,7 +24,7 @@ RUN set -eux; \
 	go env | grep -E 'OS=|ARCH=|ARM=|AMD64='; \
     go build -ldflags "-X main.buildVersion=${DOCKER_GEN_VERSION}" -o docker-gen ./cmd/docker-gen
 
-FROM --platform=$TARGETPLATFORM alpine:3.19.1
+FROM alpine:3.21.3
 
 ARG DOCKER_GEN_VERSION
 ENV DOCKER_GEN_VERSION=${DOCKER_GEN_VERSION} \

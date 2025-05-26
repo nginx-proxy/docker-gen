@@ -93,6 +93,11 @@ Options:
       docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock
   -swarm-node value
       docker api endpoints from which to listen for events. Default equals to value of `endpoint` argument
+  -event-filter value
+      additional filter for event watched by docker-gen (e.g -event-filter event=connect -event-filter event=disconnect).
+      You can pass this option multiple times to combine filters.
+      By default docker-gen listen for container events start, stop, die and health_status.
+      https://docs.docker.com/engine/reference/commandline/events/#filtering-events
   -interval int
       notify command interval (secs)
   -keep-blank-lines
@@ -101,13 +106,21 @@ Options:
       run command after template is regenerated (e.g restart xyz)
   -notify-output
       log the output(stdout/stderr) of notify command
-  -notify-container container-ID
-      container to send a signal to
-  -notify-signal signal
-      signal to send to the -notify-container. -1 to call docker restart. Defaults to 1 aka. HUP.
-      All available signals available on the [dockerclient](https://github.com/fsouza/go-dockerclient/blob/01804dec8a84d0a77e63611f2b62d33e9bb2b64a/signal.go)
   -notify-sighup container-ID
-      send HUP signal to container.  Equivalent to 'docker kill -s HUP container-ID', or `-notify-container container-ID -notify-signal 1`
+      send HUP signal to container.
+      Equivalent to 'docker kill -s HUP container-ID', or `-notify-container container-ID -notify-signal 1`.
+      You can pass this option multiple times to send HUP to multiple containers.
+  -notify-container container-ID
+      send -notify-signal signal (defaults to 1 / HUP) to container.
+      You can pass this option multiple times to notify multiple containers.
+  -notify-filter key=value
+      container filter for notification (e.g -notify-filter name=foo).
+      You can pass this option multiple times to combine filters with AND.
+      https://docs.docker.com/engine/reference/commandline/ps/#filter
+  -notify-signal signal
+      signal to send to the -notify-container and -notify-filter. -1 to call docker restart. Defaults to 1 aka. HUP.
+      All available signals available on the dockerclient
+      https://github.com/fsouza/go-dockerclient/blob/main/signal.go
   -only-exposed
       only include containers with exposed ports
   -only-published
@@ -115,11 +128,11 @@ Options:
   -include-stopped
       include stopped containers
   -tlscacert string
-      path to TLS CA certificate file (default "/Users/jason/.docker/machine/machines/default/ca.pem")
+      path to TLS CA certificate file (default "~/.docker/machine/machines/default/ca.pem")
   -tlscert string
-      path to TLS client certificate file (default "/Users/jason/.docker/machine/machines/default/cert.pem")
+      path to TLS client certificate file (default "~/.docker/machine/machines/default/cert.pem")
   -tlskey string
-      path to TLS client key file (default "/Users/jason/.docker/machine/machines/default/key.pem")
+      path to TLS client key file (default "~/.docker/machine/machines/default/key.pem")
   -tlsverify
       verify docker daemon's TLS certicate (default true)
   -version
@@ -379,33 +392,26 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 - [Functions from Sprig v3](https://masterminds.github.io/sprig/), except for those that have the same name as one of the following functions.
 - _`closest $array $value`_: Returns the longest matching substring in `$array` that matches `$value`
 - _`coalesce ...`_: Returns the first non-nil argument.
+- _`comment $delimiter $string`_: Returns `$string` with each line prefixed by `$delimiter` (helpful for debugging combined with Sprig `toPrettyJson`: `{{ toPrettyJson $ | comment "#" }}`).
 - _`contains $map $key`_: Returns `true` if `$map` contains `$key`. Takes maps from `string` to any type.
 - _`dir $path`_: Returns an array of filenames in the specified `$path`.
 - _`exists $path`_: Returns `true` if `$path` refers to an existing file or directory. Takes a string.
 - _`eval $templateName [$data]`_: Evaluates the named template like Go's built-in `template` action, but instead of writing out the result it returns the result as a string so that it can be post-processed. The `$data` argument may be omitted, which is equivalent to passing `nil`.
 - _`groupBy $containers $fieldPath`_: Groups an array of `RuntimeContainer` instances based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value, which must be a string. Returns a map from the value of the field path expression to an array of containers having that value. Containers that do not have a value for the field path in question are omitted.
+- _`groupByWithDefault $containers $fieldPath $defaultValue`_: Returns the same as `groupBy`, but containers that do not have a value for the field path are instead included in the map under the `$defaultValue` key.
 - _`groupByKeys $containers $fieldPath`_: Returns the same as `groupBy` but only returns the keys of the map.
 - _`groupByMulti $containers $fieldPath $sep`_: Like `groupBy`, but the string value specified by `$fieldPath` is first split by `$sep` into a list of strings. A container whose `$fieldPath` value contains a list of strings will show up in the map output under each of those strings.
-- _`groupByLabel $containers $label`_: Returns the same as `groupBy` but grouping by the given label's value.
+- _`groupByLabel $containers $label`_: Returns the same as `groupBy` but grouping by the given label's value. Containers that do not have the `$label` set are omitted.
+- _`groupByLabelWithDefault $containers $label $defaultValue`_: Returns the same as `groupBy` but grouping by the given label's value. Containers that do not have the `$label` set are included in the map under the `$defaultValue` key.
 - _`include $file`_: Returns content of `$file`, and empty string if file reading error.
 - _`intersect $slice1 $slice2`_: Returns the strings that exist in both string slices.
-- _`json $value`_: Returns the JSON representation of `$value` as a `string`.
 - _`fromYaml $string` / `mustFromYaml $string`_: Similar to [Sprig's `fromJson` / `mustFromJson`](https://github.com/Masterminds/sprig/blob/master/docs/defaults.md#fromjson-mustfromjson), but for YAML.
 - _`toYaml $dict` / `mustToYaml $dict`_: Similar to [Sprig's `toJson` / `mustToJson`](https://github.com/Masterminds/sprig/blob/master/docs/defaults.md#tojson-musttojson), but for YAML.
 - _`keys $map`_: Returns the keys from `$map`. If `$map` is `nil`, a `nil` is returned. If `$map` is not a `map`, an error will be thrown.
-- _`parseBool $string`_: parseBool returns the boolean value represented by the string. It accepts 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False. Any other value returns an error. Alias for [`strconv.ParseBool`](http://golang.org/pkg/strconv/#ParseBool)
-- _`replace $string $old $new $count`_: Replaces up to `$count` occurences of `$old` with `$new` in `$string`. Alias for [`strings.Replace`](http://golang.org/pkg/strings/#Replace)
-- _`sha1 $string`_: Returns the hexadecimal representation of the SHA1 hash of `$string`.
-- _`split $string $sep`_: Splits `$string` into a slice of substrings delimited by `$sep`. Alias for [`strings.Split`](http://golang.org/pkg/strings/#Split)
-- _`splitN $string $sep $count`_: Splits `$string` into a slice of substrings delimited by `$sep`, with number of substrings returned determined by `$count`. Alias for [`strings.SplitN`](https://golang.org/pkg/strings/#SplitN)
 - _`sortStringsAsc $strings`_: Returns a slice of strings `$strings` sorted in ascending order.
 - _`sortStringsDesc $strings`_: Returns a slice of strings `$strings` sorted in descending (reverse) order.
 - _`sortObjectsByKeysAsc $objects $fieldPath`_: Returns the array `$objects`, sorted in ascending order based on the values of a field path expression `$fieldPath`.
 - _`sortObjectsByKeysDesc $objects $fieldPath`_: Returns the array `$objects`, sorted in descending (reverse) order based on the values of a field path expression `$fieldPath`.
-- _`trimPrefix $prefix $string`_: If `$prefix` is a prefix of `$string`, return `$string` with `$prefix` trimmed from the beginning. Otherwise, return `$string` unchanged.
-- _`trimSuffix $suffix $string`_: If `$suffix` is a suffix of `$string`, return `$string` with `$suffix` trimmed from the end. Otherwise, return `$string` unchanged.
-- _`toLower $string`_: Replace capital letters in `$string` to lowercase.
-- _`toUpper $string`_: Replace lowercase letters in `$string` to uppercase.
 - _`when $condition $trueValue $falseValue`_: Returns the `$trueValue` when the `$condition` is `true` and the `$falseValue` otherwise
 - _`where $items $fieldPath $value`_: Filters an array or slice based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value. Returns an array of items having that value.
 - _`whereNot $items $fieldPath $value`_: Filters an array or slice based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value. Returns an array of items **not** having that value.
@@ -416,6 +422,30 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 - _`whereLabelExists $containers $label`_: Filters a slice of containers based on the existence of the label `$label`.
 - _`whereLabelDoesNotExist $containers $label`_: Filters a slice of containers based on the non-existence of the label `$label`.
 - _`whereLabelValueMatches $containers $label $pattern`_: Filters a slice of containers based on the existence of the label `$label` with values matching the regular expression `$pattern`.
+
+Sprig functions that have the same name as docker-gen function (but different behaviour) are made available with the `sprig` prefix:
+
+- _`sprigCoalesce ...`_: Alias for Sprig's [`coalesce`](https://masterminds.github.io/sprig/defaults.html).
+- _`sprigContains $string $string`_: Alias for Sprig's [`contains`](https://masterminds.github.io/sprig/strings.html).
+- _`sprigDir $path`_: Alias for Sprig's [`dir`](https://masterminds.github.io/sprig/paths.html).
+- _`sprigReplace $old $new $string`_: Alias for Sprig's [`replace`](https://masterminds.github.io/sprig/strings.html).
+- _`sprigSplit $sep $string`_: Alias for Sprig's [`split`](https://masterminds.github.io/sprig/string_slice.html).
+- _`sprigSplitn $sep $count $string"`_: Alias for Sprig's [`splitn`](https://masterminds.github.io/sprig/string_slice.html).
+
+Some functions are aliases for Go's [`strings`](https://pkg.go.dev/strings) package functions:
+
+- _`parseBool $string`_: Alias for [`strconv.ParseBool`](http://golang.org/pkg/strconv/#ParseBool). Returns the boolean value represented by `$string`. It accepts 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False. Any other value returns an error.
+- _`replace $string $old $new $count`_: Alias for [`strings.Replace`](http://golang.org/pkg/strings/#Replace). Replaces up to `$count` occurences of `$old` with `$new` in `$string`.
+- _`split $string $sep`_: Alias for [`strings.Split`](http://golang.org/pkg/strings/#Split). Splits `$string` into a slice of substrings delimited by `$sep`.
+- _`splitN $string $sep $count`_: Alias for [`strings.SplitN`](https://golang.org/pkg/strings/#SplitN). Splits `$string` into a slice of substrings delimited by `$sep`, with number of substrings returned determined by `$count`.
+- _`toLower $string`_: Alias for [`strings.ToLower`](https://pkg.go.dev/strings#ToLower). Replace capital letters in `$string` to lowercase.
+- _`toUpper $string`_: Alias for [`strings.ToUpper`](https://pkg.go.dev/strings#ToUpper). Replace lowercase letters in `$string` to uppercase.
+
+Those have been aliased to Sprig functions with the same behaviour as the original docker-gen function:
+
+- _`json $value`_: Alias for Sprig's [`mustToJson`](https://masterminds.github.io/sprig/defaults.html)
+- _`parseJson $string`_: Alias for Sprig's [`mustFromJson`](https://masterminds.github.io/sprig/defaults.html).
+- _`sha1 $string`_: Alias for Sprig's [`sha1sum`](https://masterminds.github.io/sprig/crypto.html).
 
 ---
 
@@ -480,10 +510,6 @@ make get-deps
 make
 ```
 
-### TODO
+### Powered by 
 
-- Add event status for handling start and stop events differently
-
-### License
-
-MIT
+[![GoLand logo](https://resources.jetbrains.com/storage/products/company/brand/logos/GoLand_icon.svg)](https://www.jetbrains.com/go/)

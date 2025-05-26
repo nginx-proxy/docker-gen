@@ -1,14 +1,11 @@
 package template
 
 import (
-	"bytes"
-	"crypto/sha1"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 )
 
@@ -57,6 +54,12 @@ func intersect(l1, l2 []string) []string {
 	return keys
 }
 
+// comment prefix each line of the source string with the provided comment delimiter string
+func comment(delimiter string, source string) string {
+	regexPattern := regexp.MustCompile(`(?m)^`)
+	return regexPattern.ReplaceAllString(source, delimiter)
+}
+
 func contains(input interface{}, key interface{}) bool {
 	if input == nil {
 		return false
@@ -72,29 +75,6 @@ func contains(input interface{}, key interface{}) bool {
 	}
 
 	return false
-}
-
-func hashSha1(input string) string {
-	h := sha1.New()
-	io.WriteString(h, input)
-	return fmt.Sprintf("%x", h.Sum(nil))
-}
-
-func marshalJson(input interface{}) (string, error) {
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-	if err := enc.Encode(input); err != nil {
-		return "", err
-	}
-	return strings.TrimSuffix(buf.String(), "\n"), nil
-}
-
-func unmarshalJson(input string) (interface{}, error) {
-	var v interface{}
-	if err := json.Unmarshal([]byte(input), &v); err != nil {
-		return nil, err
-	}
-	return v, nil
 }
 
 // arrayClosest find the longest matching substring in values
@@ -131,26 +111,6 @@ func coalesce(input ...interface{}) interface{} {
 		}
 	}
 	return nil
-}
-
-// trimPrefix returns a string without the prefix, if present
-func trimPrefix(prefix, s string) string {
-	return strings.TrimPrefix(s, prefix)
-}
-
-// trimSuffix returns a string without the suffix, if present
-func trimSuffix(suffix, s string) string {
-	return strings.TrimSuffix(s, suffix)
-}
-
-// toLower return the string in lower case
-func toLower(s string) string {
-	return strings.ToLower(s)
-}
-
-// toUpper return the string in upper case
-func toUpper(s string) string {
-	return strings.ToUpper(s)
 }
 
 // when returns the trueValue when the condition is true and the falseValue otherwise

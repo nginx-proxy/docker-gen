@@ -1,31 +1,20 @@
-name: Build and publish Docker images
+name: Build and publish Docker images on demand
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 0 * * 1"
-  push:
-    branches:
-      - main
-    tags:
-      - "*.*.*"
-    paths:
-      - ".dockerignore"
-      - ".github/workflows/build-publish.yml"
-      - "Dockerfile.alpine"
-      - "Dockerfile.debian"
-      - "go.mod"
-      - "go.sum"
-      - "**.go"
+    inputs:
+      image_tag:
+        description: "Image tag"
+        type: string
+        required: true
 
 jobs:
   multiarch-build:
-    name: Build and publish image
+    name: Build and publish ${{ matrix.base }} image with tag ${{ inputs.image_tag }}
     strategy:
       matrix:
         base: [alpine, debian]
     runs-on: ubuntu-latest
-    if: (github.event_name == 'schedule' && github.repository == 'nginx-proxy/docker-gen') || (github.event_name != 'schedule')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,16 +30,10 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/nginx-proxy/docker-gen
             nginxproxy/docker-gen
-            jwilder/docker-gen
           tags: |
-            type=semver,pattern={{version}},enable=${{ matrix.base == 'alpine' }}
-            type=semver,pattern={{major}}.{{minor}},enable=${{ matrix.base == 'alpine' }}
-            type=semver,suffix=-debian,pattern={{version}},enable=${{ matrix.base == 'debian' }}
-            type=semver,suffix=-debian,pattern={{major}}.{{minor}},enable=${{ matrix.base == 'debian' }}
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' && matrix.base == 'alpine' }}
-            type=raw,value=debian,enable=${{ github.ref == 'refs/heads/main' && matrix.base == 'debian' }}
+            type=raw,value=${{ inputs.image_tag }},enable=${{ matrix.base == 'alpine' }}
+            type=raw,value=${{ inputs.image_tag }},suffix=-debian,enable=${{ matrix.base == 'debian' }}
           labels: |
             org.opencontainers.image.authors=Nicolas Duchon <nicolas.duchon@gmail.com> (@buchdag), Jason Wilder
             org.opencontainers.image.version=${{ steps.docker-gen_version.outputs.VERSION }}

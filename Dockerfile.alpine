@@ -24,7 +24,7 @@ RUN set -eux; \
 	go env | grep -E 'OS=|ARCH=|ARM=|AMD64='; \
     go build -ldflags "-X main.buildVersion=${DOCKER_GEN_VERSION}" -o docker-gen ./cmd/docker-gen
 
-FROM alpine:3.21.3
+FROM alpine:3.22.0
 
 ARG DOCKER_GEN_VERSION
 ENV DOCKER_GEN_VERSION=${DOCKER_GEN_VERSION} \

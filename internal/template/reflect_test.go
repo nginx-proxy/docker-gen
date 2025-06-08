@@ -74,6 +74,28 @@ func TestDeepGet(t *testing.T) {
 			"...",
 			"foo",
 		},
+		{
+			"map with dot in key",
+			map[string]map[string]string{
+				"Foo": {
+					"foo.bar.baz.qux": "quux",
+				},
+			},
+			"Foo.foo.bar.baz.qux",
+			"quux",
+		},
+		{
+			"nested maps with dot in keys",
+			map[string]map[string]map[string]string{
+				"Foo": {
+					"foo.bar": {
+						"baz.qux": "quux",
+					},
+				},
+			},
+			"Foo.foo.bar.baz.qux",
+			"quux",
+		},
 		{"struct", s, "X", "foo"},
 		{"pointer to struct", sp, "X", "foo"},
 		{"double pointer to struct", &sp, ".X", nil},

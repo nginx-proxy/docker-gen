@@ -55,7 +55,7 @@ func TestSortObjectsByKeys(t *testing.T) {
 		Env: map[string]string{
 			"VIRTUAL_HOST": "bar.localhost",
 		},
-		ID: "9",
+		ID: "11",
 	}
 	o1 := &context.RuntimeContainer{
 		Created: time.Date(2021, 1, 2, 0, 0, 10, 0, time.UTC),

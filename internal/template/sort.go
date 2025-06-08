@@ -90,6 +90,14 @@ func getFieldAsString(item interface{}, path string) string {
 func (s sortableByKey) Less(i, j int) bool {
 	dataI := getFieldAsString(s.data[i], s.key)
 	dataJ := getFieldAsString(s.data[j], s.key)
+
+	if intI, err := strconv.ParseInt(dataI, 10, 64); err == nil {
+		if intJ, err := strconv.ParseInt(dataJ, 10, 64); err == nil {
+			// If both are integers, compare as integers
+			return intI < intJ
+		}
+	}
+
 	return dataI < dataJ
 }
 

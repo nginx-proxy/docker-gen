@@ -149,40 +149,8 @@ func removeBlankLines(reader io.Reader, writer io.Writer) {
 	bwriter.Flush()
 }
 
-func filterRunning(config config.Config, containers context.Context) context.Context {
-	if config.IncludeStopped {
-		return containers
-	} else {
-		filteredContainers := context.Context{}
-		for _, container := range containers {
-			if container.State.Running {
-				filteredContainers = append(filteredContainers, container)
-			}
-		}
-		return filteredContainers
-	}
-}
-
 func GenerateFile(config config.Config, containers context.Context) bool {
-	filteredRunningContainers := filterRunning(config, containers)
-	filteredContainers := context.Context{}
-	if config.OnlyPublished {
-		for _, container := range filteredRunningContainers {
-			if len(container.PublishedAddresses()) > 0 {
-				filteredContainers = append(filteredContainers, container)
-			}
-		}
-	} else if config.OnlyExposed {
-		for _, container := range filteredRunningContainers {
-			if len(container.Addresses) > 0 {
-				filteredContainers = append(filteredContainers, container)
-			}
-		}
-	} else {
-		filteredContainers = filteredRunningContainers
-	}
-
-	contents := executeTemplate(config.Template, filteredContainers)
+	contents := executeTemplate(config.Template, containers)
 
 	if !config.KeepBlankLines {
 		buf := new(bytes.Buffer)
@@ -201,8 +169,7 @@ func GenerateFile(config config.Config, containers context.Context) bool {
 			if err != nil {
 				log.Fatalf("Unable to write to dest file %s: %s\n", config.Dest, err)
 			}
-
-			log.Printf("Generated '%s' from %d containers", config.Dest, len(filteredContainers))
+			log.Printf("Generated '%s' from %d containers", config.Dest, len(containers))
 			return true
 		}
 		return false

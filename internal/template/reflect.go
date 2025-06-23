@@ -41,24 +41,7 @@ func deepGetImpl(v reflect.Value, path []string) interface{} {
 	case reflect.Struct:
 		return deepGetImpl(v.FieldByName(path[0]), path[1:])
 	case reflect.Map:
-		// If the first part of the path is a key in the map, we use it directly
-		if mapValue := v.MapIndex(reflect.ValueOf(path[0])); mapValue.IsValid() {
-			return deepGetImpl(mapValue, path[1:])
-		}
-
-		// If the first part of the path is not a key in the map, we try to find a valid key by joining the path parts
-		for i := 2; i <= len(path); i++ {
-			joinedPath := strings.Join(path[0:i], ".")
-			if mapValue := v.MapIndex(reflect.ValueOf(joinedPath)); mapValue.IsValid() {
-				if i == len(path) {
-					return mapValue.Interface()
-				}
-				return deepGetImpl(mapValue, path[i:])
-			}
-		}
-
-		log.Printf("unable to find key from the path expression %s in map %v\n", strings.Join(path, "."), v)
-		return nil
+		return deepGetImpl(v.MapIndex(reflect.ValueOf(path[0])), path[1:])
 	case reflect.Slice, reflect.Array:
 		i, err := parseAllocateInt(path[0])
 		if err != nil {

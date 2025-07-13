@@ -29,7 +29,8 @@ var groupByContainers = []*context.RuntimeContainer{
 		ID: "3",
 	},
 	{
-		ID: "4",
+		Env: map[string]string{},
+		ID:  "4",
 	},
 }
 
@@ -169,6 +170,10 @@ func TestGroupByMulti(t *testing.T) {
 				"VIRTUAL_HOST": "demo2.localhost",
 			},
 			ID: "3",
+		},
+		{
+			Env: map[string]string{},
+			ID:  "4",
 		},
 	}
 

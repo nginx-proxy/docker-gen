@@ -55,12 +55,18 @@ func TestSortObjectsByKeys(t *testing.T) {
 		Env: map[string]string{
 			"VIRTUAL_HOST": "bar.localhost",
 		},
+		Labels: map[string]string{
+			"com.docker.compose.container_number": "1",
+		},
 		ID: "11",
 	}
 	o1 := &context.RuntimeContainer{
 		Created: time.Date(2021, 1, 2, 0, 0, 10, 0, time.UTC),
 		Env: map[string]string{
 			"VIRTUAL_HOST": "foo.localhost",
+		},
+		Labels: map[string]string{
+			"com.docker.compose.container_number": "11",
 		},
 		ID: "1",
 	}
@@ -69,12 +75,16 @@ func TestSortObjectsByKeys(t *testing.T) {
 		Env: map[string]string{
 			"VIRTUAL_HOST": "baz.localhost",
 		},
-		ID: "3",
+		Labels: map[string]string{},
+		ID:     "3",
 	}
 	o3 := &context.RuntimeContainer{
 		Created: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
 		Env:     map[string]string{},
-		ID:      "8",
+		Labels: map[string]string{
+			"com.docker.compose.container_number": "2",
+		},
+		ID: "8",
 	}
 	containers := []*context.RuntimeContainer{o0, o1, o2, o3}
 
@@ -85,9 +95,11 @@ func TestSortObjectsByKeys(t *testing.T) {
 		want []interface{}
 	}{
 		{"Asc simple", sortObjectsByKeysAsc, "ID", []interface{}{o1, o2, o3, o0}},
-		{"Asc complex", sortObjectsByKeysAsc, "Env.VIRTUAL_HOST", []interface{}{o3, o0, o2, o1}},
 		{"Desc simple", sortObjectsByKeysDesc, "ID", []interface{}{o0, o3, o2, o1}},
+		{"Asc complex", sortObjectsByKeysAsc, "Env.VIRTUAL_HOST", []interface{}{o3, o0, o2, o1}},
 		{"Desc complex", sortObjectsByKeysDesc, "Env.VIRTUAL_HOST", []interface{}{o1, o2, o0, o3}},
+		{"Asc complex w/ dots in key name", sortObjectsByKeysAsc, "Labels.com.docker.compose.container_number", []interface{}{o2, o0, o3, o1}},
+		{"Desc complex w/ dots in key name", sortObjectsByKeysDesc, "Labels.com.docker.compose.container_number", []interface{}{o1, o3, o0, o2}},
 		{"Asc time", sortObjectsByKeysAsc, "Created", []interface{}{o3, o0, o2, o1}},
 		{"Desc time", sortObjectsByKeysDesc, "Created", []interface{}{o1, o2, o0, o3}},
 	} {

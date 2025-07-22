@@ -63,6 +63,14 @@ func TestDeepGet(t *testing.T) {
 		want interface{}
 	}{
 		{
+			"map of string",
+			map[string]string{
+				"Env": "quux",
+			},
+			"Env",
+			"quux",
+		},
+		{
 			"map key empty string",
 			map[string]map[string]map[string]string{
 				"": {
@@ -73,6 +81,28 @@ func TestDeepGet(t *testing.T) {
 			},
 			"...",
 			"foo",
+		},
+		{
+			"map with dot in key",
+			map[string]map[string]string{
+				"Env": {
+					"foo.bar.baz.qux": "quux",
+				},
+			},
+			"Env.foo.bar.baz.qux",
+			"quux",
+		},
+		{
+			"nested maps with dot in keys",
+			map[string]map[string]map[string]string{
+				"Env": {
+					"foo.bar": {
+						"baz.qux": "quux",
+					},
+				},
+			},
+			"Env.foo.bar.baz.qux",
+			"quux",
 		},
 		{"struct", s, "X", "foo"},
 		{"pointer to struct", sp, "X", "foo"},

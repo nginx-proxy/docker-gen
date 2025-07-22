@@ -47,13 +47,19 @@ func deepGetImpl(v reflect.Value, path []string) interface{} {
 		}
 
 		// If the first part of the path is not a key in the map, we try to find a valid key by joining the path parts
-		for i := 2; i <= len(path); i++ {
-			joinedPath := strings.Join(path[0:i], ".")
+		var builder strings.Builder
+		for i, pathPart := range path {
+			if i > 0 {
+				builder.WriteString(".")
+			}
+			builder.WriteString(pathPart)
+			joinedPath := builder.String()
+
 			if mapValue := v.MapIndex(reflect.ValueOf(joinedPath)); mapValue.IsValid() {
 				if i == len(path) {
 					return mapValue.Interface()
 				}
-				return deepGetImpl(mapValue, path[i:])
+				return deepGetImpl(mapValue, path[i+1:])
 			}
 		}
 

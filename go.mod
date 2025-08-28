@@ -6,7 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.3.2
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/fsouza/go-dockerclient v1.12.2
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 

@@ -34,6 +34,7 @@ var (
 	onlyExposed           bool
 	onlyPublished         bool
 	includeStopped        bool
+	containerFilter       mapstringslice = make(mapstringslice)
 	configFiles           stringslice
 	configs               config.ConfigFile
 	eventFilter           mapstringslice = mapstringslice{"event": {"start", "stop", "die", "health_status"}}
@@ -78,7 +79,7 @@ Options:`)
 	println(`
 Arguments:
   template - path to a template to generate
-  dest - path to a write the template.  If not specfied, STDOUT is used`)
+  dest - path to write the template to. If not specfied, STDOUT is used`)
 
 	println(`
 Environment Variables:
@@ -98,21 +99,35 @@ func loadConfig(file string) error {
 }
 
 func initFlags() {
-
 	certPath := filepath.Join(os.Getenv("DOCKER_CERT_PATH"))
 	if certPath == "" {
 		certPath = filepath.Join(os.Getenv("HOME"), ".docker")
 	}
+
 	flag.BoolVar(&version, "version", false, "show version")
+
+	// General configuration options
 	flag.BoolVar(&watch, "watch", false, "watch for container changes")
 	flag.StringVar(&wait, "wait", "", "minimum and maximum durations to wait (e.g. \"500ms:2s\") before triggering generate")
-	flag.BoolVar(&onlyExposed, "only-exposed", false, "only include containers with exposed ports")
+	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
+	flag.BoolVar(&keepBlankLines, "keep-blank-lines", false, "keep blank lines in the output file")
 
+	// Containers filtering options
+	flag.BoolVar(&onlyExposed, "only-exposed", false,
+		"only include containers with exposed ports. Bypassed when providing a container exposed filter (-container-filter exposed=foo).")
 	flag.BoolVar(&onlyPublished, "only-published", false,
-		"only include containers with published ports (implies -only-exposed)")
-	flag.BoolVar(&includeStopped, "include-stopped", false, "include stopped containers")
-	flag.BoolVar(&notifyOutput, "notify-output", false, "log the output(stdout/stderr) of notify command")
+		"only include containers with published ports (implies -only-exposed). Bypassed when providing a container published filter (-container-filter published=foo).")
+	flag.BoolVar(&includeStopped, "include-stopped", false,
+		"include stopped containers. Bypassed when providing a container status filter (-container-filter status=foo).")
+	flag.Var(&containerFilter, "container-filter",
+		"container filter for inclusion by docker-gen. You can pass this option multiple times to combine filters with AND. https://docs.docker.com/engine/reference/commandline/ps/#filter")
+
+	// Command notification options
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated (e.g `restart xyz`)")
+	flag.BoolVar(&notifyOutput, "notify-output", false, "log the output(stdout/stderr) of notify command")
+	flag.IntVar(&interval, "interval", 0, "notify command interval (secs)")
+
+	// Containers notification options
 	flag.Var(&sighupContainerID, "notify-sighup",
 		"send HUP signal to container. Equivalent to docker kill -s HUP `container-ID`. You can pass this option multiple times to send HUP to multiple containers.")
 	flag.Var(&notifyContainerID, "notify-container",
@@ -121,9 +136,8 @@ func initFlags() {
 		"container filter for notification (e.g -notify-filter name=foo). You can pass this option multiple times to combine filters with AND. https://docs.docker.com/engine/reference/commandline/ps/#filter")
 	flag.IntVar(&notifyContainerSignal, "notify-signal", int(docker.SIGHUP),
 		"signal to send to the notify-container and notify-filter. Defaults to SIGHUP")
-	flag.Var(&configFiles, "config", "config files with template directives. Config files will be merged if this option is specified multiple times.")
-	flag.IntVar(&interval, "interval", 0, "notify command interval (secs)")
-	flag.BoolVar(&keepBlankLines, "keep-blank-lines", false, "keep blank lines in the output file")
+
+	// Docker API endpoint configuration options
 	flag.StringVar(&endpoint, "endpoint", "", "docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock")
 	flag.StringVar(&tlsCert, "tlscert", filepath.Join(certPath, "cert.pem"), "path to TLS client certificate file")
 	flag.StringVar(&tlsKey, "tlskey", filepath.Join(certPath, "key.pem"), "path to TLS client key file")
@@ -177,9 +191,7 @@ func main() {
 			NotifyCmd:        notifyCmd,
 			NotifyOutput:     notifyOutput,
 			NotifyContainers: make(map[string]int),
-			OnlyExposed:      onlyExposed,
-			OnlyPublished:    onlyPublished,
-			IncludeStopped:   includeStopped,
+			ContainerFilter:  containerFilter,
 			Interval:         interval,
 			KeepBlankLines:   keepBlankLines,
 		}
@@ -193,15 +205,28 @@ func main() {
 			cfg.NotifyContainersFilter = notifyContainerFilter
 			cfg.NotifyContainersSignal = notifyContainerSignal
 		}
+		if len(cfg.ContainerFilter["status"]) == 0 {
+			if includeStopped {
+				cfg.ContainerFilter["status"] = []string{
+					"created",
+					"restarting",
+					"running",
+					"removing",
+					"paused",
+					"exited",
+					"dead",
+				}
+			} else {
+				cfg.ContainerFilter["status"] = []string{"running"}
+			}
+		}
+		if onlyPublished && len(cfg.ContainerFilter["publish"]) == 0 {
+			cfg.ContainerFilter["publish"] = []string{"1-65535"}
+		} else if onlyExposed && len(cfg.ContainerFilter["expose"]) == 0 {
+			cfg.ContainerFilter["expose"] = []string{"1-65535"}
+		}
 		configs = config.ConfigFile{
 			Config: []config.Config{cfg},
-		}
-	}
-
-	all := false
-	for _, config := range configs.Config {
-		if config.IncludeStopped {
-			all = true
 		}
 	}
 
@@ -211,7 +236,6 @@ func main() {
 		TLSCert:     tlsCert,
 		TLSCACert:   tlsCaCert,
 		TLSVerify:   tlsVerify,
-		All:         all,
 		EventFilter: eventFilter,
 		ConfigFile:  configs,
 	})

@@ -91,6 +91,8 @@ Options:
       config files with template directives. Config files will be merged if this option is specified multiple times. (default [])
   -endpoint string
       docker api endpoint (tcp|unix://..). Default unix:///var/run/docker.sock
+  -swarm-node value
+      docker api endpoints from which to listen for events. Default equals to value of `endpoint` argument
   -event-filter value
       additional filter for event watched by docker-gen (e.g -event-filter event=connect -event-filter event=disconnect).
       You can pass this option multiple times to combine filters.

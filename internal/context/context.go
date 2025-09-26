@@ -105,16 +105,6 @@ func (r *RuntimeContainer) Equals(o RuntimeContainer) bool {
 	return r.ID == o.ID && r.Image == o.Image
 }
 
-func (r *RuntimeContainer) PublishedAddresses() []Address {
-	mapped := []Address{}
-	for _, address := range r.Addresses {
-		if address.HostPort != "" {
-			mapped = append(mapped, address)
-		}
-	}
-	return mapped
-}
-
 type DockerImage struct {
 	Registry   string
 	Repository string

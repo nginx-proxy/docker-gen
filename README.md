@@ -156,6 +156,8 @@ Environment Variables:
   DOCKER_HOST - default value for -endpoint
   DOCKER_CERT_PATH - directory path containing key.pem, cert.pem and ca.pem
   DOCKER_TLS_VERIFY - enable client TLS verification
+  DOCKER_CONTAINER_FILTERS - comma separated list of container filters for inclusion by docker-gen.
+    Filters supplied through this variable override filters supplied through the -container-filter options.
 ```
 
 If no `<dest>` file is specified, the output is sent to stdout. Mainly useful for debugging.

@@ -86,6 +86,8 @@ Environment Variables:
   DOCKER_HOST - default value for -endpoint
   DOCKER_CERT_PATH - directory path containing key.pem, cert.pem and ca.pem
   DOCKER_TLS_VERIFY - enable client TLS verification
+  DOCKER_CONTAINER_FILTERS - comma separated list of container filters for inclusion by docker-gen.
+    Filters supplied through this variable override filters supplied through the -container-filter options.
 `)
 	println(`For more information, see https://github.com/nginx-proxy/docker-gen`)
 }
@@ -149,6 +151,24 @@ func initFlags() {
 
 	flag.Usage = usage
 	flag.Parse()
+
+	// override containerFilter with DOCKER_CONTAINER_FILTERS environment variable
+	if filtersEnvVar, found := os.LookupEnv("DOCKER_CONTAINER_FILTERS"); found && filtersEnvVar != "" {
+		var nonBlankFilters []string
+
+		for filter := range strings.SplitSeq(filtersEnvVar, ",") {
+			if strings.TrimSpace(filter) != "" {
+				nonBlankFilters = append(nonBlankFilters, filter)
+			}
+		}
+
+		if len(nonBlankFilters) > 0 {
+			containerFilter = make(mapstringslice)
+			for _, filter := range nonBlankFilters {
+				containerFilter.Set(filter)
+			}
+		}
+	}
 }
 
 func main() {

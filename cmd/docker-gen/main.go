@@ -123,13 +123,6 @@ func initFlags() {
 		"include stopped containers. Bypassed when providing a container status filter (-container-filter status=foo).")
 	flag.Var(&containerFilter, "container-filter",
 		"container filter for inclusion by docker-gen. You can pass this option multiple times to combine filters with AND. https://docs.docker.com/engine/reference/commandline/ps/#filter")
-	// override containerFilter with DOCKER_CONTAINER_FILTERS environment variable
-	if filters := strings.Split(os.Getenv("DOCKER_CONTAINER_FILTERS"), ","); len(filters) > 0 && filters[0] != "" {
-		containerFilter = make(mapstringslice)
-		for _, filter := range filters {
-			containerFilter.Set(filter)
-		}
-	}
 
 	// Command notification options
 	flag.StringVar(&notifyCmd, "notify", "", "run command after template is regenerated (e.g `restart xyz`)")
@@ -158,6 +151,24 @@ func initFlags() {
 
 	flag.Usage = usage
 	flag.Parse()
+
+	// override containerFilter with DOCKER_CONTAINER_FILTERS environment variable
+	if filtersEnvVar, found := os.LookupEnv("DOCKER_CONTAINER_FILTERS"); found && filtersEnvVar != "" {
+		var nonBlankFilters []string
+
+		for filter := range strings.SplitSeq(filtersEnvVar, ",") {
+			if strings.TrimSpace(filter) != "" {
+				nonBlankFilters = append(nonBlankFilters, filter)
+			}
+		}
+
+		if len(nonBlankFilters) > 0 {
+			containerFilter = make(mapstringslice)
+			for _, filter := range nonBlankFilters {
+				containerFilter.Set(filter)
+			}
+		}
+	}
 }
 
 func main() {

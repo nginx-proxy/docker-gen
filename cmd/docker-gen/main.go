@@ -87,7 +87,7 @@ Environment Variables:
   DOCKER_CERT_PATH - directory path containing key.pem, cert.pem and ca.pem
   DOCKER_TLS_VERIFY - enable client TLS verification
   DOCKER_CONTAINER_FILTERS - comma separated list of container filters for inclusion by docker-gen.
-    Filters supplied through this variable override filters supplied through the -container-filter options.
+    Filters supplied through this variable are ignored if -container-filter is provided.
 `)
 	println(`For more information, see https://github.com/nginx-proxy/docker-gen`)
 }
@@ -152,20 +152,11 @@ func initFlags() {
 	flag.Usage = usage
 	flag.Parse()
 
-	// override containerFilter with DOCKER_CONTAINER_FILTERS environment variable
-	if filtersEnvVar, found := os.LookupEnv("DOCKER_CONTAINER_FILTERS"); found && filtersEnvVar != "" {
-		var nonBlankFilters []string
-
+	// set containerFilter with DOCKER_CONTAINER_FILTERS if it's set and no -container-filter option was provided
+	if filtersEnvVar, found := os.LookupEnv("DOCKER_CONTAINER_FILTERS"); found && len(containerFilter) == 0 {
 		for filter := range strings.SplitSeq(filtersEnvVar, ",") {
-			if strings.TrimSpace(filter) != "" {
-				nonBlankFilters = append(nonBlankFilters, filter)
-			}
-		}
-
-		if len(nonBlankFilters) > 0 {
-			containerFilter = make(mapstringslice)
-			for _, filter := range nonBlankFilters {
-				containerFilter.Set(filter)
+			if trimmedFilter := strings.TrimSpace(filter); trimmedFilter != "" {
+				containerFilter.Set(trimmedFilter)
 			}
 		}
 	}

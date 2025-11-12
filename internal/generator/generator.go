@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -217,6 +218,7 @@ func (g *generator) generateFromEvents() {
 				g.runNotifyCmd(cfg)
 				g.sendSignalToContainers(cfg)
 				g.sendSignalToFilteredContainers(cfg)
+				g.sendCmdToContainers(cfg)
 			}
 		}(cfg)
 	}
@@ -385,6 +387,54 @@ func (g *generator) sendSignalToFilteredContainers(config config.Config) {
 
 	for _, container := range containers {
 		g.sendSignalToContainer(container.ID, config.NotifyContainersSignal)
+	}
+}
+
+func (g *generator) sendCmdToContainers(config config.Config) {
+	if len(config.NotifyContainersCmd) < 1 {
+		return
+	}
+	for container, cmd := range config.NotifyContainersCmd {
+		log.Printf("Sending container '%s' cmd '%s'", container, cmd)
+
+		createOpts := docker.CreateExecOptions{
+			Container:    container,
+			AttachStdout: true,
+			AttachStderr: true,
+			Tty:          true,
+			Cmd:          cmd,
+		}
+
+		execObj, err := g.Client.CreateExec(createOpts)
+		if err != nil {
+			log.Printf("Error creating cmd execution: %s", err)
+			continue
+		}
+
+		var stdout bytes.Buffer
+
+		startOpts := docker.StartExecOptions{
+			OutputStream: &stdout,
+			Tty:          true,
+			RawTerminal:  true,
+		}
+
+		err := g.Client.StartExec(execObj.ID, startOpts)
+		if err != nil {
+			log.Printf("Error executing command for container %s: %v", container, execErr)
+			continue
+		}
+
+		inspect, err := g.Client.InspectExec(execObj.ID)
+		if err != nil {
+			log.Printf("Error inspecting exec for container %s: %v", container, err)
+			continue
+		}
+		if inspect.ExitCode != 0 {
+			log.Printf("Command failed on container %s. Exit Code: %d. Output: %s", container, inspect.ExitCode, stdout.String())
+		} else {
+			log.Printf("Command executed successfully on container %s. Output: %s", container, stdout.String())
+		}
 	}
 }
 

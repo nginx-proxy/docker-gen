@@ -30,8 +30,8 @@ There are three common ways to run docker-gen:
 Download the version you need, untar, and install to your PATH.
 
 ```console
-wget https://github.com/nginx-proxy/docker-gen/releases/download/0.12.0/docker-gen-linux-amd64-0.12.0.tar.gz
-tar xvzf docker-gen-linux-amd64-0.12.0.tar.gz
+wget https://github.com/nginx-proxy/docker-gen/releases/download/0.16.0/docker-gen-linux-amd64-0.16.0.tar.gz
+tar xvzf docker-gen-linux-amd64-0.16.0.tar.gz
 ./docker-gen
 ```
 

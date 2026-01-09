@@ -79,6 +79,7 @@ func NewGenerator(gc GeneratorConfig) (*generator, error) {
 
 func (g *generator) Generate() error {
 	g.generateFromContainers()
+	//	g.generateFromServices()
 	g.generateAtInterval()
 	g.generateFromEvents()
 	g.generateFromSignals()
@@ -123,6 +124,14 @@ func (g *generator) generateFromSignals() {
 
 func (g *generator) generateFromContainers() {
 	for _, config := range g.Configs.Config {
+		services, err := g.getServices(config)
+		if err != nil {
+			log.Printf("Error listing services: %s\n", err)
+			return
+		}
+
+		context.SetServices(services)
+
 		containers, err := g.getContainers(config)
 		if err != nil {
 			log.Printf("Error listing containers: %s\n", err)
@@ -158,6 +167,14 @@ func (g *generator) generateAtInterval() {
 			for {
 				select {
 				case <-ticker.C:
+					services, err := g.getServices(cfg)
+					if err != nil {
+						log.Printf("Error listing services: %s\n", err)
+						return
+					}
+
+					context.SetServices(services)
+
 					containers, err := g.getContainers(cfg)
 					if err != nil {
 						log.Printf("Error listing containers: %s\n", err)
@@ -204,6 +221,15 @@ func (g *generator) generateFromEvents() {
 			defer g.wg.Done()
 			debouncedChan := newDebounceChannel(watcher, cfg.Wait)
 			for range debouncedChan {
+
+				services, err := g.getServices(cfg)
+				if err != nil {
+					log.Printf("Error listing services: %s\n", err)
+					return
+				}
+
+				context.SetServices(services)
+
 				containers, err := g.getContainers(cfg)
 				if err != nil {
 					log.Printf("Error listing containers: %s\n", err)
@@ -386,6 +412,59 @@ func (g *generator) sendSignalToFilteredContainers(config config.Config) {
 	for _, container := range containers {
 		g.sendSignalToContainer(container.ID, config.NotifyContainersSignal)
 	}
+}
+
+func (g *generator) getServices(config config.Config) ([]*context.RuntimeService, error) {
+	apiInfo, err := g.Client.Info()
+	if err != nil {
+		log.Printf("Error retrieving docker server info: %s\n", err)
+	} else {
+		context.SetServerInfo(apiInfo)
+	}
+	apiServices, err := g.Client.ListServices(docker.ListServicesOptions{
+		Status:  true,
+		Filters: nil,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	services := []*context.RuntimeService{}
+	for _, apiService := range apiServices {
+
+		runtimeService := &context.RuntimeService{
+			Name:   apiService.Spec.Name,
+			ID:     apiService.ID,
+			Labels: apiService.Spec.Labels,
+		}
+
+		if apiService.UpdateStatus != nil {
+			runtimeService.State = string(apiService.UpdateStatus.State)
+		} else {
+			runtimeService.State = ""
+		}
+
+		if apiService.Spec.EndpointSpec != nil {
+			runtimeService.EndpointMode = string(apiService.Spec.EndpointSpec.Mode)
+		} else {
+			runtimeService.EndpointMode = ""
+		}
+
+		if apiService.Spec.Mode.Replicated != nil {
+			runtimeService.Mode = "replicated"
+			runtimeService.Replicas = *apiService.Spec.Mode.Replicated.Replicas
+		} else if apiService.Spec.Mode.Global != nil {
+			runtimeService.Mode = "global"
+			runtimeService.Replicas = 0
+		} else {
+			runtimeService.Mode = ""
+			runtimeService.Replicas = 0
+		}
+
+		services = append(services, runtimeService)
+	}
+
+	return services, nil
 }
 
 func (g *generator) getContainers(config config.Config) ([]*context.RuntimeContainer, error) {

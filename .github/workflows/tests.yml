@@ -19,8 +19,8 @@ jobs:
     strategy:
       matrix:
         go-version:
-          - "1.24"
           - "1.25"
+          - "1.26"
         os:
           - macos
           - ubuntu

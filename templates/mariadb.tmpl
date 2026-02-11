@@ -1,0 +1,13 @@
+#!/bin/bash
+
+{{ range $index, $value := . }}
+
+	{{ if $value.Env.DB_HOST }}
+# TODO: Save password from dbserver startup into files then read config
+/usr/bin/mysql -h{{$value.Env.DB_HOST}} -ppass -e '
+		CREATE USER IF NOT EXISTS `{{$value.Env.DB_USER}}` IDENTIFIED BY "{{$value.Env.DB_PASS}}";
+		CREATE SCHEMA IF NOT EXISTS `{{$value.Env.DB_SCHEMA}}`;
+		GRANT ALL ON `{{$value.Env.DB_SCHEMA}}`.* TO `{{$value.Env.DB_USER}}`@`%`;
+'
+	{{ end }}
+{{end}}

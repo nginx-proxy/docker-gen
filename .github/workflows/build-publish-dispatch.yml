@@ -65,7 +65,7 @@ jobs:
 
       - name: Build and push the image
         id: docker_build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           build-args: DOCKER_GEN_VERSION=${{ steps.docker-gen_version.outputs.VERSION }}

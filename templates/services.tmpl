@@ -1,0 +1,11 @@
+---{{ .Docker.Name }}---
+{{range $key, $value := .Service}}
+********************
+{{ if eq $value.Labels.ingress "true"}}
+ingress : {{ $value.Labels.ingress }}
+{{ $value.Name }} / {{ $value.EndpointMode }} / {{ $value.Replicas }} / {{ $value.State }}
+    {{range $labelKey, $labelValue := $value.Labels}}
+    {{ $labelKey }} = {{ $labelValue }}
+    {{end}}
+{{ end }}
+{{end}}

@@ -223,9 +223,18 @@ dest = "/etc/nginx/conf.d/default.conf"
 watch = true
 wait = "500ms:2s"
 
+[[config]]
+template = "/etc/docker-gen/templates/cnames.tmpl"
+dest = "etc/dnsmasq.d/05-pihole-custom-cname.conf"
+watch = true
+wait = "500ms:2s"
+
 [config.NotifyContainers]
 nginx = 1  # 1 is a signal number to be sent; here SIGHUP
 e75a60548dc9 = 1  # a key can be either container name (nginx) or ID
+
+[config.NotifyContainersCmd]
+pihole = ["pihole", "reloaddns"]
 ```
 
 ---

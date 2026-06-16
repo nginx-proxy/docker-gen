@@ -13,9 +13,10 @@ import (
 )
 
 var (
-	mu         sync.RWMutex
-	dockerInfo Docker
-	dockerEnv  *docker.Env
+	mu            sync.RWMutex
+	dockerInfo    Docker
+	dockerEnv     *docker.Env
+	dockerService []*RuntimeService
 )
 
 type Context []*RuntimeContainer
@@ -28,6 +29,18 @@ func (c *Context) Docker() Docker {
 	mu.RLock()
 	defer mu.RUnlock()
 	return dockerInfo
+}
+
+func (c *Context) Service() []*RuntimeService {
+	mu.RLock()
+	defer mu.RUnlock()
+	return dockerService
+}
+
+func SetServices(services []*RuntimeService) {
+	mu.Lock()
+	defer mu.Unlock()
+	dockerService = services
 }
 
 func SetServerInfo(d *docker.DockerInfo) {
@@ -78,6 +91,16 @@ type State struct {
 
 type Health struct {
 	Status string
+}
+
+type RuntimeService struct {
+	ID           string
+	Name         string
+	Labels       map[string]string
+	Replicas     uint64
+	EndpointMode string
+	Mode         string
+	State        string
 }
 
 type RuntimeContainer struct {
@@ -147,6 +170,10 @@ type Docker struct {
 	OperatingSystem    string
 	Architecture       string
 	CurrentContainerID string
+}
+
+type Service struct {
+	Name string
 }
 
 // GetCurrentContainerID attempts to extract the current container ID from the provided file paths.

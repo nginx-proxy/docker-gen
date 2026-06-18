@@ -55,6 +55,7 @@ func SetDockerEnv(d *docker.Env) {
 type Network struct {
 	IP                  string
 	Name                string
+	Aliases             []string
 	Gateway             string
 	EndpointID          string
 	IPv6Gateway         string

@@ -460,6 +460,7 @@ func (g *generator) getContainers(config config.Config) ([]*context.RuntimeConta
 			network := context.Network{
 				IP:                  v.IPAddress,
 				Name:                k,
+				Aliases:             append([]string{}, v.Aliases...),
 				Gateway:             v.Gateway,
 				EndpointID:          v.EndpointID,
 				IPv6Gateway:         v.IPv6Gateway,

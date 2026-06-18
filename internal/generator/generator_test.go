@@ -18,6 +18,7 @@ import (
 	"github.com/nginx-proxy/docker-gen/internal/config"
 	"github.com/nginx-proxy/docker-gen/internal/context"
 	"github.com/nginx-proxy/docker-gen/internal/dockerclient"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGenerateFromEvents(t *testing.T) {
@@ -214,5 +215,34 @@ func TestGenerateFromEvents(t *testing.T) {
 		if string(value) != expected {
 			t.Errorf("expected: %s. got: %s", expected, value)
 		}
+	}
+}
+
+func TestSortNetworks(t *testing.T) {
+	for _, tc := range []struct {
+		desc string
+		in   []context.Network
+		want []context.Network
+	}{
+		{
+			desc: "multiple unsorted",
+			in:   []context.Network{{Name: "frontend"}, {Name: "bridge"}, {Name: "app_net"}},
+			want: []context.Network{{Name: "app_net"}, {Name: "bridge"}, {Name: "frontend"}},
+		},
+		{
+			desc: "single element",
+			in:   []context.Network{{Name: "bridge"}},
+			want: []context.Network{{Name: "bridge"}},
+		},
+		{
+			desc: "empty",
+			in:   []context.Network{},
+			want: []context.Network{},
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			sortNetworks(tc.in)
+			assert.Equal(t, tc.want, tc.in)
+		})
 	}
 }

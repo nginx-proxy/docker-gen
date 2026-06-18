@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"sort"
 	"strings"
 	"sync"
 	"syscall"
@@ -388,6 +389,13 @@ func (g *generator) sendSignalToFilteredContainers(config config.Config) {
 	}
 }
 
+// sortNetworks sorts networks in place by Name (ascending).
+func sortNetworks(networks []context.Network) {
+	sort.Slice(networks, func(i, j int) bool {
+		return networks[i].Name < networks[j].Name
+	})
+}
+
 func (g *generator) getContainers(config config.Config) ([]*context.RuntimeContainer, error) {
 	apiInfo, err := g.Client.Info()
 	if err != nil {
@@ -473,6 +481,8 @@ func (g *generator) getContainers(config config.Config) ([]*context.RuntimeConta
 			runtimeContainer.Networks = append(runtimeContainer.Networks,
 				network)
 		}
+
+		sortNetworks(runtimeContainer.Networks)
 
 		for k, v := range container.Volumes {
 			runtimeContainer.Volumes[k] = context.Volume{

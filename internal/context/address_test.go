@@ -114,3 +114,50 @@ func TestGenerateContainerAddressesWithNoPorts(t *testing.T) {
 		HostPort:     "",
 	})
 }
+
+func TestSortAddresses(t *testing.T) {
+	addresses := []Address{
+		{IP: "10.0.0.10", Port: "8080", Proto: "tcp"},
+		{IP: "10.0.0.10", Port: "80", Proto: "tcp"},
+		{IP: "10.0.0.10", Port: "443", Proto: "tcp"},
+		{IP: "10.0.0.10", Port: "53", Proto: "udp"},
+		{IP: "10.0.0.10", Port: "53", Proto: "tcp"},
+	}
+
+	// Port sorts numerically (not lexically: "443" must not sort before "80"),
+	// with Proto as the tie-breaker for equal ports (53/tcp before 53/udp).
+	want := []Address{
+		{IP: "10.0.0.10", Port: "53", Proto: "tcp"},
+		{IP: "10.0.0.10", Port: "53", Proto: "udp"},
+		{IP: "10.0.0.10", Port: "80", Proto: "tcp"},
+		{IP: "10.0.0.10", Port: "443", Proto: "tcp"},
+		{IP: "10.0.0.10", Port: "8080", Proto: "tcp"},
+	}
+
+	sortAddresses(addresses)
+	assert.Equal(t, want, addresses)
+}
+
+func TestGetContainerAddressesSorted(t *testing.T) {
+	testContainer := &docker.Container{
+		Config: &docker.Config{
+			ExposedPorts: map[docker.Port]struct{}{},
+		},
+		NetworkSettings: &docker.NetworkSettings{
+			IPAddress: "10.0.0.10",
+			Ports:     map[docker.Port][]docker.PortBinding{},
+		},
+	}
+	// Insert ports out of numeric order; the map iteration order is random but
+	// GetContainerAddresses must return them deterministically sorted by port.
+	testContainer.NetworkSettings.Ports[httpTestPort] = []docker.PortBinding{} // 8080
+	testContainer.NetworkSettings.Ports[httpPort] = []docker.PortBinding{}     // 80
+	testContainer.NetworkSettings.Ports[httpsPort] = []docker.PortBinding{}    // 443
+
+	addresses := GetContainerAddresses(testContainer)
+	ports := make([]string, len(addresses))
+	for i, a := range addresses {
+		ports[i] = a.Port
+	}
+	assert.Equal(t, []string{"80", "443", "8080"}, ports)
+}

@@ -218,7 +218,8 @@ func matchContainerID(regex, lines string) string {
 	// https://www.kernel.org/doc/Documentation/filesystems/proc.txt section 3.5
 	re := regexp.MustCompilePOSIX("^[0-9]+ [0-9]+ [0-9]+:[0-9]+ /")
 	if re.MatchString(lines) {
-		regex = fmt.Sprintf("containers/%v", regex)
+		// Anchor the id to a per-container file so it matches whether or not the path keeps a containers/ segment (#452).
+		regex = fmt.Sprintf("/%v/(hostname|hosts|resolv\\.conf)", regex)
 	}
 
 	re = regexp.MustCompilePOSIX(regex)

@@ -1,6 +1,9 @@
 package context
 
 import (
+	"sort"
+	"strconv"
+
 	docker "github.com/fsouza/go-dockerclient"
 )
 
@@ -46,5 +49,29 @@ func GetContainerAddresses(container *docker.Container) []Address {
 		}
 	}
 
+	sortAddresses(addresses)
+
 	return addresses
+}
+
+// sortAddresses sorts addresses in place by port (numeric), then proto, host port, host IP and IP.
+func sortAddresses(addresses []Address) {
+	sort.Slice(addresses, func(i, j int) bool {
+		a, b := addresses[i], addresses[j]
+		pa, _ := strconv.Atoi(a.Port)
+		pb, _ := strconv.Atoi(b.Port)
+		if pa != pb {
+			return pa < pb
+		}
+		if a.Proto != b.Proto {
+			return a.Proto < b.Proto
+		}
+		if a.HostPort != b.HostPort {
+			return a.HostPort < b.HostPort
+		}
+		if a.HostIP != b.HostIP {
+			return a.HostIP < b.HostIP
+		}
+		return a.IP < b.IP
+	})
 }

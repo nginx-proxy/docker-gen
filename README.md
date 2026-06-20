@@ -394,6 +394,20 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
 }
 ```
 
+#### Ordering of `Addresses` and `Networks`
+
+The `Addresses` and `Networks` slices are emitted in a deterministic order, so generated output is stable across regenerations and does not trigger spurious reloads/restarts when nothing meaningful changed:
+
+- `Addresses` are sorted by port (compared numerically), then by protocol, host port, host IP and IP.
+- `Networks` are sorted alphabetically by `Name`.
+
+As a consequence, `index .Networks 0` returns the alphabetically-first network (for example `bridge`) rather than an arbitrary one. To select a specific network by name, filter with `where`:
+
+```
+{{ $net := index (where $value.Networks "Name" "my-network") 0 }}
+server {{ $net.IP }}:{{ (index $value.Addresses 0).Port }};
+```
+
 #### Functions
 
 - [Functions from Go](https://pkg.go.dev/text/template#hdr-Functions)

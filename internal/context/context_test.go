@@ -128,6 +128,42 @@ func TestGetCurrentContainerIDMountInfo(t *testing.T) {
 	assert.Equal(t, id, GetCurrentContainerID(filepaths...), "id mismatch on mountinfo")
 }
 
+func TestGetCurrentContainerIDSeparateMount(t *testing.T) {
+	// Test specific to https://github.com/nginx-proxy/docker-gen/issues/452 where /var/lib/docker/containers
+	// is a separate mount, so per-container files appear as /<id>/hosts without a containers/ segment.
+	hostname := os.Getenv("HOSTNAME")
+	defer os.Setenv("HOSTNAME", hostname)
+	os.Setenv("HOSTNAME", "customhostname")
+
+	id := ids[2]
+	overlay := "e1fab975d5ffd51474b11a964c82c3bfda1c0e82aec6845a1f12c8150bf61419"
+
+	content := map[string]string{
+		"cpuset": "/",
+		"cgroup": "0::/",
+		"mountinfo": fmt.Sprintf(`705 661 0:96 / / rw,relatime master:192 - overlay overlay rw,upperdir=/var/lib/docker/overlay2/%[2]v/diff,workdir=/var/lib/docker/overlay2/%[2]v/work,index=off
+713 705 8:3 /%[1]v/resolv.conf /etc/resolv.conf rw,relatime - ext4 /dev/sda3 rw
+714 705 8:3 /%[1]v/hostname /etc/hostname rw,relatime - ext4 /dev/sda3 rw
+715 705 8:3 /%[1]v/hosts /etc/hosts rw,relatime - ext4 /dev/sda3 rw`, id, overlay),
+	}
+
+	var filepaths []string
+	for _, key := range fileKeys {
+		file, err := os.CreateTemp("", key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.Remove(file.Name())
+		if _, err = file.WriteString(content[key]); err != nil {
+			t.Fatal(err)
+		}
+		filepaths = append(filepaths, file.Name())
+	}
+
+	// The id must come from the /<id>/hosts path field, not the overlay2 hex in the mount options.
+	assert.Equal(t, id, GetCurrentContainerID(filepaths...), "id mismatch on separate-mount mountinfo")
+}
+
 func TestGetCurrentContainerEmpty(t *testing.T) {
 	assert.Equal(t, "", GetCurrentContainerID())
 }

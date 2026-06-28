@@ -1,3 +1,21 @@
+<a href="https://zerossl.com">
+<picture>
+  <!-- Dark mode -->
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="https://github.com/nginx-proxy/docker-gen/blob/main/docs/img/docker-gen_dark_theme.svg" />
+  <!-- Light mode -->
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="https://github.com/nginx-proxy/docker-gen/blob/main/docs/img/docker-gen_light_theme.svg" />
+  <!-- Fallback for environments without media queries -->
+  <img
+    alt="ZeroSSL"
+    src="https://github.com/nginx-proxy/docker-gen/blob/main/docs/img/docker-gen_light_theme.svg"
+    height="auto" />
+</picture>
+</a>
+
 # docker-gen
 
 [![Tests](https://github.com/nginx-proxy/docker-gen/actions/workflows/tests.yml/badge.svg)](https://github.com/nginx-proxy/docker-gen/actions/workflows/tests.yml)

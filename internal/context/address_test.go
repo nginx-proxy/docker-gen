@@ -161,3 +161,16 @@ func TestGetContainerAddressesSorted(t *testing.T) {
 	}
 	assert.Equal(t, []string{"80", "443", "8080"}, ports)
 }
+
+func TestGetContainerAddressesNilNetworkSettings(t *testing.T) {
+	testContainer := &docker.Container{
+		Config:          &docker.Config{ExposedPorts: map[docker.Port]struct{}{}},
+		NetworkSettings: nil,
+	}
+	assert.Empty(t, GetContainerAddresses(testContainer))
+}
+
+func TestGetContainerAddressesNilStructs(t *testing.T) {
+	testContainer := &docker.Container{Config: nil, NetworkSettings: nil}
+	assert.Empty(t, GetContainerAddresses(testContainer))
+}

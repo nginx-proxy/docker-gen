@@ -1,15 +1,21 @@
 package generator
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
 	"log"
+	"net/http"
+	"strings"
 	"testing"
 	"testing/synctest"
 	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
+	dockertest "github.com/fsouza/go-dockerclient/testing"
 	"github.com/nginx-proxy/docker-gen/internal/config"
 	"github.com/nginx-proxy/docker-gen/internal/context"
+	"github.com/nginx-proxy/docker-gen/internal/dockerclient"
 	"github.com/stretchr/testify/assert"
 )
 

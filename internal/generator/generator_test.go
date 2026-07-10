@@ -129,3 +129,57 @@ func TestSortNetworks(t *testing.T) {
 		})
 	}
 }
+
+func TestGetContainersNilStructs(t *testing.T) {
+	// A container inspected with nil Config/NetworkSettings/HostConfig must not panic (#227).
+	log.SetOutput(io.Discard)
+	containerID := "abc123def4567890"
+
+	server, _ := dockertest.NewServer("127.0.0.1:0", nil, nil)
+	server.CustomHandler("/info", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"Containers":1,"Images":1,"NFd":11,"NGoroutines":21}`))
+	}))
+	server.CustomHandler("/version", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"Version":"19.03.12","Os":"Linux","GoVersion":"go1.13.14","Arch":"amd64","ApiVersion":"1.40"}`))
+	}))
+	server.CustomHandler("/networks", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("[]"))
+	}))
+	server.CustomHandler("/containers/json", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode([]docker.APIContainers{{ID: containerID, Names: []string{"/nil-test"}}})
+	}))
+	server.CustomHandler(fmt.Sprintf("/containers/%s/json", containerID), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(docker.Container{
+			ID:              containerID,
+			Name:            "/nil-test",
+			Config:          nil,
+			HostConfig:      nil,
+			NetworkSettings: nil,
+		})
+	}))
+
+	serverURL := fmt.Sprintf("tcp://%s", strings.TrimRight(strings.TrimPrefix(server.URL(), "http://"), "/"))
+	client, err := dockerclient.NewDockerClient(serverURL, false, "", "", "")
+	if err != nil {
+		t.Fatalf("failed to create client: %s", err)
+	}
+	client.SkipServerVersionCheck = true
+
+	apiVersion, err := client.Version()
+	if err != nil {
+		t.Fatalf("failed to retrieve version: %s", err)
+	}
+	context.SetDockerEnv(apiVersion)
+
+	g := &generator{Client: client, Endpoint: serverURL}
+	containers, err := g.getContainers(config.Config{})
+	assert.NoError(t, err)
+	assert.Len(t, containers, 1)
+	assert.Equal(t, containerID, containers[0].ID)
+	assert.Equal(t, "nil-test", containers[0].Name)
+	assert.Empty(t, containers[0].Hostname)
+	assert.Empty(t, containers[0].NetworkMode)
+	assert.Empty(t, containers[0].IP)
+	assert.Empty(t, containers[0].Addresses)
+	assert.Empty(t, containers[0].Networks)
+}

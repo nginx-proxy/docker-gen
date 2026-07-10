@@ -18,30 +18,35 @@ type Address struct {
 }
 
 func renderAddress(container *docker.Container, port docker.Port) Address {
-	return Address{
-		IP:           container.NetworkSettings.IPAddress,
-		IP6LinkLocal: container.NetworkSettings.LinkLocalIPv6Address,
-		IP6Global:    container.NetworkSettings.GlobalIPv6Address,
-		Port:         port.Port(),
-		Proto:        port.Proto(),
+	address := Address{
+		Port:  port.Port(),
+		Proto: port.Proto(),
 	}
+	if container.NetworkSettings != nil {
+		address.IP = container.NetworkSettings.IPAddress
+		address.IP6LinkLocal = container.NetworkSettings.LinkLocalIPv6Address
+		address.IP6Global = container.NetworkSettings.GlobalIPv6Address
+	}
+	return address
 }
 
 func GetContainerAddresses(container *docker.Container) []Address {
 	addresses := []Address{}
 
-	for port, bindings := range container.NetworkSettings.Ports {
-		address := renderAddress(container, port)
+	if container.NetworkSettings != nil {
+		for port, bindings := range container.NetworkSettings.Ports {
+			address := renderAddress(container, port)
 
-		if len(bindings) > 0 {
-			address.HostPort = bindings[0].HostPort
-			address.HostIP = bindings[0].HostIP
+			if len(bindings) > 0 {
+				address.HostPort = bindings[0].HostPort
+				address.HostIP = bindings[0].HostIP
+			}
+
+			addresses = append(addresses, address)
 		}
-
-		addresses = append(addresses, address)
 	}
 
-	if len(addresses) == 0 {
+	if len(addresses) == 0 && container.Config != nil {
 		// internal docker network has empty 'container.NetworkSettings.Ports'
 		for port := range container.Config.ExposedPorts {
 			address := renderAddress(container, port)

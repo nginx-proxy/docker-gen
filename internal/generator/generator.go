@@ -431,7 +431,21 @@ func (g *generator) getContainers(config config.Config) ([]*context.RuntimeConta
 			continue
 		}
 
-		registry, repository, tag := dockerclient.SplitDockerImage(container.Config.Image)
+		// Inspect may return nil pointers for these structs; copy into zero values to avoid a panic.
+		var containerConfig docker.Config
+		if container.Config != nil {
+			containerConfig = *container.Config
+		}
+		var containerNetSettings docker.NetworkSettings
+		if container.NetworkSettings != nil {
+			containerNetSettings = *container.NetworkSettings
+		}
+		var containerHostConfig docker.HostConfig
+		if container.HostConfig != nil {
+			containerHostConfig = *container.HostConfig
+		}
+
+		registry, repository, tag := dockerclient.SplitDockerImage(containerConfig.Image)
 		runtimeContainer := &context.RuntimeContainer{
 			ID:      container.ID,
 			Created: container.Created,
@@ -447,24 +461,24 @@ func (g *generator) getContainers(config config.Config) ([]*context.RuntimeConta
 				},
 			},
 			Name:         strings.TrimLeft(container.Name, "/"),
-			Hostname:     container.Config.Hostname,
-			Gateway:      container.NetworkSettings.Gateway,
-			NetworkMode:  container.HostConfig.NetworkMode,
+			Hostname:     containerConfig.Hostname,
+			Gateway:      containerNetSettings.Gateway,
+			NetworkMode:  containerHostConfig.NetworkMode,
 			Addresses:    []context.Address{},
 			Networks:     []context.Network{},
 			Env:          make(map[string]string),
 			Volumes:      make(map[string]context.Volume),
 			Node:         context.SwarmNode{},
 			Labels:       make(map[string]string),
-			IP:           container.NetworkSettings.IPAddress,
-			IP6LinkLocal: container.NetworkSettings.LinkLocalIPv6Address,
-			IP6Global:    container.NetworkSettings.GlobalIPv6Address,
+			IP:           containerNetSettings.IPAddress,
+			IP6LinkLocal: containerNetSettings.LinkLocalIPv6Address,
+			IP6Global:    containerNetSettings.GlobalIPv6Address,
 		}
 
-		adresses := context.GetContainerAddresses(container)
-		runtimeContainer.Addresses = append(runtimeContainer.Addresses, adresses...)
+		addresses := context.GetContainerAddresses(container)
+		runtimeContainer.Addresses = append(runtimeContainer.Addresses, addresses...)
 
-		for k, v := range container.NetworkSettings.Networks {
+		for k, v := range containerNetSettings.Networks {
 			network := context.Network{
 				IP:                  v.IPAddress,
 				Name:                k,
@@ -511,8 +525,8 @@ func (g *generator) getContainers(config config.Config) ([]*context.RuntimeConta
 			})
 		}
 
-		runtimeContainer.Env = utils.SplitKeyValueSlice(container.Config.Env)
-		runtimeContainer.Labels = container.Config.Labels
+		runtimeContainer.Env = utils.SplitKeyValueSlice(containerConfig.Env)
+		runtimeContainer.Labels = containerConfig.Labels
 		containers = append(containers, runtimeContainer)
 	}
 	return containers, nil

@@ -216,8 +216,8 @@ func matchContainerIDWithHostname(lines string) string {
 func matchContainerID(regex, lines string) string {
 	matchAndExtract := func(pattern string) string {
 		re := regexp.MustCompilePOSIX(pattern)
-		if re.MatchString(lines) {
-			submatches := re.FindStringSubmatch(lines)
+		submatches := re.FindStringSubmatch(lines)
+		if len(submatches) >= 2 {
 			return submatches[1]
 		}
 		return ""

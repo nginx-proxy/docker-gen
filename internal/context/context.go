@@ -13,9 +13,11 @@ import (
 )
 
 var (
-	mu         sync.RWMutex
-	dockerInfo Docker
-	dockerEnv  *docker.Env
+	mu                   sync.RWMutex
+	dockerInfo           Docker
+	dockerEnv            *docker.Env
+	hostnameRegex        = regexp.MustCompilePOSIX("^[[:alnum:]]{12}$")
+	mountinfoPrefixRegex = regexp.MustCompilePOSIX("^[0-9]+ [0-9]+ [0-9]+:[0-9]+ /")
 )
 
 type Context []*RuntimeContainer
@@ -203,9 +205,8 @@ func GetCurrentContainerID(filepaths ...string) (id string) {
 
 func matchContainerIDWithHostname(lines string) string {
 	hostname := os.Getenv("HOSTNAME")
-	re := regexp.MustCompilePOSIX("^[[:alnum:]]{12}$")
 
-	if re.MatchString(hostname) {
+	if hostnameRegex.MatchString(hostname) {
 		regex := fmt.Sprintf("(%s[[:alnum:]]{52})", hostname)
 
 		return matchContainerID(regex, lines)
@@ -225,8 +226,7 @@ func matchContainerID(regex, lines string) string {
 
 	// Attempt to detect if we're on a line from a /proc/<pid>/mountinfo file and modify the regexp accordingly
 	// https://www.kernel.org/doc/Documentation/filesystems/proc.txt section 3.5
-	re := regexp.MustCompilePOSIX("^[0-9]+ [0-9]+ [0-9]+:[0-9]+ /")
-	if re.MatchString(lines) {
+	if mountinfoPrefixRegex.MatchString(lines) {
 		// Match on containers/<id> while also supporting file-anchored paths and Podman paths that insert a userdata segment before those files.
 		// See https://github.com/nginx-proxy/docker-gen/issues/452 and https://github.com/nginx-proxy/nginx-proxy/issues/2759
 		if containerID := matchAndExtract(fmt.Sprintf("containers/%v", regex)); len(containerID) == 64 {

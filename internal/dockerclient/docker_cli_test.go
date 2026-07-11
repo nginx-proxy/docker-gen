@@ -239,7 +239,10 @@ func TestTlsEnabled(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer os.Remove(file.Name())
+		defer func() {
+			file.Close()
+			os.Remove(file.Name())
+		}()
 		filepaths[key] = file.Name()
 	}
 

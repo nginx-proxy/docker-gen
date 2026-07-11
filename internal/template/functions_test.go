@@ -238,7 +238,10 @@ func TestDirList(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer os.Remove(file.Name())
+		defer func() {
+			file.Close()
+			os.Remove(file.Name())
+		}()
 		files[key] = file.Name()
 	}
 

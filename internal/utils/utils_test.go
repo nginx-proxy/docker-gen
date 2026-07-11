@@ -32,7 +32,10 @@ func TestPathExists(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(file.Name())
+	defer func() {
+		file.Close()
+		os.Remove(file.Name())
+	}()
 
 	exists, err := PathExists(file.Name())
 	assert.NoError(t, err)

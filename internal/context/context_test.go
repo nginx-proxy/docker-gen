@@ -66,6 +66,18 @@ var (
 	}
 )
 
+func removeTempFile(t *testing.T, fd *os.File) {
+	// https://stackoverflow.com/a/64943554
+	for _, err := range [...]error{
+		fd.Close(),
+		os.Remove(fd.Name()),
+	} {
+		if err != nil {
+			t.Log("failed to remove temp file: ", err)
+		}
+	}
+}
+
 func TestGetCurrentContainerID(t *testing.T) {
 	hostname := os.Getenv("HOSTNAME")
 	defer os.Setenv("HOSTNAME", hostname)
@@ -77,7 +89,7 @@ func TestGetCurrentContainerID(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer os.Remove(file.Name())
+		defer removeTempFile(t, file)
 		if _, err = file.WriteString(contents[key]); err != nil {
 			t.Fatal(err)
 		}
@@ -117,7 +129,7 @@ func TestGetCurrentContainerIDMountInfo(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer os.Remove(file.Name())
+		defer removeTempFile(t, file)
 		if _, err = file.WriteString(content[key]); err != nil {
 			t.Fatal(err)
 		}
@@ -153,7 +165,7 @@ func TestGetCurrentContainerIDSeparateMount(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer os.Remove(file.Name())
+		defer removeTempFile(t, file)
 		if _, err = file.WriteString(content[key]); err != nil {
 			t.Fatal(err)
 		}
@@ -189,7 +201,7 @@ func TestGetCurrentContainerIDPodmanUserdataMount(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer os.Remove(file.Name())
+		defer removeTempFile(t, file)
 		if _, err = file.WriteString(content[key]); err != nil {
 			t.Fatal(err)
 		}
@@ -220,7 +232,7 @@ func TestGetCurrentContainerIDMountInfoLegacyContainersMatch(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer os.Remove(file.Name())
+		defer removeTempFile(t, file)
 		if _, err = file.WriteString(content[key]); err != nil {
 			t.Fatal(err)
 		}

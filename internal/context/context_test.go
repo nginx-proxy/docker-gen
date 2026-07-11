@@ -164,6 +164,72 @@ func TestGetCurrentContainerIDSeparateMount(t *testing.T) {
 	assert.Equal(t, id, GetCurrentContainerID(filepaths...), "id mismatch on separate-mount mountinfo")
 }
 
+func TestGetCurrentContainerIDPodmanUserdataMount(t *testing.T) {
+	// Test specific to https://github.com/nginx-proxy/nginx-proxy/issues/2759
+	// where Podman mounts /etc/hosts, /etc/hostname, and /etc/resolv.conf from a userdata directory.
+	hostname := os.Getenv("HOSTNAME")
+	defer os.Setenv("HOSTNAME", hostname)
+	os.Setenv("HOSTNAME", "customhostname")
+
+	id := ids[2]
+	overlay := "e1fab975d5ffd51474b11a964c82c3bfda1c0e82aec6845a1f12c8150bf61419"
+
+	content := map[string]string{
+		"cpuset": "/",
+		"cgroup": "0::/",
+		"mountinfo": fmt.Sprintf(`705 661 0:96 / / rw,relatime master:192 - overlay overlay rw,upperdir=/var/lib/docker/overlay2/%[2]v/diff,workdir=/var/lib/docker/overlay2/%[2]v/work,index=off
+713 705 8:3 /containers/overlay-containers/%[1]v/userdata/resolv.conf /etc/resolv.conf rw,relatime - ext4 /dev/sda3 rw
+714 705 8:3 /containers/overlay-containers/%[1]v/userdata/hostname /etc/hostname rw,relatime - ext4 /dev/sda3 rw
+715 705 8:3 /containers/overlay-containers/%[1]v/userdata/hosts /etc/hosts rw,relatime - ext4 /dev/sda3 rw`, id, overlay),
+	}
+
+	var filepaths []string
+	for _, key := range fileKeys {
+		file, err := os.CreateTemp("", key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.Remove(file.Name())
+		if _, err = file.WriteString(content[key]); err != nil {
+			t.Fatal(err)
+		}
+		filepaths = append(filepaths, file.Name())
+	}
+
+	assert.Equal(t, id, GetCurrentContainerID(filepaths...), "id mismatch on podman userdata mountinfo")
+}
+
+func TestGetCurrentContainerIDMountInfoLegacyContainersMatch(t *testing.T) {
+	hostname := os.Getenv("HOSTNAME")
+	defer os.Setenv("HOSTNAME", hostname)
+	os.Setenv("HOSTNAME", "customhostname")
+
+	id := ids[2]
+	overlay := "e1fab975d5ffd51474b11a964c82c3bfda1c0e82aec6845a1f12c8150bf61419"
+
+	content := map[string]string{
+		"cpuset": "/",
+		"cgroup": "0::/",
+		"mountinfo": fmt.Sprintf(`705 661 0:96 / / rw,relatime master:192 - overlay overlay rw,upperdir=/var/lib/docker/overlay2/%[2]v/diff,workdir=/var/lib/docker/overlay2/%[2]v/work,index=off
+713 705 8:3 /var/lib/docker/containers/%[1]v/shm /dev/shm rw,relatime - ext4 /dev/sda3 rw`, id, overlay),
+	}
+
+	var filepaths []string
+	for _, key := range fileKeys {
+		file, err := os.CreateTemp("", key)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer os.Remove(file.Name())
+		if _, err = file.WriteString(content[key]); err != nil {
+			t.Fatal(err)
+		}
+		filepaths = append(filepaths, file.Name())
+	}
+
+	assert.Equal(t, id, GetCurrentContainerID(filepaths...), "id mismatch on legacy containers mountinfo")
+}
+
 func TestGetCurrentContainerEmpty(t *testing.T) {
 	assert.Equal(t, "", GetCurrentContainerID())
 }

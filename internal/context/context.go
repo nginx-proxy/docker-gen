@@ -13,9 +13,11 @@ import (
 )
 
 var (
-	mu         sync.RWMutex
-	dockerInfo Docker
-	dockerEnv  *docker.Env
+	mu                   sync.RWMutex
+	dockerInfo           Docker
+	dockerEnv            *docker.Env
+	hostnameRegex        = regexp.MustCompilePOSIX("^[[:alnum:]]{12}$")
+	mountinfoPrefixRegex = regexp.MustCompilePOSIX("^[0-9]+ [0-9]+ [0-9]+:[0-9]+ /")
 )
 
 type Context []*RuntimeContainer
@@ -160,60 +162,66 @@ func GetCurrentContainerID(filepaths ...string) (id string) {
 
 	// We try to match a 64 character hex string starting with the hostname first
 	for _, filepath := range filepaths {
-		file, err := os.Open(filepath)
-		if err != nil {
-			continue
-		}
-		defer file.Close()
-		scanner := bufio.NewScanner(file)
-		scanner.Split(bufio.ScanLines)
-		for scanner.Scan() {
-			_, lines, err := bufio.ScanLines([]byte(scanner.Text()), true)
-			if err == nil {
-				strLines := string(lines)
-				if id = matchContainerIDWithHostname(strLines); len(id) == 64 {
-					return
-				}
-			}
+		if id = readContainerIDFromFile(filepath, matchContainerIDWithHostname); len(id) == 64 {
+			return
 		}
 	}
 
 	// If we didn't get any ID that matches the hostname, fall back to matching the first 64 character hex string
 	for _, filepath := range filepaths {
-		file, err := os.Open(filepath)
-		if err != nil {
-			continue
-		}
-		defer file.Close()
-		scanner := bufio.NewScanner(file)
-		scanner.Split(bufio.ScanLines)
-		for scanner.Scan() {
-			_, lines, err := bufio.ScanLines([]byte(scanner.Text()), true)
-			if err == nil {
-				strLines := string(lines)
-				if id = matchContainerID("([[:alnum:]]{64})", strLines); len(id) == 64 {
-					return
-				}
-			}
+		if id = readContainerIDFromFile(filepath, matchContainerID); len(id) == 64 {
+			return
 		}
 	}
 
 	return
 }
 
+// readContainerIDFromFile reads a file and attempts to match a container ID.
+// idMatcher is a function that extracts a container ID from a string.
+func readContainerIDFromFile(filepath string, idMatcher func(string) string) (id string) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return ""
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	// Increase buffer size to handle long /proc/mountinfo lines
+	// 1MB is usually sufficient for even the largest mountinfo entries
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+
+	for scanner.Scan() {
+		strLines := scanner.Text()
+		if id = idMatcher(strLines); len(id) == 64 {
+			return
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return ""
+	}
+
+	return ""
+}
+
+func matchContainerID(lines string) string {
+	return matchContainerIDWithRegex("([[:alnum:]]{64})", lines)
+}
+
 func matchContainerIDWithHostname(lines string) string {
 	hostname := os.Getenv("HOSTNAME")
-	re := regexp.MustCompilePOSIX("^[[:alnum:]]{12}$")
 
-	if re.MatchString(hostname) {
+	if hostnameRegex.MatchString(hostname) {
 		regex := fmt.Sprintf("(%s[[:alnum:]]{52})", hostname)
 
-		return matchContainerID(regex, lines)
+		return matchContainerIDWithRegex(regex, lines)
 	}
 	return ""
 }
 
-func matchContainerID(regex, lines string) string {
+func matchContainerIDWithRegex(regex, lines string) (containerID string) {
 	matchAndExtract := func(pattern string) string {
 		re := regexp.MustCompilePOSIX(pattern)
 		submatches := re.FindStringSubmatch(lines)
@@ -225,15 +233,14 @@ func matchContainerID(regex, lines string) string {
 
 	// Attempt to detect if we're on a line from a /proc/<pid>/mountinfo file and modify the regexp accordingly
 	// https://www.kernel.org/doc/Documentation/filesystems/proc.txt section 3.5
-	re := regexp.MustCompilePOSIX("^[0-9]+ [0-9]+ [0-9]+:[0-9]+ /")
-	if re.MatchString(lines) {
+	if mountinfoPrefixRegex.MatchString(lines) {
 		// Match on containers/<id> while also supporting file-anchored paths and Podman paths that insert a userdata segment before those files.
 		// See https://github.com/nginx-proxy/docker-gen/issues/452 and https://github.com/nginx-proxy/nginx-proxy/issues/2759
-		if containerID := matchAndExtract(fmt.Sprintf("containers/%v", regex)); len(containerID) == 64 {
-			return containerID
+		if containerID = matchAndExtract(fmt.Sprintf("containers/%v", regex)); len(containerID) == 64 {
+			return
 		}
-		if containerID := matchAndExtract(fmt.Sprintf("/%v/(userdata/)?(hostname|hosts|resolv\\.conf)", regex)); len(containerID) == 64 {
-			return containerID
+		if containerID = matchAndExtract(fmt.Sprintf("/%v/(userdata/)?(hostname|hosts|resolv\\.conf)", regex)); len(containerID) == 64 {
+			return
 		}
 		return ""
 	}

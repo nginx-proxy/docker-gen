@@ -272,6 +272,7 @@ type RuntimeContainer struct {
     Created      time.Time
     Addresses    []Address
     Networks     []Network
+    Devices      []Device
     Gateway      string
     Name         string
     Hostname     string
@@ -326,6 +327,12 @@ type Mount struct {
   RW          bool
 }
 
+type Device struct {
+  PathOnHost      string
+  PathInContainer string
+  Permissions     string
+}
+
 type Volume struct {
     Path      string
     HostPath  string
@@ -375,6 +382,13 @@ For example, this is a JSON version of an emitted RuntimeContainer struct:
       "Proto": "tcp",
       "HostIP": "192.168.10.24",
       "HostPort": "2222"
+    }
+  ],
+  "Devices": [
+    {
+      "PathOnHost": "/dev/ttyACM0",
+      "PathInContainer": "/dev/ttyUSB0",
+      "Permissions": "rwm"
     }
   ],
   "Gateway": "172.17.42.1",

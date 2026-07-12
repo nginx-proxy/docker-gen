@@ -191,3 +191,54 @@ func TestGetContainersNilStructs(t *testing.T) {
 	assert.Empty(t, containers[0].Addresses)
 	assert.Empty(t, containers[0].Networks)
 }
+
+func TestGetContainersDevices(t *testing.T) {
+	log.SetOutput(io.Discard)
+	containerID := "dev123456789abcd"
+
+	server, _ := dockertest.NewServer("127.0.0.1:0", nil, nil)
+	server.CustomHandler("/info", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"Containers":1,"Images":1,"NFd":11,"NGoroutines":21}`))
+	}))
+	server.CustomHandler("/version", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"Version":"19.03.12","Os":"Linux","GoVersion":"go1.13.14","Arch":"amd64","ApiVersion":"1.40"}`))
+	}))
+	server.CustomHandler("/networks", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("[]"))
+	}))
+	server.CustomHandler("/containers/json", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode([]docker.APIContainers{{ID: containerID, Names: []string{"/dev-test"}}})
+	}))
+	server.CustomHandler(fmt.Sprintf("/containers/%s/json", containerID), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(docker.Container{
+			ID:   containerID,
+			Name: "/dev-test",
+			HostConfig: &docker.HostConfig{
+				Devices: []docker.Device{
+					{PathOnHost: "/dev/ttyACM0", PathInContainer: "/dev/ttyUSB0", CgroupPermissions: "rwm"},
+				},
+			},
+		})
+	}))
+
+	serverURL := fmt.Sprintf("tcp://%s", strings.TrimRight(strings.TrimPrefix(server.URL(), "http://"), "/"))
+	client, err := dockerclient.NewDockerClient(serverURL, false, "", "", "")
+	if err != nil {
+		t.Fatalf("failed to create client: %s", err)
+	}
+	client.SkipServerVersionCheck = true
+
+	apiVersion, err := client.Version()
+	if err != nil {
+		t.Fatalf("failed to retrieve version: %s", err)
+	}
+	context.SetDockerEnv(apiVersion)
+
+	g := &generator{Client: client, Endpoint: serverURL}
+	containers, err := g.getContainers(config.Config{})
+	assert.NoError(t, err)
+	assert.Len(t, containers, 1)
+	assert.Equal(t, []context.Device{
+		{PathOnHost: "/dev/ttyACM0", PathInContainer: "/dev/ttyUSB0", Permissions: "rwm"},
+	}, containers[0].Devices)
+}

@@ -466,6 +466,7 @@ func (g *generator) getContainers(config config.Config) ([]*context.RuntimeConta
 			NetworkMode:  containerHostConfig.NetworkMode,
 			Addresses:    []context.Address{},
 			Networks:     []context.Network{},
+			Devices:      []context.Device{},
 			Env:          make(map[string]string),
 			Volumes:      make(map[string]context.Volume),
 			Node:         context.SwarmNode{},
@@ -522,6 +523,14 @@ func (g *generator) getContainers(config config.Config) ([]*context.RuntimeConta
 				Driver:      v.Driver,
 				Mode:        v.Mode,
 				RW:          v.RW,
+			})
+		}
+
+		for _, v := range containerHostConfig.Devices {
+			runtimeContainer.Devices = append(runtimeContainer.Devices, context.Device{
+				PathOnHost:      v.PathOnHost,
+				PathInContainer: v.PathInContainer,
+				Permissions:     v.CgroupPermissions,
 			})
 		}
 

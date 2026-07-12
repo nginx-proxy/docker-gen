@@ -119,20 +119,18 @@ func parseHost(addr string) (string, string, error) {
 }
 
 func SplitDockerImage(img string) (string, string, string) {
-	index := 0
-	repository := img
 	var registry, tag string
-	if strings.Contains(img, "/") {
-		separator := strings.Index(img, "/")
-		registry = img[index:separator]
-		index = separator + 1
-		repository = img[index:]
+	repository := img
+	if i := strings.Index(img, "/"); i != -1 {
+		if first := img[:i]; strings.ContainsAny(first, ".:") || first == "localhost" {
+			registry = first
+			repository = img[i+1:]
+		}
 	}
 
-	if strings.Contains(repository, ":") {
-		separator := strings.Index(repository, ":")
-		tag = repository[separator+1:]
-		repository = repository[0:separator]
+	if i := strings.Index(repository, ":"); i != -1 {
+		tag = repository[i+1:]
+		repository = repository[:i]
 	}
 
 	return registry, repository, tag

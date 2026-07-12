@@ -154,6 +154,36 @@ func TestSplitDockerImageWithLocalRepositoryAndTag(t *testing.T) {
 	assert.Equal(t, "localhost:8888/ubuntu:12.04", dockerImage.String())
 }
 
+func TestSplitDockerImageWithNamespacedRepository(t *testing.T) {
+	registry, repository, tag := SplitDockerImage("tianon/centos")
+
+	assert.Equal(t, "", registry)
+	assert.Equal(t, "tianon/centos", repository)
+	assert.Equal(t, "", tag)
+
+	dockerImage := context.DockerImage{
+		Registry:   registry,
+		Repository: repository,
+		Tag:        tag,
+	}
+	assert.Equal(t, "tianon/centos", dockerImage.String())
+}
+
+func TestSplitDockerImageWithNamespacedRepositoryAndTag(t *testing.T) {
+	registry, repository, tag := SplitDockerImage("tianon/centos:7")
+
+	assert.Equal(t, "", registry)
+	assert.Equal(t, "tianon/centos", repository)
+	assert.Equal(t, "7", tag)
+
+	dockerImage := context.DockerImage{
+		Registry:   registry,
+		Repository: repository,
+		Tag:        tag,
+	}
+	assert.Equal(t, "tianon/centos:7", dockerImage.String())
+}
+
 func TestParseHostUnix(t *testing.T) {
 	proto, addr, err := parseHost("unix:///var/run/docker.sock")
 	assert.NoError(t, err)

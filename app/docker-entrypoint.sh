@@ -2,7 +2,13 @@
 
 set -eu
 
-# run container's CMD if it is an executable in PATH
-command -v -- "$1" >/dev/null 2>&1 || set -- docker-gen "$@"
+# Prepend docker-gen unless $1 resolves to an executable regular file
+_cmd="$(command -v -- "$1" 2>/dev/null)"
+if [ -f "$_cmd" ] && [ -x "$_cmd" ]; then
+	:
+else
+	set -- docker-gen "$@"
+fi
+unset _cmd
 
 exec "$@"

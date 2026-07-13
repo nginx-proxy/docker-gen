@@ -246,6 +246,26 @@ func TestGetCurrentContainerEmpty(t *testing.T) {
 	assert.Equal(t, "", GetCurrentContainerID())
 }
 
+func TestCurrentContainer(t *testing.T) {
+	mu.Lock()
+	saved := currentContainer
+	mu.Unlock()
+	t.Cleanup(func() {
+		mu.Lock()
+		currentContainer = saved
+		mu.Unlock()
+	})
+
+	var c Context
+
+	rc := &RuntimeContainer{ID: "abc"}
+	SetCurrentContainer(rc)
+	assert.Same(t, rc, c.CurrentContainer())
+
+	SetCurrentContainer(nil)
+	assert.Nil(t, c.CurrentContainer())
+}
+
 func TestRuntimeContainerEquals(t *testing.T) {
 	rc1 := &RuntimeContainer{
 		ID: "baz",

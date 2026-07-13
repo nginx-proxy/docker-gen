@@ -396,6 +396,8 @@ func sortNetworks(networks []context.Network) {
 	})
 }
 
+var getCurrentContainerID = context.GetCurrentContainerID
+
 func (g *generator) getContainers(config config.Config) ([]*context.RuntimeContainer, error) {
 	apiInfo, err := g.Client.Info()
 	if err != nil {
@@ -424,122 +426,149 @@ func (g *generator) getContainers(config config.Config) ([]*context.RuntimeConta
 
 	containers := []*context.RuntimeContainer{}
 	for _, apiContainer := range apiContainers {
-		opts := docker.InspectContainerOptions{ID: apiContainer.ID}
-		container, err := g.Client.InspectContainerWithOptions(opts)
+		runtimeContainer, err := g.inspectContainer(apiContainer.ID, networks)
 		if err != nil {
 			log.Printf("Error inspecting container: %s: %s\n", apiContainer.ID, err)
 			continue
 		}
-
-		// Inspect may return nil pointers for these structs; copy into zero values to avoid a panic.
-		var containerConfig docker.Config
-		if container.Config != nil {
-			containerConfig = *container.Config
-		}
-		var containerNetSettings docker.NetworkSettings
-		if container.NetworkSettings != nil {
-			containerNetSettings = *container.NetworkSettings
-		}
-		var containerHostConfig docker.HostConfig
-		if container.HostConfig != nil {
-			containerHostConfig = *container.HostConfig
-		}
-
-		registry, repository, tag := dockerclient.SplitDockerImage(containerConfig.Image)
-		runtimeContainer := &context.RuntimeContainer{
-			ID:      container.ID,
-			Created: container.Created,
-			Image: context.DockerImage{
-				Registry:   registry,
-				Repository: repository,
-				Tag:        tag,
-			},
-			State: context.State{
-				Running: container.State.Running,
-				Health: context.Health{
-					Status: container.State.Health.Status,
-				},
-			},
-			Name:         strings.TrimLeft(container.Name, "/"),
-			Hostname:     containerConfig.Hostname,
-			Gateway:      containerNetSettings.Gateway,
-			NetworkMode:  containerHostConfig.NetworkMode,
-			Addresses:    []context.Address{},
-			Networks:     []context.Network{},
-			Devices:      []context.Device{},
-			Env:          make(map[string]string),
-			Volumes:      make(map[string]context.Volume),
-			Node:         context.SwarmNode{},
-			Labels:       make(map[string]string),
-			IP:           containerNetSettings.IPAddress,
-			IP6LinkLocal: containerNetSettings.LinkLocalIPv6Address,
-			IP6Global:    containerNetSettings.GlobalIPv6Address,
-		}
-
-		addresses := context.GetContainerAddresses(container)
-		runtimeContainer.Addresses = append(runtimeContainer.Addresses, addresses...)
-
-		for k, v := range containerNetSettings.Networks {
-			network := context.Network{
-				IP:                  v.IPAddress,
-				Name:                k,
-				Aliases:             append([]string{}, v.Aliases...),
-				Gateway:             v.Gateway,
-				EndpointID:          v.EndpointID,
-				IPv6Gateway:         v.IPv6Gateway,
-				GlobalIPv6Address:   v.GlobalIPv6Address,
-				MacAddress:          v.MacAddress,
-				GlobalIPv6PrefixLen: v.GlobalIPv6PrefixLen,
-				IPPrefixLen:         v.IPPrefixLen,
-				Internal:            networks[k].Internal,
-			}
-
-			runtimeContainer.Networks = append(runtimeContainer.Networks,
-				network)
-		}
-
-		sortNetworks(runtimeContainer.Networks)
-
-		for k, v := range container.Volumes {
-			runtimeContainer.Volumes[k] = context.Volume{
-				Path:      k,
-				HostPath:  v,
-				ReadWrite: container.VolumesRW[k],
-			}
-		}
-		if container.Node != nil {
-			runtimeContainer.Node.ID = container.Node.ID
-			runtimeContainer.Node.Name = container.Node.Name
-			runtimeContainer.Node.Address = context.Address{
-				IP: container.Node.IP,
-			}
-		}
-
-		for _, v := range container.Mounts {
-			runtimeContainer.Mounts = append(runtimeContainer.Mounts, context.Mount{
-				Name:        v.Name,
-				Source:      v.Source,
-				Destination: v.Destination,
-				Driver:      v.Driver,
-				Mode:        v.Mode,
-				RW:          v.RW,
-			})
-		}
-
-		for _, v := range containerHostConfig.Devices {
-			runtimeContainer.Devices = append(runtimeContainer.Devices, context.Device{
-				PathOnHost:      v.PathOnHost,
-				PathInContainer: v.PathInContainer,
-				Permissions:     v.CgroupPermissions,
-			})
-		}
-
-		runtimeContainer.Env = utils.SplitKeyValueSlice(containerConfig.Env)
-		runtimeContainer.Labels = containerConfig.Labels
 		containers = append(containers, runtimeContainer)
 	}
-	return containers, nil
 
+	context.SetCurrentContainer(g.currentContainer(containers, networks))
+	return containers, nil
+}
+
+func (g *generator) currentContainer(containers []*context.RuntimeContainer, networks map[string]docker.Network) *context.RuntimeContainer {
+	currentID := getCurrentContainerID()
+	if currentID == "" {
+		return nil
+	}
+	for _, c := range containers {
+		if c.ID == currentID {
+			return c
+		}
+	}
+	runtimeContainer, err := g.inspectContainer(currentID, networks)
+	if err != nil {
+		log.Printf("Error inspecting current container: %s: %s\n", currentID, err)
+		return nil
+	}
+	return runtimeContainer
+}
+
+func (g *generator) inspectContainer(id string, networks map[string]docker.Network) (*context.RuntimeContainer, error) {
+	opts := docker.InspectContainerOptions{ID: id}
+	container, err := g.Client.InspectContainerWithOptions(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// Inspect may return nil pointers for these structs; copy into zero values to avoid a panic.
+	var containerConfig docker.Config
+	if container.Config != nil {
+		containerConfig = *container.Config
+	}
+	var containerNetSettings docker.NetworkSettings
+	if container.NetworkSettings != nil {
+		containerNetSettings = *container.NetworkSettings
+	}
+	var containerHostConfig docker.HostConfig
+	if container.HostConfig != nil {
+		containerHostConfig = *container.HostConfig
+	}
+
+	registry, repository, tag := dockerclient.SplitDockerImage(containerConfig.Image)
+	runtimeContainer := &context.RuntimeContainer{
+		ID:      container.ID,
+		Created: container.Created,
+		Image: context.DockerImage{
+			Registry:   registry,
+			Repository: repository,
+			Tag:        tag,
+		},
+		State: context.State{
+			Running: container.State.Running,
+			Health: context.Health{
+				Status: container.State.Health.Status,
+			},
+		},
+		Name:         strings.TrimLeft(container.Name, "/"),
+		Hostname:     containerConfig.Hostname,
+		Gateway:      containerNetSettings.Gateway,
+		NetworkMode:  containerHostConfig.NetworkMode,
+		Addresses:    []context.Address{},
+		Networks:     []context.Network{},
+		Devices:      []context.Device{},
+		Env:          make(map[string]string),
+		Volumes:      make(map[string]context.Volume),
+		Node:         context.SwarmNode{},
+		Labels:       make(map[string]string),
+		IP:           containerNetSettings.IPAddress,
+		IP6LinkLocal: containerNetSettings.LinkLocalIPv6Address,
+		IP6Global:    containerNetSettings.GlobalIPv6Address,
+	}
+
+	addresses := context.GetContainerAddresses(container)
+	runtimeContainer.Addresses = append(runtimeContainer.Addresses, addresses...)
+
+	for k, v := range containerNetSettings.Networks {
+		network := context.Network{
+			IP:                  v.IPAddress,
+			Name:                k,
+			Aliases:             append([]string{}, v.Aliases...),
+			Gateway:             v.Gateway,
+			EndpointID:          v.EndpointID,
+			IPv6Gateway:         v.IPv6Gateway,
+			GlobalIPv6Address:   v.GlobalIPv6Address,
+			MacAddress:          v.MacAddress,
+			GlobalIPv6PrefixLen: v.GlobalIPv6PrefixLen,
+			IPPrefixLen:         v.IPPrefixLen,
+			Internal:            networks[k].Internal,
+		}
+
+		runtimeContainer.Networks = append(runtimeContainer.Networks,
+			network)
+	}
+
+	sortNetworks(runtimeContainer.Networks)
+
+	for k, v := range container.Volumes {
+		runtimeContainer.Volumes[k] = context.Volume{
+			Path:      k,
+			HostPath:  v,
+			ReadWrite: container.VolumesRW[k],
+		}
+	}
+	if container.Node != nil {
+		runtimeContainer.Node.ID = container.Node.ID
+		runtimeContainer.Node.Name = container.Node.Name
+		runtimeContainer.Node.Address = context.Address{
+			IP: container.Node.IP,
+		}
+	}
+
+	for _, v := range container.Mounts {
+		runtimeContainer.Mounts = append(runtimeContainer.Mounts, context.Mount{
+			Name:        v.Name,
+			Source:      v.Source,
+			Destination: v.Destination,
+			Driver:      v.Driver,
+			Mode:        v.Mode,
+			RW:          v.RW,
+		})
+	}
+
+	for _, v := range containerHostConfig.Devices {
+		runtimeContainer.Devices = append(runtimeContainer.Devices, context.Device{
+			PathOnHost:      v.PathOnHost,
+			PathInContainer: v.PathInContainer,
+			Permissions:     v.CgroupPermissions,
+		})
+	}
+
+	runtimeContainer.Env = utils.SplitKeyValueSlice(containerConfig.Env)
+	runtimeContainer.Labels = containerConfig.Labels
+	return runtimeContainer, nil
 }
 
 func newSignalChannel() (<-chan os.Signal, func()) {

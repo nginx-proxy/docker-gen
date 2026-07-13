@@ -65,138 +65,117 @@ func TestUnixBadFormat(t *testing.T) {
 	}
 }
 
-func TestSplitDockerImageRepository(t *testing.T) {
-	registry, repository, tag := SplitDockerImage("ubuntu")
-
-	assert.Equal(t, "", registry)
-	assert.Equal(t, "ubuntu", repository)
-	assert.Equal(t, "", tag)
-
-	dockerImage := context.DockerImage{
-		Registry:   registry,
-		Repository: repository,
-		Tag:        tag,
-	}
-	assert.Equal(t, "ubuntu", dockerImage.String())
+type splitDockerImageResults struct {
+	registry   string
+	repository string
+	tag        string
 }
 
-func TestSplitDockerImageWithRegistry(t *testing.T) {
-	registry, repository, tag := SplitDockerImage("custom.registry/ubuntu")
+func assertSplitDockerImage(t *testing.T, image string, expected splitDockerImageResults) {
+	registry, repository, tag := SplitDockerImage(image)
 
-	assert.Equal(t, "custom.registry", registry)
-	assert.Equal(t, "ubuntu", repository)
-	assert.Equal(t, "", tag)
+	assert.Equal(t, expected.registry, registry)
+	assert.Equal(t, expected.repository, repository)
+	assert.Equal(t, expected.tag, tag)
 
 	dockerImage := context.DockerImage{
 		Registry:   registry,
 		Repository: repository,
 		Tag:        tag,
 	}
-	assert.Equal(t, "custom.registry/ubuntu", dockerImage.String())
+	assert.Equal(t, image, dockerImage.String())
 }
 
-func TestSplitDockerImageWithRegistryAndTag(t *testing.T) {
-	registry, repository, tag := SplitDockerImage("custom.registry/ubuntu:12.04")
+func TestSplitDockerImage(t *testing.T) {
+	t.Run("base image", func(t *testing.T) {
+		expected := splitDockerImageResults{
+			registry:   "",
+			repository: "ubuntu",
+			tag:        "",
+		}
+		assertSplitDockerImage(t, "ubuntu", expected)
+	})
 
-	assert.Equal(t, "custom.registry", registry)
-	assert.Equal(t, "ubuntu", repository)
-	assert.Equal(t, "12.04", tag)
+	t.Run("image with registry", func(t *testing.T) {
+		expected := splitDockerImageResults{
+			registry:   "custom.registry",
+			repository: "ubuntu",
+			tag:        "",
+		}
+		assertSplitDockerImage(t, "custom.registry/ubuntu", expected)
+	})
 
-	dockerImage := context.DockerImage{
-		Registry:   registry,
-		Repository: repository,
-		Tag:        tag,
-	}
-	assert.Equal(t, "custom.registry/ubuntu:12.04", dockerImage.String())
-}
+	t.Run("image with tag", func(t *testing.T) {
+		expected := splitDockerImageResults{
+			registry:   "",
+			repository: "ubuntu",
+			tag:        "12.04",
+		}
+		assertSplitDockerImage(t, "ubuntu:12.04", expected)
+	})
 
-func TestSplitDockerImageWithRepositoryAndTag(t *testing.T) {
-	registry, repository, tag := SplitDockerImage("ubuntu:12.04")
+	t.Run("image with registry and tag", func(t *testing.T) {
+		expected := splitDockerImageResults{
+			registry:   "custom.registry",
+			repository: "ubuntu",
+			tag:        "12.04",
+		}
+		assertSplitDockerImage(t, "custom.registry/ubuntu:12.04", expected)
+	})
 
-	assert.Equal(t, "", registry)
-	assert.Equal(t, "ubuntu", repository)
-	assert.Equal(t, "12.04", tag)
+	t.Run("image with localhost registry and tag", func(t *testing.T) {
+		expected := splitDockerImageResults{
+			registry:   "localhost",
+			repository: "ubuntu",
+			tag:        "12.04",
+		}
+		assertSplitDockerImage(t, "localhost/ubuntu:12.04", expected)
+	})
 
-	dockerImage := context.DockerImage{
-		Registry:   registry,
-		Repository: repository,
-		Tag:        tag,
-	}
-	assert.Equal(t, "ubuntu:12.04", dockerImage.String())
-}
+	t.Run("image with localhost registry on custom port and tag", func(t *testing.T) {
+		expected := splitDockerImageResults{
+			registry:   "localhost:8888",
+			repository: "ubuntu",
+			tag:        "12.04",
+		}
+		assertSplitDockerImage(t, "localhost:8888/ubuntu:12.04", expected)
+	})
 
-func TestSplitDockerImageWithPrivateRegistryPath(t *testing.T) {
-	registry, repository, tag := SplitDockerImage("localhost:8888/ubuntu/foo:12.04")
+	t.Run("image with localhost registry on custom port and namespaced repository and tag", func(t *testing.T) {
+		expected := splitDockerImageResults{
+			registry:   "localhost:8888",
+			repository: "ubuntu/foo",
+			tag:        "12.04",
+		}
+		assertSplitDockerImage(t, "localhost:8888/ubuntu/foo:12.04", expected)
+	})
 
-	assert.Equal(t, "localhost:8888", registry)
-	assert.Equal(t, "ubuntu/foo", repository)
-	assert.Equal(t, "12.04", tag)
+	t.Run("image with namespaced repository", func(t *testing.T) {
+		expected := splitDockerImageResults{
+			registry:   "",
+			repository: "tianon/centos",
+			tag:        "",
+		}
+		assertSplitDockerImage(t, "tianon/centos", expected)
+	})
 
-	dockerImage := context.DockerImage{
-		Registry:   registry,
-		Repository: repository,
-		Tag:        tag,
-	}
-	assert.Equal(t, "localhost:8888/ubuntu/foo:12.04", dockerImage.String())
-}
-func TestSplitDockerImageWithLocalRepositoryAndTag(t *testing.T) {
-	registry, repository, tag := SplitDockerImage("localhost:8888/ubuntu:12.04")
+	t.Run("image with namespaced repository and tag", func(t *testing.T) {
+		expected := splitDockerImageResults{
+			registry:   "",
+			repository: "tianon/centos",
+			tag:        "7",
+		}
+		assertSplitDockerImage(t, "tianon/centos:7", expected)
+	})
 
-	assert.Equal(t, "localhost:8888", registry)
-	assert.Equal(t, "ubuntu", repository)
-	assert.Equal(t, "12.04", tag)
-
-	dockerImage := context.DockerImage{
-		Registry:   registry,
-		Repository: repository,
-		Tag:        tag,
-	}
-	assert.Equal(t, "localhost:8888/ubuntu:12.04", dockerImage.String())
-}
-
-func TestSplitDockerImageWithNamespacedRepository(t *testing.T) {
-	registry, repository, tag := SplitDockerImage("tianon/centos")
-
-	assert.Equal(t, "", registry)
-	assert.Equal(t, "tianon/centos", repository)
-	assert.Equal(t, "", tag)
-
-	dockerImage := context.DockerImage{
-		Registry:   registry,
-		Repository: repository,
-		Tag:        tag,
-	}
-	assert.Equal(t, "tianon/centos", dockerImage.String())
-}
-
-func TestSplitDockerImageWithNamespacedRepositoryAndTag(t *testing.T) {
-	registry, repository, tag := SplitDockerImage("tianon/centos:7")
-
-	assert.Equal(t, "", registry)
-	assert.Equal(t, "tianon/centos", repository)
-	assert.Equal(t, "7", tag)
-
-	dockerImage := context.DockerImage{
-		Registry:   registry,
-		Repository: repository,
-		Tag:        tag,
-	}
-	assert.Equal(t, "tianon/centos:7", dockerImage.String())
-}
-
-func TestSplitDockerImageWithLocalhostRegistryAndTag(t *testing.T) {
-	registry, repository, tag := SplitDockerImage("localhost/ubuntu:12.04")
-
-	assert.Equal(t, "localhost", registry)
-	assert.Equal(t, "ubuntu", repository)
-	assert.Equal(t, "12.04", tag)
-
-	dockerImage := context.DockerImage{
-		Registry:   registry,
-		Repository: repository,
-		Tag:        tag,
-	}
-	assert.Equal(t, "localhost/ubuntu:12.04", dockerImage.String())
+	t.Run("image with registry and namespaced repository and tag", func(t *testing.T) {
+		expected := splitDockerImageResults{
+			registry:   "custom.registry",
+			repository: "tianon/centos",
+			tag:        "7",
+		}
+		assertSplitDockerImage(t, "custom.registry/tianon/centos:7", expected)
+	})
 }
 
 func TestParseHostUnix(t *testing.T) {

@@ -451,6 +451,7 @@ server {{ $net.IP }}:{{ (index $value.Addresses 0).Port }};
 - _`contains $map $key`_: Returns `true` if `$map` contains `$key`. Takes maps from `string` to any type.
 - _`dir $path`_: Returns an array of filenames in the specified `$path`.
 - _`exists $path`_: Returns `true` if `$path` refers to an existing file or directory. Takes a string.
+- _`lexists $path`_: Like `exists`, but does not follow symlinks — returns `true` for a symlink itself even when its target is missing. Takes a string.
 - _`eval $templateName [$data]`_: Evaluates the named template like Go's built-in `template` action, but instead of writing out the result it returns the result as a string so that it can be post-processed. The `$data` argument may be omitted, which is equivalent to passing `nil`.
 - _`groupBy $containers $fieldPath`_: Groups an array of `RuntimeContainer` instances based on the values of a field path expression `$fieldPath`. A field path expression is a dot-delimited list of map keys or struct member names specifying the path from container to a nested value, which must be a string. Returns a map from the value of the field path expression to an array of containers having that value. Containers that do not have a value for the field path in question are omitted.
 - _`groupByWithDefault $containers $fieldPath $defaultValue`_: Returns the same as `groupBy`, but containers that do not have a value for the field path are instead included in the map under the `$defaultValue` key.

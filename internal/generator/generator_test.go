@@ -193,10 +193,16 @@ func TestGetContainersNilStructs(t *testing.T) {
 }
 
 func TestGetContainersDevices(t *testing.T) {
+	orig := log.Writer()
 	log.SetOutput(io.Discard)
+	t.Cleanup(func() { log.SetOutput(orig) })
 	containerID := "dev123456789abcd"
 
-	server, _ := dockertest.NewServer("127.0.0.1:0", nil, nil)
+	server, err := dockertest.NewServer("127.0.0.1:0", nil, nil)
+	if err != nil {
+		t.Fatalf("failed to create test server: %s", err)
+	}
+	t.Cleanup(server.Stop)
 	server.CustomHandler("/info", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"Containers":1,"Images":1,"NFd":11,"NGoroutines":21}`))
 	}))

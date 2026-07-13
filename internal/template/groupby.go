@@ -45,6 +45,30 @@ func groupByMulti(entries interface{}, key, sep string) (map[string][]interface{
 	})
 }
 
+func splitKeyValuePairs(input, listSep, kvpSep string, defaultKey ...string) map[string]string {
+	output := map[string]string{}
+	for _, kvp := range strings.Split(input, listSep) {
+		var key, value string
+		if parts := strings.SplitN(kvp, kvpSep, 2); len(parts) == 2 {
+			key, value = parts[0], parts[1]
+		} else if len(defaultKey) == 0 || defaultKey[0] == "" {
+			key, value = kvp, kvp
+		} else {
+			key, value = defaultKey[0], kvp
+		}
+		output[key] = value
+	}
+	return output
+}
+
+func groupByMultiKeyValuePairs(entries interface{}, key, listSep, kvpSep string, defaultKey ...string) (map[string][]interface{}, error) {
+	return generalizedGroupByKey("groupByMultiKeyValuePairs", entries, key, func(groups map[string][]interface{}, value interface{}, v interface{}) {
+		for k := range splitKeyValuePairs(value.(string), listSep, kvpSep, defaultKey...) {
+			groups[k] = append(groups[k], v)
+		}
+	})
+}
+
 // groupBy groups a generic array or slice by the path property key
 func groupBy(entries interface{}, key string) (map[string][]interface{}, error) {
 	return generalizedGroupByKey("groupBy", entries, key, func(groups map[string][]interface{}, value interface{}, v interface{}) {

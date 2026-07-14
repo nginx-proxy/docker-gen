@@ -16,6 +16,7 @@ on:
     paths:
       - ".dockerignore"
       - ".github/workflows/build-publish.yml"
+      - "app/docker-entrypoint.sh"
       - "Dockerfile.alpine"
       - "Dockerfile.debian"
       - "go.mod"

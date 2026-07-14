@@ -24,7 +24,7 @@ on:
 
 jobs:
   multiarch-build:
-    name: Build and publish image
+    name: Build and publish ${{ matrix.base }} image
     strategy:
       matrix:
         base: [alpine, debian]

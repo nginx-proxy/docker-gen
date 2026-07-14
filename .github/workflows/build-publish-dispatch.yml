@@ -37,7 +37,8 @@ jobs:
             nginxproxy/docker-gen
           tags: |
             type=raw,value=${{ inputs.image_tag }},enable=${{ matrix.base == 'alpine' }}
-            type=raw,value=${{ inputs.image_tag }},suffix=-debian,enable=${{ matrix.base == 'debian' }}
+            type=raw,value=${{ inputs.image_tag }},suffix=-debian,enable=${{ matrix.base == 'debian' && inputs.image_tag != 'latest' }}
+            type=raw,value=debian,enable=${{ matrix.base == 'debian' && inputs.image_tag == 'latest' }}
           labels: |
             org.opencontainers.image.authors=Nicolas Duchon <nicolas.duchon@gmail.com> (@buchdag), Jason Wilder
             org.opencontainers.image.version=${{ steps.docker-gen_version.outputs.VERSION }}

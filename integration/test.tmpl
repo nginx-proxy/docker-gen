@@ -1,0 +1,6 @@
+{{/* This template is used to test and debug the template engine. */}}
+{
+  "Docker": {{ toPrettyJson .Docker }},
+  "Env": {{ toPrettyJson .Env }},
+  "Containers": {{ toPrettyJson . }}
+}

@@ -51,3 +51,33 @@ jobs:
 
       - name: Run tests
         run: make test
+  
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./integration
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "./integration/go.mod"
+
+      - name: Install dependencies
+        run: make get-deps
+
+      - name: Build docker-gen images
+        run: make build-docker-gen-images
+
+      - name: Run tests
+        run: make test
+      
+      - name: Cleanup docker-gen images
+        if: always()
+        run: make cleanup-docker-gen-images

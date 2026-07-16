@@ -92,6 +92,39 @@ jobs:
           name: docker-gen-${{ matrix.base }}-image.tar
           path: docker-gen-${{ matrix.base }}-image.tar
   
+  docker-specs-tests:
+    strategy:
+      matrix:
+        base: 
+          - alpine
+          - debian
+
+    name: Docker specs tests (${{ matrix.base }})
+    needs: build-images
+    runs-on: ubuntu-latest
+
+    env:
+      ARTIFACT_NAME: docker-gen-${{ matrix.base }}-image.tar
+      IMAGE: nginxproxy/docker-gen:test-${{ matrix.base }}
+
+    steps:
+      - name: Checkout Docker official images tests
+        uses: actions/checkout@v7
+        with:
+          repository: docker-library/official-images
+          path: official-images
+
+      - name: Download built image
+        uses: actions/download-artifact@v8
+        with:
+          name: "${{ env.ARTIFACT_NAME }}"
+
+      - name: Import built image
+        run: docker load < "${{ env.ARTIFACT_NAME }}"
+
+      - name: Run Docker specifications tests
+        run: official-images/test/run.sh "${{ env.IMAGE }}"
+  
   integration:
     name: Integration Tests
     needs: build-images

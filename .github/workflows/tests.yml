@@ -15,7 +15,7 @@ on:
       - "templates/*"
 
 jobs:
-  unit:
+  unit-tests:
     strategy:
       matrix:
         go-version:
@@ -32,8 +32,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-go@v6
         with:
@@ -48,6 +46,112 @@ jobs:
       - name: Check code formatting
         if: runner.os != 'Windows'
         run: make check-gofmt
+
+      - name: Run tests
+        run: make test
+  
+  build-images:
+    strategy:
+      matrix:
+        base: 
+          - alpine
+          - debian
+
+    name: Build ${{ matrix.base }} test image
+    runs-on: ubuntu-latest
+          
+    env:
+      ARTIFACT_NAME: docker-gen-${{ matrix.base }}-image.tar
+      IMAGE: nginxproxy/docker-gen:test-${{ matrix.base }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build image
+        run: make build-docker-gen-${{ matrix.base }}-test-image
+        working-directory: ./integration
+
+      - name: Inspect Image
+        run: docker inspect "${{ env.IMAGE }}"
+      
+      - name: Get docker-gen version
+        run: docker run --rm "${{ env.IMAGE }}" --version
+      
+      - name: List Docker Images
+        run: docker images
+      
+      - name: Save Docker image artifact
+        run: docker save "${{ env.IMAGE }}" > "${{ env.ARTIFACT_NAME}}"
+      
+      - name: Upload Image Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.ARTIFACT_NAME}}
+          path: ${{ env.ARTIFACT_NAME}}
+  
+  docker-specs-tests:
+    strategy:
+      matrix:
+        base: 
+          - alpine
+          - debian
+
+    name: Docker specs tests (${{ matrix.base }})
+    needs: build-images
+    runs-on: ubuntu-latest
+
+    env:
+      ARTIFACT_NAME: docker-gen-${{ matrix.base }}-image.tar
+      IMAGE: nginxproxy/docker-gen:test-${{ matrix.base }}
+
+    steps:
+      - name: Checkout Docker official images tests
+        uses: actions/checkout@v7
+        with:
+          repository: docker-library/official-images
+          path: official-images
+
+      - name: Download built image
+        uses: actions/download-artifact@v8
+        with:
+          name: "${{ env.ARTIFACT_NAME }}"
+
+      - name: Import built image
+        run: docker load < "${{ env.ARTIFACT_NAME }}"
+
+      - name: Run Docker specifications tests
+        run: official-images/test/run.sh "${{ env.IMAGE }}"
+  
+  integration-tests:
+    name: Integration Tests
+    needs: build-images
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./integration
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "./integration/go.mod"
+
+      - name: Install dependencies
+        run: make get-deps
+
+      - name: Download built images
+        uses: actions/download-artifact@v8
+        with:
+          path: integration
+          merge-multiple: true
+      
+      - name: Import built images
+        run: |
+          for flavor in alpine debian; do
+            docker load < "docker-gen-${flavor}-image.tar"
+          done 
 
       - name: Run tests
         run: make test

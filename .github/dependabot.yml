@@ -2,7 +2,9 @@ version: 2
 updates:
   # Maintain dependencies for Go modules
   - package-ecosystem: "gomod"
-    directory: "/"
+    directories:
+      - "/"
+      - "/integration"
     schedule:
       interval: "daily"
     commit-message:

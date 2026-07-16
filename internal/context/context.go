@@ -16,6 +16,7 @@ var (
 	mu                   sync.RWMutex
 	dockerInfo           Docker
 	dockerEnv            *docker.Env
+	currentContainer     *RuntimeContainer
 	hostnameRegex        = regexp.MustCompilePOSIX("^[[:alnum:]]{12}$")
 	mountinfoPrefixRegex = regexp.MustCompilePOSIX("^[0-9]+ [0-9]+ [0-9]+:[0-9]+ /")
 )
@@ -30,6 +31,12 @@ func (c *Context) Docker() Docker {
 	mu.RLock()
 	defer mu.RUnlock()
 	return dockerInfo
+}
+
+func (c *Context) CurrentContainer() *RuntimeContainer {
+	mu.RLock()
+	defer mu.RUnlock()
+	return currentContainer
 }
 
 func SetServerInfo(d *docker.DockerInfo) {
@@ -52,6 +59,12 @@ func SetDockerEnv(d *docker.Env) {
 	mu.Lock()
 	defer mu.Unlock()
 	dockerEnv = d
+}
+
+func SetCurrentContainer(c *RuntimeContainer) {
+	mu.Lock()
+	defer mu.Unlock()
+	currentContainer = c
 }
 
 type Network struct {

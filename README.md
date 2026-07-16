@@ -370,6 +370,8 @@ type Docker struct {
 // Host environment variables accessible from root in templates as .Env
 ```
 
+The root also exposes `.CurrentContainer`, the `RuntimeContainer` of the docker-gen container itself (or `nil` if it cannot be determined). Like `.Docker`, it is resolved independently from the container list, so it remains available even when `-only-exposed`/`-only-published` would filter the docker-gen container out; depending on filters, it may also be present in the containers the templates iterate over.
+
 For example, this is a JSON version of an emitted RuntimeContainer struct:
 
 ```json

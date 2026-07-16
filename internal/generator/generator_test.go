@@ -248,3 +248,59 @@ func TestGetContainersDevices(t *testing.T) {
 		{PathOnHost: "/dev/ttyACM0", PathInContainer: "/dev/ttyUSB0", Permissions: "rwm"},
 	}, containers[0].Devices)
 }
+
+func TestGetContainersSetsCurrentContainer(t *testing.T) {
+	orig := log.Writer()
+	log.SetOutput(io.Discard)
+	t.Cleanup(func() { log.SetOutput(orig) })
+
+	currentID := "current123456789"
+	saved := getCurrentContainerID
+	getCurrentContainerID = func(...string) string { return currentID }
+	t.Cleanup(func() { getCurrentContainerID = saved })
+	t.Cleanup(func() { context.SetCurrentContainer(nil) })
+
+	server, err := dockertest.NewServer("127.0.0.1:0", nil, nil)
+	if err != nil {
+		t.Fatalf("failed to create test server: %s", err)
+	}
+	t.Cleanup(server.Stop)
+	server.CustomHandler("/info", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"Containers":0,"Images":0,"NFd":11,"NGoroutines":21}`))
+	}))
+	server.CustomHandler("/version", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"Version":"19.03.12","Os":"Linux","GoVersion":"go1.13.14","Arch":"amd64","ApiVersion":"1.40"}`))
+	}))
+	server.CustomHandler("/networks", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("[]"))
+	}))
+	server.CustomHandler("/containers/json", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("[]"))
+	}))
+	server.CustomHandler(fmt.Sprintf("/containers/%s/json", currentID), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(docker.Container{ID: currentID, Name: "/self"})
+	}))
+
+	serverURL := fmt.Sprintf("tcp://%s", strings.TrimRight(strings.TrimPrefix(server.URL(), "http://"), "/"))
+	client, err := dockerclient.NewDockerClient(serverURL, false, "", "", "")
+	if err != nil {
+		t.Fatalf("failed to create client: %s", err)
+	}
+	client.SkipServerVersionCheck = true
+
+	apiVersion, err := client.Version()
+	if err != nil {
+		t.Fatalf("failed to retrieve version: %s", err)
+	}
+	context.SetDockerEnv(apiVersion)
+
+	g := &generator{Client: client, Endpoint: serverURL}
+	containers, err := g.getContainers(config.Config{})
+	assert.NoError(t, err)
+	assert.Empty(t, containers)
+
+	var emptyCtx context.Context
+	current := emptyCtx.CurrentContainer()
+	assert.NotNil(t, current)
+	assert.Equal(t, currentID, current.ID)
+}

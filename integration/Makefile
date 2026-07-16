@@ -1,19 +1,22 @@
 .SILENT :
 .PHONY : test
 
-TAG:=`git describe --tags`
+GIT_TAG:=`git describe --tags`
+IMAGE_REPO:=nginxproxy/docker-gen
+ALPINE_IMAGE:=$(IMAGE_REPO):test-alpine
+DEBIAN_IMAGE:=$(IMAGE_REPO):test-debian
 
-build-docker-gen-images: build-docker-gen-alpine-image build-docker-gen-debian-image
+build-docker-gen-test-images: build-docker-gen-alpine-test-image build-docker-gen-debian-test-image
 
-cleanup-docker-gen-images:
-	docker rmi nginxproxy/docker-gen:test-alpine || true
-	docker rmi nginxproxy/docker-gen:test-debian || true
+cleanup-docker-gen-test-images:
+	docker rmi $(ALPINE_IMAGE) || true
+	docker rmi $(DEBIAN_IMAGE) || true
 
-build-docker-gen-alpine-image:
-	docker build --build-arg DOCKER_GEN_VERSION=$(TAG) -t nginxproxy/docker-gen:test-alpine -f ../Dockerfile.alpine ../
+build-docker-gen-alpine-test-image:
+	docker build --build-arg DOCKER_GEN_VERSION=$(GIT_TAG) -t $(ALPINE_IMAGE) -f ../Dockerfile.alpine ../
 
-build-docker-gen-debian-image:
-	docker build --build-arg DOCKER_GEN_VERSION=$(TAG) -t nginxproxy/docker-gen:test-debian -f ../Dockerfile.debian ../
+build-docker-gen-debian-test-image:
+	docker build --build-arg DOCKER_GEN_VERSION=$(GIT_TAG) -t $(DEBIAN_IMAGE) -f ../Dockerfile.debian ../
 
 get-deps:
 	go mod download

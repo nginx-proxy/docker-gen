@@ -52,8 +52,49 @@ jobs:
       - name: Run tests
         run: make test
   
+  build-images:
+    strategy:
+      matrix:
+        base: 
+          - alpine
+          - debian
+
+    name: Build docker-gen ${{ matrix.base }} test image
+    runs-on: ubuntu-latest
+          
+    env:
+      IMAGE: nginxproxy/docker-gen:test-${{ matrix.base }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Build image
+        run: make build-docker-gen-${{ matrix.base }}-test-image
+        working-directory: ./integration
+
+      - name: Inspect Image
+        run: docker inspect "$IMAGE"
+      
+      - name: Get docker-gen version
+        run: docker run --rm "$IMAGE" --version
+      
+      - name: List Docker Images
+        run: docker images
+      
+      - name: Save Docker image artifact
+        run: docker save $IMAGE > docker-gen-${{ matrix.base }}-image.tar
+      
+      - name: Upload Image Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: docker-gen-${{ matrix.base }}-image.tar
+          path: docker-gen-${{ matrix.base }}-image.tar
+  
   integration:
     name: Integration Tests
+    needs: build-images
     runs-on: ubuntu-latest
 
     defaults:
@@ -72,12 +113,21 @@ jobs:
       - name: Install dependencies
         run: make get-deps
 
-      - name: Build docker-gen images
-        run: make build-docker-gen-images
+      - name: Download built images
+        uses: actions/download-artifact@v8
+        with:
+          path: integration
+          merge-multiple: true
+      
+      - name: Import built images
+        run: |
+          for flavor in alpine debian; do
+            docker load < "docker-gen-${flavor}-image.tar"
+          done 
 
       - name: Run tests
         run: make test
       
       - name: Cleanup docker-gen images
         if: always()
-        run: make cleanup-docker-gen-images
+        run: make cleanup-docker-gen-test-images

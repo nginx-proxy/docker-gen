@@ -456,6 +456,7 @@ server {{ $net.IP }}:{{ (index $value.Addresses 0).Port }};
 - _`groupByWithDefault $containers $fieldPath $defaultValue`_: Returns the same as `groupBy`, but containers that do not have a value for the field path are instead included in the map under the `$defaultValue` key.
 - _`groupByKeys $containers $fieldPath`_: Returns the same as `groupBy` but only returns the keys of the map.
 - _`groupByMulti $containers $fieldPath $sep`_: Like `groupBy`, but the string value specified by `$fieldPath` is first split by `$sep` into a list of strings. A container whose `$fieldPath` value contains a list of strings will show up in the map output under each of those strings.
+- _`groupByMultiKeyValuePairs $containers $fieldPath $listSep $kvpSep [$defaultKey]`_: Like `groupByMulti`, but the value is parsed into key/value pairs by `splitKeyValuePairs` and the containers are grouped by key.
 - _`groupByLabel $containers $label`_: Returns the same as `groupBy` but grouping by the given label's value. Containers that do not have the `$label` set are omitted.
 - _`groupByLabelWithDefault $containers $label $defaultValue`_: Returns the same as `groupBy` but grouping by the given label's value. Containers that do not have the `$label` set are included in the map under the `$defaultValue` key.
 - _`include $file`_: Returns content of `$file`, and empty string if file reading error.
@@ -493,6 +494,7 @@ Some functions are aliases for Go's [`strings`](https://pkg.go.dev/strings) pack
 - _`replace $string $old $new $count`_: Alias for [`strings.Replace`](http://golang.org/pkg/strings/#Replace). Replaces up to `$count` occurences of `$old` with `$new` in `$string`.
 - _`split $string $sep`_: Alias for [`strings.Split`](http://golang.org/pkg/strings/#Split). Splits `$string` into a slice of substrings delimited by `$sep`.
 - _`splitN $string $sep $count`_: Alias for [`strings.SplitN`](https://golang.org/pkg/strings/#SplitN). Splits `$string` into a slice of substrings delimited by `$sep`, with number of substrings returned determined by `$count`.
+- _`splitKeyValuePairs $string $listSep $kvpSep [$defaultKey]`_: Splits `$string` by `$listSep`, then splits each item by `$kvpSep` into a map of key/value pairs. Items without `$kvpSep` use `$defaultKey` as key, or the item itself when `$defaultKey` is empty or omitted.
 - _`toLower $string`_: Alias for [`strings.ToLower`](https://pkg.go.dev/strings#ToLower). Replace capital letters in `$string` to lowercase.
 - _`toUpper $string`_: Alias for [`strings.ToUpper`](https://pkg.go.dev/strings#ToUpper). Replace lowercase letters in `$string` to uppercase.
 

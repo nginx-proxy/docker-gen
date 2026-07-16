@@ -15,7 +15,7 @@ on:
       - "templates/*"
 
 jobs:
-  unit:
+  unit-tests:
     strategy:
       matrix:
         go-version:
@@ -59,10 +59,11 @@ jobs:
           - alpine
           - debian
 
-    name: Build docker-gen ${{ matrix.base }} test image
+    name: Build ${{ matrix.base }} test image
     runs-on: ubuntu-latest
           
     env:
+      ARTIFACT_NAME: docker-gen-${{ matrix.base }}-image.tar
       IMAGE: nginxproxy/docker-gen:test-${{ matrix.base }}
 
     steps:
@@ -75,22 +76,22 @@ jobs:
         working-directory: ./integration
 
       - name: Inspect Image
-        run: docker inspect "$IMAGE"
+        run: docker inspect "${{ env.IMAGE }}"
       
       - name: Get docker-gen version
-        run: docker run --rm "$IMAGE" --version
+        run: docker run --rm "${{ env.IMAGE }}" --version
       
       - name: List Docker Images
         run: docker images
       
       - name: Save Docker image artifact
-        run: docker save $IMAGE > docker-gen-${{ matrix.base }}-image.tar
+        run: docker save "${{ env.IMAGE }}" > "${{ env.ARTIFACT_NAME}}"
       
       - name: Upload Image Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: docker-gen-${{ matrix.base }}-image.tar
-          path: docker-gen-${{ matrix.base }}-image.tar
+          name: ${{ env.ARTIFACT_NAME}}
+          path: ${{ env.ARTIFACT_NAME}}
   
   docker-specs-tests:
     strategy:
@@ -125,7 +126,7 @@ jobs:
       - name: Run Docker specifications tests
         run: official-images/test/run.sh "${{ env.IMAGE }}"
   
-  integration:
+  integration-tests:
     name: Integration Tests
     needs: build-images
     runs-on: ubuntu-latest
@@ -160,7 +161,3 @@ jobs:
 
       - name: Run tests
         run: make test
-      
-      - name: Cleanup docker-gen images
-        if: always()
-        run: make cleanup-docker-gen-test-images

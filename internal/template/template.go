@@ -105,7 +105,9 @@ func newTemplate(name string) *template.Template {
 		"whereLabelValueMatches":  whereLabelValueMatches,
 
 		// validation functions
-		"mustBeOneOf": mustBeOneOf,
+		"mustBeOneOf":      mustBeOneOf,
+		"mustBeInt":        mustBeInt,
+		"mustBeIntInRange": mustBeIntInRange,
 
 		// legacy docker-gen template function aliased to their Sprig clone
 		"json":      sprigFuncMap["mustToJson"],

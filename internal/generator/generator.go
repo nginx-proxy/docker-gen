@@ -29,8 +29,9 @@ type generator struct {
 	All                        bool
 	EventFilter                map[string][]string
 
-	wg    sync.WaitGroup
-	retry bool
+	wg                    sync.WaitGroup
+	retry                 bool
+	getCurrentContainerID func(...string) string
 }
 
 type GeneratorConfig struct {
@@ -44,6 +45,8 @@ type GeneratorConfig struct {
 	EventFilter map[string][]string
 
 	ConfigFile config.ConfigFile
+
+	GetCurrentContainerID func(...string) string
 }
 
 func NewGenerator(gc GeneratorConfig) (*generator, error) {
@@ -66,15 +69,16 @@ func NewGenerator(gc GeneratorConfig) (*generator, error) {
 	context.SetDockerEnv(apiVersion)
 
 	return &generator{
-		Client:      client,
-		Endpoint:    gc.Endpoint,
-		TLSVerify:   gc.TLSVerify,
-		TLSCert:     gc.TLSCert,
-		TLSCaCert:   gc.TLSCACert,
-		TLSKey:      gc.TLSKey,
-		EventFilter: gc.EventFilter,
-		Configs:     gc.ConfigFile,
-		retry:       true,
+		Client:                client,
+		Endpoint:              gc.Endpoint,
+		TLSVerify:             gc.TLSVerify,
+		TLSCert:               gc.TLSCert,
+		TLSCaCert:             gc.TLSCACert,
+		TLSKey:                gc.TLSKey,
+		EventFilter:           gc.EventFilter,
+		Configs:               gc.ConfigFile,
+		getCurrentContainerID: gc.GetCurrentContainerID,
+		retry:                 true,
 	}, nil
 }
 
@@ -396,14 +400,17 @@ func sortNetworks(networks []context.Network) {
 	})
 }
 
-var getCurrentContainerID = context.GetCurrentContainerID
-
 func (g *generator) getContainers(config config.Config) ([]*context.RuntimeContainer, error) {
 	apiInfo, err := g.Client.Info()
 	if err != nil {
 		log.Printf("Error retrieving docker server info: %s\n", err)
 	} else {
 		context.SetServerInfo(apiInfo)
+	}
+
+	if g.getCurrentContainerID != nil {
+		id := g.getCurrentContainerID()
+		context.SetCurrentContainerID(id)
 	}
 
 	apiContainers, err := g.Client.ListContainers(docker.ListContainersOptions{
@@ -439,7 +446,11 @@ func (g *generator) getContainers(config config.Config) ([]*context.RuntimeConta
 }
 
 func (g *generator) currentContainer(containers []*context.RuntimeContainer, networks map[string]docker.Network) *context.RuntimeContainer {
-	currentID := getCurrentContainerID()
+	if g.getCurrentContainerID == nil {
+		return nil
+	}
+
+	currentID := g.getCurrentContainerID()
 	if currentID == "" {
 		return nil
 	}

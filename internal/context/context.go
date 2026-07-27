@@ -43,15 +43,14 @@ func SetServerInfo(d *docker.DockerInfo) {
 	mu.Lock()
 	defer mu.Unlock()
 	dockerInfo = Docker{
-		Name:               d.Name,
-		NumContainers:      d.Containers,
-		NumImages:          d.Images,
-		Version:            dockerEnv.Get("Version"),
-		ApiVersion:         dockerEnv.Get("ApiVersion"),
-		GoVersion:          dockerEnv.Get("GoVersion"),
-		OperatingSystem:    dockerEnv.Get("Os"),
-		Architecture:       dockerEnv.Get("Arch"),
-		CurrentContainerID: GetCurrentContainerID(),
+		Name:            d.Name,
+		NumContainers:   d.Containers,
+		NumImages:       d.Images,
+		Version:         dockerEnv.Get("Version"),
+		ApiVersion:      dockerEnv.Get("ApiVersion"),
+		GoVersion:       dockerEnv.Get("GoVersion"),
+		OperatingSystem: dockerEnv.Get("Os"),
+		Architecture:    dockerEnv.Get("Arch"),
 	}
 }
 
@@ -65,6 +64,12 @@ func SetCurrentContainer(c *RuntimeContainer) {
 	mu.Lock()
 	defer mu.Unlock()
 	currentContainer = c
+}
+
+func SetCurrentContainerID(id string) {
+	mu.Lock()
+	defer mu.Unlock()
+	dockerInfo.CurrentContainerID = id
 }
 
 type Network struct {

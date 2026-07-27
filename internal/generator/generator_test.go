@@ -255,10 +255,6 @@ func TestGetContainersSetsCurrentContainer(t *testing.T) {
 	t.Cleanup(func() { log.SetOutput(orig) })
 
 	currentID := "current123456789"
-	saved := getCurrentContainerID
-	getCurrentContainerID = func(...string) string { return currentID }
-	t.Cleanup(func() { getCurrentContainerID = saved })
-	t.Cleanup(func() { context.SetCurrentContainer(nil) })
 
 	server, err := dockertest.NewServer("127.0.0.1:0", nil, nil)
 	if err != nil {
@@ -294,7 +290,12 @@ func TestGetContainersSetsCurrentContainer(t *testing.T) {
 	}
 	context.SetDockerEnv(apiVersion)
 
-	g := &generator{Client: client, Endpoint: serverURL}
+	g := &generator{
+		Client:                client,
+		Endpoint:              serverURL,
+		getCurrentContainerID: func(...string) string { return currentID },
+	}
+
 	containers, err := g.getContainers(config.Config{})
 	assert.NoError(t, err)
 	assert.Empty(t, containers)

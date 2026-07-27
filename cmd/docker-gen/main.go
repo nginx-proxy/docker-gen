@@ -14,6 +14,7 @@ import (
 	"github.com/BurntSushi/toml"
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/nginx-proxy/docker-gen/internal/config"
+	"github.com/nginx-proxy/docker-gen/internal/context"
 	"github.com/nginx-proxy/docker-gen/internal/generator"
 )
 
@@ -242,13 +243,14 @@ func main() {
 	}
 
 	generator, err := generator.NewGenerator(generator.GeneratorConfig{
-		Endpoint:    endpoint,
-		TLSKey:      tlsKey,
-		TLSCert:     tlsCert,
-		TLSCACert:   tlsCaCert,
-		TLSVerify:   tlsVerify,
-		EventFilter: eventFilter,
-		ConfigFile:  configs,
+		Endpoint:              endpoint,
+		TLSKey:                tlsKey,
+		TLSCert:               tlsCert,
+		TLSCACert:             tlsCaCert,
+		TLSVerify:             tlsVerify,
+		EventFilter:           eventFilter,
+		ConfigFile:            configs,
+		GetCurrentContainerID: context.GetCurrentContainerID,
 	})
 
 	if err != nil {

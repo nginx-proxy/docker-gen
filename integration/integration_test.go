@@ -29,6 +29,7 @@ func TestDockergenContainers(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, dockergenContainer.GetContainerID(), result.Docker.CurrentContainerID)
+			assert.Equal(t, dockergenContainer.GetContainerID(), result.CurrentContainer.ID)
 			assert.Len(t, result.Containers, 1)
 			assert.Equal(t, dockergenContainer.GetContainerID(), result.Containers[0].ID)
 		})

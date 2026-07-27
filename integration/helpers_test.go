@@ -17,9 +17,10 @@ import (
 )
 
 type templateResult struct {
-	Docker     docker             `json:"Docker"`
-	Env        map[string]string  `json:"Env"`
-	Containers []runtimeContainer `json:"Containers"`
+	Docker           docker             `json:"Docker"`
+	Env              map[string]string  `json:"Env"`
+	CurrentContainer runtimeContainer   `json:"CurrentContainer"`
+	Containers       []runtimeContainer `json:"Containers"`
 }
 
 type docker struct {

@@ -1,9 +1,30 @@
 package template
 
 import (
-	"strings"
+	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
+
+type parserExpectation struct {
+	wantValue  string
+	wantErr    bool
+	errSnippet string
+}
+
+func assertParserResult(t *testing.T, call string, got string, err error, expect parserExpectation) {
+	t.Helper()
+
+	if expect.wantErr {
+		assert.ErrorContains(t, err, expect.errSnippet, "%q: expected error containing %q, got: %v", call, expect.errSnippet, err)
+		assert.Empty(t, got, "%q: expected empty result when error occurs, got: %q", call, got)
+		return
+	}
+
+	assert.NoError(t, err, "%q: unexpected error: %v", call, err)
+	assert.Equal(t, expect.wantValue, got, "%q: unexpected result, got %q, want %q", call, got, expect.wantValue)
+}
 
 func TestMustParseHSTS(t *testing.T) {
 	testCases := []struct {
@@ -85,26 +106,12 @@ func TestMustParseHSTS(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := mustParseHSTS(tc.input)
-
-			if tc.wantErr {
-				if err == nil {
-					t.Fatalf("mustParseHSTS(%q) expected an error; got nil", tc.input)
-				}
-				if got != "" {
-					t.Fatalf("mustParseHSTS(%q) returned unexpected value on error: %q", tc.input, got)
-				}
-				if tc.errSnippet != "" && !strings.Contains(err.Error(), tc.errSnippet) {
-					t.Fatalf("mustParseHSTS(%q) error %q does not contain %q", tc.input, err.Error(), tc.errSnippet)
-				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("mustParseHSTS(%q) returned unexpected error: %v", tc.input, err)
-			}
-			if got != tc.wantValue {
-				t.Fatalf("mustParseHSTS(%q) returned %q; want %q", tc.input, got, tc.wantValue)
-			}
+			call := fmt.Sprintf("mustParseHSTS(%q)", tc.input)
+			assertParserResult(t, call, got, err, parserExpectation{
+				wantValue:  tc.wantValue,
+				wantErr:    tc.wantErr,
+				errSnippet: tc.errSnippet,
+			})
 		})
 	}
 }

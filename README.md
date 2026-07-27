@@ -460,6 +460,9 @@ server {{ $net.IP }}:{{ (index $value.Addresses 0).Port }};
 - _`groupByLabelWithDefault $containers $label $defaultValue`_: Returns the same as `groupBy` but grouping by the given label's value. Containers that do not have the `$label` set are included in the map under the `$defaultValue` key.
 - _`include $file`_: Returns content of `$file`, and empty string if file reading error.
 - _`intersect $slice1 $slice2`_: Returns the strings that exist in both string slices.
+- _`mustBeOneOf $slice $value`_: Validates that `$value` is one of the allowed string values in `$slice`, returns `$value` on success and an error otherwise.
+- _`mustBeInt $value`_: Validates that `$value` is a base-10 integer string, returns `$value` on success and an error otherwise.
+- _`mustBeIntInRange $min $max $value`_: Validates that `$value` is a base-10 integer string in the inclusive range `$min..$max`, returns `$value` on success and an error otherwise.
 - _`fromYaml $string` / `mustFromYaml $string`_: Similar to [Sprig's `fromJson` / `mustFromJson`](https://github.com/Masterminds/sprig/blob/master/docs/defaults.md#fromjson-mustfromjson), but for YAML.
 - _`toYaml $dict` / `mustToYaml $dict`_: Similar to [Sprig's `toJson` / `mustToJson`](https://github.com/Masterminds/sprig/blob/master/docs/defaults.md#tojson-musttojson), but for YAML.
 - _`keys $map`_: Returns the keys from `$map`. If `$map` is `nil`, a `nil` is returned. If `$map` is not a `map`, an error will be thrown.

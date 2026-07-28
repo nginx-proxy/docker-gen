@@ -11,6 +11,8 @@ type hstsDirectives struct {
 	Preload           bool
 }
 
+// mustParseHSTS validates and normalizes the Strict-Transport-Security header value according to its specification.
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Strict-Transport-Security
 func mustParseHSTS(value string) (string, error) {
 	if value == "" {
 		return "", fmt.Errorf("HSTS value cannot be empty")

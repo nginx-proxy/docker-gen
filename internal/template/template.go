@@ -109,6 +109,9 @@ func newTemplate(name string) *template.Template {
 		"mustBeInt":        mustBeInt,
 		"mustBeIntInRange": mustBeIntInRange,
 
+		// nginx validation functions
+		"mustParseHSTS": mustParseHSTS,
+
 		// legacy docker-gen template function aliased to their Sprig clone
 		"json":      sprigFuncMap["mustToJson"],
 		"parseJson": sprigFuncMap["mustFromJson"],

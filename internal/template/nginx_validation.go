@@ -11,8 +11,8 @@ type hstsDirectives struct {
 	Preload           bool
 }
 
-// mustParseHSTS validates and normalizes the Strict-Transport-Security header value according to its specification.
-// https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Strict-Transport-Security
+// mustParseHSTS validates and normalizes a Strict-Transport-Security header value.
+// It also accepts the special value "off" (nginx-proxy convention) to indicate the header should not be set.
 func mustParseHSTS(value string) (string, error) {
 	if value == "" {
 		return "", fmt.Errorf("HSTS value cannot be empty")
@@ -27,7 +27,16 @@ func mustParseHSTS(value string) (string, error) {
 	for directive := range strings.SplitSeq(value, ";") {
 		directive = strings.TrimSpace(directive)
 		if strings.HasPrefix(directive, "max-age=") {
-			_, err := fmt.Sscanf(directive, "max-age=%d", &directives.MaxAge)
+			maxAgeStr := strings.TrimPrefix(directive, "max-age=")
+			if maxAgeStr == "" {
+				return "", fmt.Errorf("invalid max-age directive: %s", directive)
+			}
+			for _, r := range maxAgeStr {
+				if r < '0' || r > '9' {
+					return "", fmt.Errorf("invalid max-age directive: %s", directive)
+				}
+			}
+			_, err := fmt.Sscanf(maxAgeStr, "%d", &directives.MaxAge)
 			if err != nil {
 				return "", fmt.Errorf("invalid max-age directive: %s", directive)
 			}

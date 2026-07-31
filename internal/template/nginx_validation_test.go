@@ -60,8 +60,13 @@ func TestMustParseHSTS(t *testing.T) {
 			wantValue: "max-age=31536000; includeSubDomains; preload",
 		},
 		{
+			name:      "function is case-insensitive",
+			input:     "Max-Age=31536000; includesubdomains; PRELOAD",
+			wantValue: "max-age=31536000; includeSubDomains; preload",
+		},
+		{
 			name:       "empty value is rejected",
-			input:      "",
+			input:      " ",
 			wantErr:    true,
 			errSnippet: "cannot be empty",
 		},

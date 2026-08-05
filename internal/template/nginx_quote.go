@@ -33,7 +33,7 @@ func nginxQuote(value string) (string, error) {
 	shouldBeQuoted := hasUnescapedNginxSpecialChars(value) || hasUnescapedSingleQuote || hasUnescapedDoubleQuote
 
 	if shouldBeQuoted {
-		// quote the value with single quotes if it contains unescaped single quotes, otherwise use double quotes
+		// quote the value with single quotes if it contains unescaped double quotes, otherwise use double quotes
 		if hasUnescapedDoubleQuote {
 			return fmt.Sprintf("'%s'", value), nil
 		}

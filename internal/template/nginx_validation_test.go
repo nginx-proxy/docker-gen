@@ -71,7 +71,7 @@ func TestMustParseHSTS(t *testing.T) {
 			errSnippet: "cannot be empty",
 		},
 		{
-			name:       "max-age with empty valkue is rejected",
+			name:       "max-age with empty value is rejected",
 			input:      "max-age=",
 			wantErr:    true,
 			errSnippet: "invalid max-age directive",

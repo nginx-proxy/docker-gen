@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// nginxQuote quotes a string if it contains unescaped Nginx special characters or unescaped quotes.
+// nginxQuote trim then quotes a string if it contains unescaped Nginx special characters or unescaped quotes.
 // It returns an error if the string contains line breaks or both unescaped single and double quotes.
 func nginxQuote(value string) (string, error) {
 	value = strings.TrimSpace(value)
@@ -52,7 +52,7 @@ func hasUnescapedNginxSpecialChars(value string) bool {
 			if i == 0 {
 				// leading nginx special character found
 				return true
-			} else if value[i-1] != '\\' {
+			} else if !isEscapedAt(value, i) {
 				// unescaped nginx special character found
 				return !isQuoted(value)
 			}
@@ -63,37 +63,41 @@ func hasUnescapedNginxSpecialChars(value string) bool {
 
 // hasUnescapedSingleQuote checks if the given string contains an unescaped single quote character.
 func hasUnescapedSingleQuote(value string) bool {
+	length := len(value)
+
 	for i, char := range value {
 		if char == '\'' {
 			switch i {
 			case 0: // leading single quote
-				if len(value) < 2 {
+				if length < 2 {
 					// value is a single quote character
 					return true
 				}
-				if value[len(value)-1] != '\'' || value[len(value)-2] == '\\' {
+				if value[length-1] != '\'' || isEscapedAt(value, length-1) {
 					// is found without a matching unescaped trailing single quote
 					return true
 				}
-			case len(value) - 1: // trailing single quote
-				if value[i-1] != '\\' && value[0] != '\'' {
+			case length - 1: // trailing single quote
+				if !isEscapedAt(value, i) && value[0] != '\'' {
 					// is not escaped and found without a matching leading single quote
 					return true
 				}
 			default:
-				if value[i-1] != '\\' {
+				if !isEscapedAt(value, i) {
 					// unescaped single quote is found in the middle of the string
 					return !isDoubleQuoted(value)
 				}
 			}
 		}
 	}
+
 	return false
 }
 
 // hasUnescapedDoubleQuote checks if the given string contains an unescaped double quote character.
 func hasUnescapedDoubleQuote(value string) bool {
 	length := len(value)
+
 	for i, char := range value {
 		if char == '"' {
 			switch i {
@@ -102,23 +106,24 @@ func hasUnescapedDoubleQuote(value string) bool {
 					// value is a double quote character
 					return true
 				}
-				if value[length-1] != '"' || value[length-2] == '\\' {
+				if value[length-1] != '"' || isEscapedAt(value, length-1) {
 					// is found without a matching unescaped trailing double quote
 					return true
 				}
 			case length - 1: // trailing double quote
-				if value[i-1] != '\\' && value[0] != '"' {
+				if !isEscapedAt(value, i) && value[0] != '"' {
 					// is not escaped and found without a matching leading double quote
 					return true
 				}
 			default:
-				if value[i-1] != '\\' {
+				if !isEscapedAt(value, i) {
 					// unescaped double quote is found in the middle of the string
 					return !isSingleQuoted(value)
 				}
 			}
 		}
 	}
+
 	return false
 }
 
@@ -129,21 +134,37 @@ func isQuoted(value string) bool {
 
 // isSingleQuoted checks if the given string is enclosed in single quotes and the trailing quote is not escaped.
 func isSingleQuoted(value string) bool {
-	if len(value) < 2 {
-		return false
-	}
-	hasLeadingSingleQuote := strings.HasPrefix(value, "'")
-	hasTrailingUnescapedSingleQuote := strings.HasSuffix(value, "'") && value[len(value)-2] != '\\'
-	return hasLeadingSingleQuote && hasTrailingUnescapedSingleQuote
+	return isQuotedWith(value, '\'')
 }
 
 // isDoubleQuoted checks if the given string is enclosed in double quotes and the trailing quote is not escaped.
 func isDoubleQuoted(value string) bool {
-	if len(value) < 2 {
+	return isQuotedWith(value, '"')
+}
+
+// isQuotedWith checks if the given string is enclosed in the specified quote character and the trailing quote is not escaped.
+func isQuotedWith(value string, quoteChar rune) bool {
+	length := len(value)
+
+	if length < 2 {
 		return false
 	}
 
-	hasLeadingDoubleQuote := strings.HasPrefix(value, "\"")
-	hasTrailingUnescapedDoubleQuote := strings.HasSuffix(value, "\"") && value[len(value)-2] != '\\'
-	return hasLeadingDoubleQuote && hasTrailingUnescapedDoubleQuote
+	hasLeadingQuote := strings.HasPrefix(value, string(quoteChar))
+	hasTrailingUnescapedQuote := strings.HasSuffix(value, string(quoteChar)) && !isEscapedAt(value, length-1)
+	return hasLeadingQuote && hasTrailingUnescapedQuote
+}
+
+// isEscapedAt checks whether the character at index i is escaped by an odd-length run of preceding backslashes.
+func isEscapedAt(value string, i int) bool {
+	if i <= 0 || i > len(value) {
+		return false
+	}
+
+	precedingBackslashes := 0
+	for j := i - 1; j >= 0 && value[j] == '\\'; j-- {
+		precedingBackslashes++
+	}
+
+	return precedingBackslashes%2 == 1
 }

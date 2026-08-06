@@ -25,6 +25,11 @@ func TestNginxQuote(t *testing.T) {
 				wantValue: fmt.Sprintf(`"foo%sbar"`, char),
 			},
 			testCase{
+				name:      fmt.Sprintf("string with incorrectly escaped %q is quoted", char),
+				input:     fmt.Sprintf(`foo\\%sbar`, char),
+				wantValue: fmt.Sprintf(`"foo\\%sbar"`, char),
+			},
+			testCase{
 				name:      fmt.Sprintf("quoted string with unescaped %q is untouched", char),
 				input:     fmt.Sprintf(`"foo%sbar"`, char),
 				wantValue: fmt.Sprintf(`"foo%sbar"`, char),
@@ -43,6 +48,11 @@ func TestNginxQuote(t *testing.T) {
 			name:      `string with unescaped " is quoted`,
 			input:     `foo"bar`,
 			wantValue: `'foo"bar'`,
+		},
+		testCase{
+			name:      `string with incorrectly escaped " is quoted`,
+			input:     `foo\\"bar`,
+			wantValue: `'foo\\"bar'`,
 		},
 		testCase{
 			name:      `quoted string with unescaped " is untouched`,
@@ -381,6 +391,77 @@ func TestIsQuoted(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got := isQuoted(tc.input)
 			assert.Equal(t, tc.wantValue, got, "isQuoted(%q) returned %v; want %v", tc.input, got, tc.wantValue)
+		})
+	}
+}
+
+func TestIsEscapedAt(t *testing.T) {
+	testCases := []struct {
+		name      string
+		input     string
+		index     int
+		wantValue bool
+	}{
+		{
+			name:      "index zero is never escaped",
+			input:     `\a`,
+			index:     0,
+			wantValue: false,
+		},
+		{
+			name:      "negative index is never escaped",
+			input:     `\a`,
+			index:     -1,
+			wantValue: false,
+		},
+		{
+			name:      "index beyond length is never escaped",
+			input:     `abc`,
+			index:     4,
+			wantValue: false,
+		},
+		{
+			name:      "character with no preceding backslash is not escaped",
+			input:     `abc`,
+			index:     2,
+			wantValue: false,
+		},
+		{
+			name:      "character preceded by one backslash is escaped",
+			input:     `a\b`,
+			index:     2,
+			wantValue: true,
+		},
+		{
+			name:      "character preceded by two backslashes is not escaped",
+			input:     `a\\b`,
+			index:     3,
+			wantValue: false,
+		},
+		{
+			name:      "character preceded by three backslashes is escaped",
+			input:     `a\\\b`,
+			index:     4,
+			wantValue: true,
+		},
+		{
+			name:      "character at end of string preceded by one backslash is escaped",
+			input:     `foo\"`,
+			index:     4,
+			wantValue: true,
+		},
+		{
+			name:      "character at end of string preceded by two backslashes is not escaped",
+			input:     `foo\\"`,
+			index:     5,
+			wantValue: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := isEscapedAt(tc.input, tc.index)
+			assert.Equal(t, tc.wantValue, got, "isEscapedAt(%q, %d) returned %v; want %v", tc.input, tc.index, got, tc.wantValue)
 		})
 	}
 }

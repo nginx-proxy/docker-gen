@@ -24,8 +24,8 @@ func nginxQuote(value string) (string, error) {
 	}
 
 	// error if the value contains both unescaped single and double quotes
-	hasUnescapedSingleQuote := hasUnescapedSingleQuote(value)
-	hasUnescapedDoubleQuote := hasUnescapedDoubleQuote(value)
+	hasUnescapedSingleQuote := hasUnescapedQuotingChar(value, '\'')
+	hasUnescapedDoubleQuote := hasUnescapedQuotingChar(value, '"')
 	if hasUnescapedSingleQuote && hasUnescapedDoubleQuote {
 		return "", fmt.Errorf("value has both unescaped single and double quotes: %s", value)
 	}
@@ -61,64 +61,34 @@ func hasUnescapedNginxSpecialChars(value string) bool {
 	return false
 }
 
-// hasUnescapedSingleQuote checks if the given string contains an unescaped single quote character.
-func hasUnescapedSingleQuote(value string) bool {
+// hasUnescapedQuotingChar checks if the given string contains any unescaped quoting characters (single or double quotes).
+func hasUnescapedQuotingChar(value string, quoteChar rune) bool {
 	length := len(value)
 
 	for i, char := range value {
-		if char == '\'' {
+		if char == quoteChar {
 			switch i {
-			case 0: // leading single quote
+			case 0: // leading quote
 				if length < 2 {
-					// value is a single quote character
+					// value is a single quoting character
 					return true
 				}
-				if value[length-1] != '\'' || isEscapedAt(value, length-1) {
-					// is found without a matching unescaped trailing single quote
+				if rune(value[length-1]) != quoteChar || isEscapedAt(value, length-1) {
+					// is found without a matching unescaped trailing quote
 					return true
 				}
-			case length - 1: // trailing single quote
-				if !isEscapedAt(value, i) && value[0] != '\'' {
-					// is not escaped and found without a matching leading single quote
+			case length - 1: // trailing quote
+				if !isEscapedAt(value, i) && rune(value[0]) != quoteChar {
+					// is not escaped and found without a matching leading quote
 					return true
 				}
 			default:
 				if !isEscapedAt(value, i) {
-					// unescaped single quote is found in the middle of the string
-					return !isDoubleQuoted(value)
-				}
-			}
-		}
-	}
-
-	return false
-}
-
-// hasUnescapedDoubleQuote checks if the given string contains an unescaped double quote character.
-func hasUnescapedDoubleQuote(value string) bool {
-	length := len(value)
-
-	for i, char := range value {
-		if char == '"' {
-			switch i {
-			case 0: // leading double quote
-				if length < 2 {
-					// value is a double quote character
-					return true
-				}
-				if value[length-1] != '"' || isEscapedAt(value, length-1) {
-					// is found without a matching unescaped trailing double quote
-					return true
-				}
-			case length - 1: // trailing double quote
-				if !isEscapedAt(value, i) && value[0] != '"' {
-					// is not escaped and found without a matching leading double quote
-					return true
-				}
-			default:
-				if !isEscapedAt(value, i) {
-					// unescaped double quote is found in the middle of the string
-					return !isSingleQuoted(value)
+					// unescaped quote is found in the middle of the string
+					if quoteChar == '"' {
+						return !isQuotedWith(value, '\'')
+					}
+					return !isQuotedWith(value, '"')
 				}
 			}
 		}
@@ -129,17 +99,7 @@ func hasUnescapedDoubleQuote(value string) bool {
 
 // isQuoted checks if the given string is enclosed in single or double quotes and the trailing quote is not escaped.
 func isQuoted(value string) bool {
-	return isSingleQuoted(value) || isDoubleQuoted(value)
-}
-
-// isSingleQuoted checks if the given string is enclosed in single quotes and the trailing quote is not escaped.
-func isSingleQuoted(value string) bool {
-	return isQuotedWith(value, '\'')
-}
-
-// isDoubleQuoted checks if the given string is enclosed in double quotes and the trailing quote is not escaped.
-func isDoubleQuoted(value string) bool {
-	return isQuotedWith(value, '"')
+	return isQuotedWith(value, '\'') || isQuotedWith(value, '"')
 }
 
 // isQuotedWith checks if the given string is enclosed in the specified quote character and the trailing quote is not escaped.

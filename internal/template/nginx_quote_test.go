@@ -191,7 +191,7 @@ func TestHasUnescapedSingleQuote(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := hasUnescapedSingleQuote(tc.input)
+			got := hasUnescapedQuotingChar(tc.input, '\'')
 			assert.Equal(t, tc.wantValue, got, "hasUnescapedSingleQuote(%q) returned %v; want %v", tc.input, got, tc.wantValue)
 		})
 	}
@@ -263,7 +263,7 @@ func TestHasUnescapedDoubleQuote(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := hasUnescapedDoubleQuote(tc.input)
+			got := hasUnescapedQuotingChar(tc.input, '"')
 			assert.Equal(t, tc.wantValue, got, "hasUnescapedDoubleQuote(%q) returned %v; want %v", tc.input, got, tc.wantValue)
 		})
 	}
@@ -310,7 +310,7 @@ func TestIsSingleQuoted(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := isSingleQuoted(tc.input)
+			got := isQuotedWith(tc.input, '\'')
 			assert.Equal(t, tc.wantValue, got, "isSingleQuoted(%q) returned %v; want %v", tc.input, got, tc.wantValue)
 		})
 	}
@@ -357,7 +357,7 @@ func TestIsDoubleQuoted(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := isDoubleQuoted(tc.input)
+			got := isQuotedWith(tc.input, '"')
 			assert.Equal(t, tc.wantValue, got, "isDoubleQuoted(%q) returned %v; want %v", tc.input, got, tc.wantValue)
 		})
 	}

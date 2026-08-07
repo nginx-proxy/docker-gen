@@ -16,7 +16,7 @@ type testCase struct {
 func TestNginxQuote(t *testing.T) {
 	testCases := []testCase{}
 
-	for _, char := range []string{"{", "}", ";", "#", " ", "'"} {
+	for _, char := range []string{"{", "}", ";", "#", " ", "\t", "'"} {
 		testCases = append(
 			testCases,
 			testCase{
@@ -91,6 +91,53 @@ func TestNginxQuote(t *testing.T) {
 		assert.Error(t, err, "nginxQuote(`foo'bar\"baz`) did not return an error for a string with both unescaped single and double quotes")
 		assert.Empty(t, got, "nginxQuote(`foo'bar\"baz`) returned %q; want empty string", got)
 	})
+}
+
+func TestQuoteWith(t *testing.T) {
+	testCases := []struct {
+		name      string
+		input     string
+		quoteChar rune
+		wantValue string
+	}{
+		{
+			name:      "wraps value with double quotes",
+			input:     `value`,
+			quoteChar: '"',
+			wantValue: `"value"`,
+		},
+		{
+			name:      "wraps value with single quotes",
+			input:     `value`,
+			quoteChar: '\'',
+			wantValue: `'value'`,
+		},
+		{
+			name:      "keeps internal escaped quotes unchanged",
+			input:     `foo\"bar`,
+			quoteChar: '"',
+			wantValue: `"foo\"bar"`,
+		},
+		{
+			name:      "trailing escaped backslash stays unchanged",
+			input:     `foo\\`,
+			quoteChar: '"',
+			wantValue: `"foo\\"`,
+		},
+		{
+			name:      "trailing unescaped backslash is escaped",
+			input:     `foo\`,
+			quoteChar: '"',
+			wantValue: `"foo\\"`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := quoteWith(tc.input, tc.quoteChar)
+			assert.Equal(t, tc.wantValue, got, "quoteWith(%q, %q) returned %q; want %q", tc.input, tc.quoteChar, got, tc.wantValue)
+		})
+	}
 }
 
 func TestHasUnescapedNginxSpecialChars(t *testing.T) {
@@ -417,7 +464,13 @@ func TestIsEscapedAt(t *testing.T) {
 		{
 			name:      "index beyond length is never escaped",
 			input:     `abc`,
-			index:     4,
+			index:     3,
+			wantValue: false,
+		},
+		{
+			name:      "non existent character is not escaped",
+			input:     `a\`,
+			index:     2,
 			wantValue: false,
 		},
 		{

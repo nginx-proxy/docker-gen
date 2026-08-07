@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// nginxQuote trim then quotes a string if it contains unescaped Nginx special characters or unescaped quotes.
+// nginxQuote trims then quotes a string if it contains unescaped Nginx special characters or unescaped quotes.
 // It returns an error if the string contains line breaks or both unescaped single and double quotes.
 func nginxQuote(value string) (string, error) {
 	value = strings.TrimSpace(value)
@@ -19,7 +19,7 @@ func nginxQuote(value string) (string, error) {
 	lineBreaks := []string{"\n", "\r"}
 	for _, char := range lineBreaks {
 		if strings.Contains(value, char) {
-			return "", fmt.Errorf("value must not contain line breaks: %s", value)
+			return "", fmt.Errorf("value must not contain line breaks: %q", value)
 		}
 	}
 
@@ -27,7 +27,7 @@ func nginxQuote(value string) (string, error) {
 	hasUnescapedSingleQuote := hasUnescapedQuotingChar(value, '\'')
 	hasUnescapedDoubleQuote := hasUnescapedQuotingChar(value, '"')
 	if hasUnescapedSingleQuote && hasUnescapedDoubleQuote {
-		return "", fmt.Errorf("value has both unescaped single and double quotes: %s", value)
+		return "", fmt.Errorf("value has both unescaped single and double quotes: %q", value)
 	}
 
 	shouldBeQuoted := hasUnescapedNginxSpecialChars(value) || hasUnescapedSingleQuote || hasUnescapedDoubleQuote
@@ -35,18 +35,27 @@ func nginxQuote(value string) (string, error) {
 	if shouldBeQuoted {
 		// quote the value with single quotes if it contains unescaped double quotes, otherwise use double quotes
 		if hasUnescapedDoubleQuote {
-			return fmt.Sprintf("'%s'", value), nil
+			return quoteWith(value, '\''), nil
 		}
-		return fmt.Sprintf("\"%s\"", value), nil
+		return quoteWith(value, '"'), nil
 	}
 
 	return value, nil
 }
 
+// quoteWith quotes the given string with the specified quote character.
+func quoteWith(value string, quoteChar rune) string {
+	if strings.HasSuffix(value, "\\") && !isEscapedAt(value, len(value)-1) {
+		// if the value ends with an unescaped backslash, escape it to prevent it from escaping the trailing quote
+		value = value + "\\"
+	}
+	return fmt.Sprintf("%c%s%c", quoteChar, value, quoteChar)
+}
+
 // hasUnescapedNginxSpecialChars checks if the given string contains
 // any unescaped Nginx special characters and is not enclosed in quotes.
 func hasUnescapedNginxSpecialChars(value string) bool {
-	nginxSpecialChars := []rune{'{', '}', ';', '#', ' '}
+	nginxSpecialChars := []rune{'{', '}', ';', '#', ' ', '\t'}
 	for i, char := range value {
 		if slices.Contains(nginxSpecialChars, char) {
 			if i == 0 {
@@ -117,7 +126,7 @@ func isQuotedWith(value string, quoteChar rune) bool {
 
 // isEscapedAt checks whether the character at index i is escaped by an odd-length run of preceding backslashes.
 func isEscapedAt(value string, i int) bool {
-	if i <= 0 || i > len(value) {
+	if i <= 0 || i >= len(value) {
 		return false
 	}
 

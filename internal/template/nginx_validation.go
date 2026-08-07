@@ -29,8 +29,7 @@ func nginxMustParseHSTS(value string) (string, error) {
 
 	for directive := range strings.SplitSeq(value, ";") {
 		directive = strings.TrimSpace(directive)
-		if strings.HasPrefix(directive, "max-age=") {
-			maxAgeStr := strings.TrimPrefix(directive, "max-age=")
+		if maxAgeStr, ok := strings.CutPrefix(directive, "max-age="); ok {
 			if maxAgeStr == "" {
 				return "", fmt.Errorf("invalid max-age directive: %s", directive)
 			}

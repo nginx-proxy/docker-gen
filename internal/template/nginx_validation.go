@@ -11,9 +11,9 @@ type hstsDirectives struct {
 	Preload           bool
 }
 
-// mustParseHSTS validates and normalizes a Strict-Transport-Security header value.
+// nginxMustParseHSTS validates and normalizes a Strict-Transport-Security header value.
 // It also accepts the special value "off" (nginx-proxy convention) to indicate the header should not be set.
-func mustParseHSTS(value string) (string, error) {
+func nginxMustParseHSTS(value string) (string, error) {
 	value = strings.TrimSpace(value)
 	value = strings.ToLower(value)
 

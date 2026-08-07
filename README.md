@@ -483,6 +483,9 @@ server {{ $net.IP }}:{{ (index $value.Addresses 0).Port }};
 - _`whereLabelDoesNotExist $containers $label`_: Filters a slice of containers based on the non-existence of the label `$label`.
 - _`whereLabelValueMatches $containers $label $pattern`_: Filters a slice of containers based on the existence of the label `$label` with values matching the regular expression `$pattern`.
 
+Nginx-specific functions:
+- _`nginxQuote $string`_: Returns `$string` trimmed then enclosed in quotes if it contains any unescaped character that have special meaning in Nginx configuration files. Otherwise, returns `$string` trimmed. Errors if `$string` contains line breaks or both unescaped single and double quotes.
+
 Sprig functions that have the same name as docker-gen function (but different behaviour) are made available with the `sprig` prefix:
 
 - _`sprigCoalesce ...`_: Alias for Sprig's [`coalesce`](https://masterminds.github.io/sprig/defaults.html).

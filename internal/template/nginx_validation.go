@@ -12,17 +12,12 @@ type hstsDirectives struct {
 }
 
 // nginxMustParseHSTS validates and normalizes a Strict-Transport-Security header value.
-// It also accepts the special value "off" (nginx-proxy convention) to indicate the header should not be set.
 func nginxMustParseHSTS(value string) (string, error) {
 	value = strings.TrimSpace(value)
 	value = strings.ToLower(value)
 
 	if value == "" {
 		return "", fmt.Errorf("HSTS value cannot be empty")
-	}
-
-	if value == "off" {
-		return value, nil
 	}
 
 	var directives hstsDirectives

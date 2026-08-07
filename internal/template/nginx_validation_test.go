@@ -35,11 +35,6 @@ func TestNginxMustParseHSTS(t *testing.T) {
 		errSnippet string
 	}{
 		{
-			name:      "off value is accepted",
-			input:     "off",
-			wantValue: "off",
-		},
-		{
 			name:      "max-age only value is accepted",
 			input:     "max-age=300",
 			wantValue: "max-age=300",

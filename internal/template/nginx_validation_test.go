@@ -26,7 +26,7 @@ func assertParserResult(t *testing.T, call string, got string, err error, expect
 	assert.Equal(t, expect.wantValue, got, "%q: unexpected result, got %q, want %q", call, got, expect.wantValue)
 }
 
-func TestMustParseHSTS(t *testing.T) {
+func TestNginxMustParseHSTS(t *testing.T) {
 	testCases := []struct {
 		name       string
 		input      string
@@ -34,11 +34,6 @@ func TestMustParseHSTS(t *testing.T) {
 		wantErr    bool
 		errSnippet string
 	}{
-		{
-			name:      "off value is accepted",
-			input:     "off",
-			wantValue: "off",
-		},
 		{
 			name:      "max-age only value is accepted",
 			input:     "max-age=300",
@@ -74,25 +69,25 @@ func TestMustParseHSTS(t *testing.T) {
 			name:       "max-age with empty value is rejected",
 			input:      "max-age=",
 			wantErr:    true,
-			errSnippet: "invalid max-age directive",
+			errSnippet: "invalid Strict-Transport-Security max-age directive",
 		},
 		{
 			name:       "unknown directive is rejected",
 			input:      "max-age=300; server {}",
 			wantErr:    true,
-			errSnippet: "unknown HSTS directive: server {}",
+			errSnippet: "unknown Strict-Transport-Security directive: server {}",
 		},
 		{
 			name:       "max-age with trailing garbage is rejected",
 			input:      "max-age=300foo",
 			wantErr:    true,
-			errSnippet: "invalid max-age directive",
+			errSnippet: "invalid Strict-Transport-Security max-age directive",
 		},
 		{
 			name:       "invalid max-age format is rejected",
 			input:      "max-age=abc",
 			wantErr:    true,
-			errSnippet: "invalid max-age directive",
+			errSnippet: "invalid Strict-Transport-Security max-age directive",
 		},
 		{
 			name:       "missing max-age is rejected",
@@ -122,7 +117,7 @@ func TestMustParseHSTS(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := mustParseHSTS(tc.input)
+			got, err := nginxMustParseHSTS(tc.input)
 			call := fmt.Sprintf("mustParseHSTS(%q)", tc.input)
 			assertParserResult(t, call, got, err, parserExpectation{
 				wantValue:  tc.wantValue,

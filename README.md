@@ -485,6 +485,7 @@ server {{ $net.IP }}:{{ (index $value.Addresses 0).Port }};
 
 Nginx-specific functions:
 - _`nginxQuote $string`_: Returns `$string` trimmed then enclosed in quotes if it contains any unescaped character that have special meaning in Nginx configuration files. Otherwise, returns `$string` trimmed. Errors if `$string` contains line breaks or both unescaped single and double quotes.
+- _`nginxMustParseHSTS $string`_: Returns `$string` trimmed and validated as a Strict-Transport-Security header value. Errors if `$string` is not a valid Strict-Transport-Security header value.
 
 Sprig functions that have the same name as docker-gen function (but different behaviour) are made available with the `sprig` prefix:
 

@@ -31,10 +31,10 @@ func GetDockerHostURL(ctx context.Context) (*url.URL, error) {
 	}
 	defer client.Close()
 
-	url, err := url.Parse(client.DaemonHost())
+	dockerHostURL, err := url.Parse(client.DaemonHost())
 	if err != nil {
 		return nil, err
 	}
 
-	return url, nil
+	return dockerHostURL, nil
 }

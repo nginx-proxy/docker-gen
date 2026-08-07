@@ -28,7 +28,7 @@ type Container struct {
 
 // WithCustomTemplate mounts a custom template file at /etc/docker-gen/templates/test.tmpl in the container.
 //
-// The templatePath must be an absolute or relative path to the configuration file on the host.
+// The templatePath must be an absolute or relative path to the template file on the host.
 func WithCustomTemplate(templatePath string) tc.CustomizeRequestOption {
 	return tc.WithFiles(tc.ContainerFile{
 		HostFilePath:      templatePath,
@@ -109,9 +109,8 @@ func (c *Container) UnmarshalRenderedTemplate(ctx context.Context, pointer any) 
 		return err
 	}
 
-	err = json.Unmarshal(content, pointer)
-	if err != nil {
-		return err
+	if err := json.Unmarshal(content, pointer); err != nil {
+		return fmt.Errorf("unmarshal rendered template: %w", err)
 	}
 
 	return nil

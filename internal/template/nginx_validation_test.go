@@ -128,7 +128,7 @@ func TestNginxMustParseHSTS(t *testing.T) {
 	}
 }
 
-func TestMustParseLoadbalance(t *testing.T) {
+func TestNginxMustParseLoadbalance(t *testing.T) {
 	testCases := []struct {
 		name       string
 		input      string
@@ -221,7 +221,7 @@ func TestMustParseLoadbalance(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := mustParseLoadbalance(tc.input)
+			got, err := nginxMustParseLoadbalance(tc.input)
 			call := fmt.Sprintf("mustParseLoadbalance(%q)", tc.input)
 			assertParserResult(t, call, got, err, parserExpectation{
 				wantValue:  tc.wantValue,

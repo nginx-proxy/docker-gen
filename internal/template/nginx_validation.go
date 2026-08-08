@@ -68,9 +68,9 @@ func nginxMustParseHSTS(value string) (string, error) {
 	return fmt.Sprintf("max-age=%d", directives.MaxAge), nil
 }
 
-// mustParseLoadbalance validates and normalizes the Nginx directives for the various supported loadbalancing methods.
+// nginxMustParseLoadbalance validates and normalizes the Nginx directives for the various supported loadbalancing methods.
 // https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/#method
-func mustParseLoadbalance(value string) (string, error) {
+func nginxMustParseLoadbalance(value string) (string, error) {
 	value = strings.TrimSuffix(value, ";")
 	methodAndParameters := strings.SplitAfterN(value, " ", 2)
 	method := strings.TrimSpace(methodAndParameters[0])

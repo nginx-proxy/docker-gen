@@ -2,6 +2,7 @@ package template
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -65,4 +66,127 @@ func nginxMustParseHSTS(value string) (string, error) {
 	}
 
 	return fmt.Sprintf("max-age=%d", directives.MaxAge), nil
+}
+
+// mustParseLoadbalance validates and normalizes the Nginx directives for the various supported loadbalancing methods.
+// https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/#method
+func mustParseLoadbalance(value string) (string, error) {
+	value = strings.TrimSuffix(value, ";")
+	methodAndParameters := strings.SplitAfterN(value, " ", 2)
+	method := strings.TrimSpace(methodAndParameters[0])
+
+	switch method {
+	case "hash":
+		return parseHashLoadBalanceMethod(methodAndParameters)
+	case "ip_hash", "least_conn":
+		return parseUnparameterizedLoadbalanceMethod(methodAndParameters)
+	case "least_time":
+		return parseLeastTimeLoadbalanceMethod(methodAndParameters)
+	case "random":
+		return parseRandomLoadbalanceMethod(methodAndParameters)
+	default:
+		validMethods := []string{"hash", "ip_hash", "least_conn", "least_time", "random"}
+		return "", fmt.Errorf("invalid loadbalance directive: %s. Valid values are: %v", method, validMethods)
+	}
+}
+
+// parseHashLoadBalanceMethod validates and normalizes the Nginx hash load balancing method.
+func parseHashLoadBalanceMethod(value []string) (string, error) {
+	method := "hash"
+
+	var firstParameter, secondParameter string
+	var err error
+
+	switch len(value) {
+	case 3:
+		if secondParameter = strings.TrimSpace(value[2]); secondParameter != "consistent" {
+			return "", fmt.Errorf("%s loadbalance method does not take any first parameter other than 'consistent'", method)
+		}
+		fallthrough
+	case 2:
+		if firstParameter, err = nginxQuote(value[1]); err != nil {
+			return "", err
+		}
+		fallthrough
+	case 1:
+		// no parameters
+	default:
+		return "", fmt.Errorf("%s loadbalance method does not take more than two parameters", method)
+	}
+
+	if secondParameter != "" && firstParameter != "" {
+		return fmt.Sprintf("%s %s %s", method, firstParameter, secondParameter), nil
+	}
+	if firstParameter != "" {
+		return fmt.Sprintf("%s %s", method, firstParameter), nil
+	}
+	return fmt.Sprintf("%s", method), nil
+}
+
+// parseUnparameterizedLoadbalanceMethod validates and normalizes the Nginx load balancing methods that do not take any parameters (ip_hash and least_conn).
+func parseUnparameterizedLoadbalanceMethod(value []string) (string, error) {
+	method := strings.TrimSpace(value[0])
+	if len(value) != 1 {
+		return "", fmt.Errorf("%s loadbalance method does not take any parameters", method)
+	}
+	return method, nil
+}
+
+// parseLeastTimeLoadbalanceMethod validates and normalizes the Nginx least_time load balancing method.
+func parseLeastTimeLoadbalanceMethod(value []string) (string, error) {
+	method := "least_time"
+
+	if len(value) != 2 {
+		return "", fmt.Errorf("%s loadbalance directive requires a parameter", method)
+	}
+
+	parameter := strings.TrimSpace(value[1])
+	validParameters := []string{"header", "last_byte", "last_byte inflight"}
+	if slices.Contains(validParameters, parameter) {
+		return fmt.Sprintf("%s %s", method, parameter), nil
+	}
+
+	return "", fmt.Errorf("invalid least_time loadbalance method parameter: %s. Valid values are: %v", parameter, validParameters)
+}
+
+// parseRandomLoadbalanceMethod validates and normalizes the Nginx random load balancing method.
+func parseRandomLoadbalanceMethod(value []string) (string, error) {
+	method := "random"
+
+	parseFirstParameter := func(param string) (string, error) {
+		firstParameter := strings.TrimSpace(param)
+		if firstParameter != "two" {
+			return "", fmt.Errorf("%s loadbalance method does not take any first parameter other than 'two'", method)
+		}
+		return firstParameter, nil
+	}
+
+	var firstParameter, secondParameter string
+	var err error
+
+	switch len(value) {
+	case 3:
+		validSecondParameters := []string{"least_conn", "least_time=header", "least_time=last_byte"}
+		if secondParameter = strings.TrimSpace(value[2]); !slices.Contains(validSecondParameters, secondParameter) {
+			return "", fmt.Errorf("%s loadbalance method with 'two' parameter only accepts %v as the second parameter", method, validSecondParameters)
+		}
+		fallthrough
+	case 2:
+		if firstParameter, err = parseFirstParameter(value[1]); err != nil {
+			return "", err
+		}
+		fallthrough
+	case 1:
+		// no parameters
+	default:
+		return "", fmt.Errorf("%s loadbalance method does not take more than two parameters", method)
+	}
+
+	if firstParameter != "" && secondParameter != "" {
+		return fmt.Sprintf("%s %s %s", method, firstParameter, secondParameter), nil
+	}
+	if firstParameter != "" {
+		return fmt.Sprintf("%s %s", method, firstParameter), nil
+	}
+	return fmt.Sprintf("%s", method), nil
 }

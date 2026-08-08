@@ -177,6 +177,11 @@ func TestNginxMustParseLoadbalance(t *testing.T) {
 			wantValue: "random two",
 		},
 		{
+			name:      "random with two and least_conn parameter is accepted",
+			input:     "random two least_conn",
+			wantValue: "random two least_conn",
+		},
+		{
 			name:      "trailing semicolon is normalized",
 			input:     "least_conn;",
 			wantValue: "least_conn",
@@ -208,12 +213,6 @@ func TestNginxMustParseLoadbalance(t *testing.T) {
 		{
 			name:       "random with unsupported first parameter is rejected",
 			input:      "random one",
-			wantErr:    true,
-			errSnippet: "does not take any first parameter other than 'two'",
-		},
-		{
-			name:       "random with second parameter is rejected",
-			input:      "random two least_conn",
 			wantErr:    true,
 			errSnippet: "does not take any first parameter other than 'two'",
 		},
@@ -336,18 +335,17 @@ func TestParseLeastTimeLoadbalanceMethod(t *testing.T) {
 		},
 		{
 			name:      "last_byte inflight parameter is accepted",
+			input:     []string{"least_time", "last_byte", "inflight"},
+			wantValue: "least_time last_byte inflight",
+		},
+		{
+			name:      "last_byte inflight parameter with whitespace is accepted",
 			input:     []string{"least_time", " last_byte inflight "},
 			wantValue: "least_time last_byte inflight",
 		},
 		{
 			name:       "missing parameter is rejected",
 			input:      []string{"least_time"},
-			wantErr:    true,
-			errSnippet: "requires a parameter",
-		},
-		{
-			name:       "too many segments are rejected",
-			input:      []string{"least_time", "last_byte", "inflight"},
 			wantErr:    true,
 			errSnippet: "requires a parameter",
 		},

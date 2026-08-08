@@ -72,7 +72,7 @@ func nginxMustParseHSTS(value string) (string, error) {
 // https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/#method
 func nginxMustParseLoadbalance(value string) (string, error) {
 	value = strings.TrimSuffix(value, ";")
-	methodAndParameters := strings.SplitAfterN(value, " ", 2)
+	methodAndParameters := strings.Split(value, " ")
 	method := strings.TrimSpace(methodAndParameters[0])
 
 	switch method {
@@ -99,7 +99,8 @@ func parseHashLoadBalanceMethod(value []string) (string, error) {
 
 	switch len(value) {
 	case 3:
-		if secondParameter = strings.TrimSpace(value[2]); secondParameter != "consistent" {
+		secondParameter = strings.TrimSpace(value[2])
+		if secondParameter != "consistent" {
 			return "", fmt.Errorf("%s loadbalance method does not take any second parameter other than 'consistent'", method)
 		}
 		fallthrough
@@ -136,11 +137,12 @@ func parseUnparameterizedLoadbalanceMethod(value []string) (string, error) {
 func parseLeastTimeLoadbalanceMethod(value []string) (string, error) {
 	method := "least_time"
 
-	if len(value) != 2 {
+	if len(value) < 2 {
 		return "", fmt.Errorf("%s loadbalance directive requires a parameter", method)
 	}
 
-	parameter := strings.TrimSpace(value[1])
+	parameter := strings.Join(value[1:], " ")
+	parameter = strings.TrimSpace(parameter)
 	validParameters := []string{"header", "last_byte", "last_byte inflight"}
 	if slices.Contains(validParameters, parameter) {
 		return fmt.Sprintf("%s %s", method, parameter), nil
@@ -153,27 +155,20 @@ func parseLeastTimeLoadbalanceMethod(value []string) (string, error) {
 func parseRandomLoadbalanceMethod(value []string) (string, error) {
 	method := "random"
 
-	parseFirstParameter := func(param string) (string, error) {
-		firstParameter := strings.TrimSpace(param)
-		if firstParameter != "two" {
-			return "", fmt.Errorf("%s loadbalance method does not take any first parameter other than 'two'", method)
-		}
-		return firstParameter, nil
-	}
-
 	var firstParameter, secondParameter string
-	var err error
 
 	switch len(value) {
 	case 3:
 		validSecondParameters := []string{"least_conn", "least_time=header", "least_time=last_byte"}
-		if secondParameter = strings.TrimSpace(value[2]); !slices.Contains(validSecondParameters, secondParameter) {
+		secondParameter = strings.TrimSpace(value[2])
+		if !slices.Contains(validSecondParameters, secondParameter) {
 			return "", fmt.Errorf("%s loadbalance method with 'two' parameter only accepts %v as the second parameter", method, validSecondParameters)
 		}
 		fallthrough
 	case 2:
-		if firstParameter, err = parseFirstParameter(value[1]); err != nil {
-			return "", err
+		firstParameter = strings.TrimSpace(value[1])
+		if firstParameter != "two" {
+			return "", fmt.Errorf("%s loadbalance method does not take any first parameter other than 'two'", method)
 		}
 		fallthrough
 	case 1:

@@ -69,6 +69,7 @@ func newTemplate(name string) *template.Template {
 		"dir":                     dirList,
 		"eval":                    eval,
 		"exists":                  utils.PathExists,
+		"lexists":                 utils.PathLExists,
 		"groupBy":                 groupBy,
 		"groupByWithDefault":      groupByWithDefault,
 		"groupByKeys":             groupByKeys,

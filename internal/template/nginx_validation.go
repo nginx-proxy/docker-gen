@@ -100,7 +100,7 @@ func parseHashLoadBalanceMethod(value []string) (string, error) {
 	switch len(value) {
 	case 3:
 		if secondParameter = strings.TrimSpace(value[2]); secondParameter != "consistent" {
-			return "", fmt.Errorf("%s loadbalance method does not take any first parameter other than 'consistent'", method)
+			return "", fmt.Errorf("%s loadbalance method does not take any second parameter other than 'consistent'", method)
 		}
 		fallthrough
 	case 2:

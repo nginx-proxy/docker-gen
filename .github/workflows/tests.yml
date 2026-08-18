@@ -31,7 +31,8 @@ jobs:
     runs-on: ${{ matrix.os }}-latest
 
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout repository
+        uses: actions/checkout@v7
 
       - uses: actions/setup-go@v7
         with:
@@ -65,7 +66,8 @@ jobs:
       IMAGE: nginxproxy/docker-gen:test-${{ matrix.base }}
 
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout repository
+        uses: actions/checkout@v7
 
       - name: Build image
         run: make build-docker-gen-${{ matrix.base }}-test-image
@@ -132,7 +134,8 @@ jobs:
         working-directory: ./integration
 
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout repository
+        uses: actions/checkout@v7
 
       - uses: actions/setup-go@v7
         with:

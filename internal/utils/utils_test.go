@@ -2,6 +2,7 @@ package utils
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,28 +48,27 @@ func TestPathExists(t *testing.T) {
 }
 
 func TestPathLExists(t *testing.T) {
-	file, err := os.CreateTemp("", "test")
-	if err != nil {
+	dir := t.TempDir()
+
+	file := filepath.Join(dir, "file")
+	if err := os.WriteFile(file, nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	defer func() {
-		file.Close()
-		os.Remove(file.Name())
-	}()
+	// Never created, so it is guaranteed not to exist on any platform.
+	missing := filepath.Join(dir, "missing")
 
-	ok, err := PathLExists(file.Name())
+	ok, err := PathLExists(file)
 	assert.NoError(t, err)
 	assert.True(t, ok)
 
-	ok, err = PathLExists("/wrong/path")
+	ok, err = PathLExists(missing)
 	assert.NoError(t, err)
 	assert.False(t, ok)
 
-	link := file.Name() + "-link"
-	if err := os.Symlink("/wrong/path", link); err != nil {
+	link := filepath.Join(dir, "link")
+	if err := os.Symlink(missing, link); err != nil {
 		t.Skipf("symlinks unavailable: %s", err)
 	}
-	defer os.Remove(link)
 
 	ok, err = PathLExists(link)
 	assert.NoError(t, err)

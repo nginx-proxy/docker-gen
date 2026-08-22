@@ -35,6 +35,9 @@ func PathExists(path string) (bool, error) {
 	return false, err
 }
 
+// PathLExists returns whether the given file or directory exists or not,
+// without following symlinks: a symlink whose target is missing still reports
+// as existing.
 func PathLExists(path string) (bool, error) {
 	_, err := os.Lstat(path)
 	if err == nil {

@@ -199,3 +199,81 @@ func TestGroupByMulti(t *testing.T) {
 		t.Fatalf("expected 2 got %s", groups["demo3.localhost"][0].(*context.RuntimeContainer).ID)
 	}
 }
+
+func TestGroupByMultiKeyValuePairs(t *testing.T) {
+	containers := []*context.RuntimeContainer{
+		{Env: map[string]string{"VIRTUAL_PORT": "443:3000,3000:3000"}, ID: "1"},
+		{Env: map[string]string{"VIRTUAL_PORT": "1111,250:360"}, ID: "2"},
+		{Env: map[string]string{"VIRTUAL_PORT": "123"}, ID: "3"},
+	}
+
+	groups, _ := groupByMultiKeyValuePairs(containers, "Env.VIRTUAL_PORT", ",", ":", "445")
+	if len(groups) != 4 {
+		t.Fatalf("expected 4 got %d", len(groups))
+	}
+	if len(groups["445"]) != 2 {
+		t.Fatalf("expected 2 got %d", len(groups["445"]))
+	}
+	if len(groups["443"]) != 1 {
+		t.Fatalf("expected 1 got %d", len(groups["443"]))
+	}
+	if groups["445"][1].(*context.RuntimeContainer).ID != "3" {
+		t.Fatalf("expected 3 got %s", groups["445"][1].(*context.RuntimeContainer).ID)
+	}
+	if len(groups["3000"]) != 1 {
+		t.Fatalf("expected 1 got %d", len(groups["3000"]))
+	}
+	if groups["250"][0].(*context.RuntimeContainer).ID != "2" {
+		t.Fatalf("expected 2 got %s", groups["250"][0].(*context.RuntimeContainer).ID)
+	}
+}
+
+func TestGroupByMultiKeyValuePairsDefaultKeyOmitted(t *testing.T) {
+	containers := []*context.RuntimeContainer{
+		{Env: map[string]string{"VIRTUAL_PORT": "443:3000,1111"}, ID: "1"},
+	}
+
+	groups, err := groupByMultiKeyValuePairs(containers, "Env.VIRTUAL_PORT", ",", ":")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(groups) != 2 {
+		t.Fatalf("expected 2 got %d", len(groups))
+	}
+	if len(groups["443"]) != 1 {
+		t.Fatalf("expected 1 got %d", len(groups["443"]))
+	}
+	if len(groups["1111"]) != 1 {
+		t.Fatalf("expected 1 got %d", len(groups["1111"]))
+	}
+}
+
+func TestSplitKeyValuePairs1(t *testing.T) {
+	list := splitKeyValuePairs("key=value,1=2,test", ",", "=")
+
+	if len(list) != 3 {
+		t.Fatalf("expected 3 got %d", len(list))
+	}
+	if list["test"] != "test" {
+		t.Fatalf("expected value 'test' got '%s'", list["test"])
+	}
+}
+
+func TestSplitKeyValuePairs2(t *testing.T) {
+	list := splitKeyValuePairs("key:value/1:2/test", "/", ":")
+
+	if len(list) != 3 {
+		t.Fatalf("expected 3 got %d", len(list))
+	}
+	if list["test"] != "test" {
+		t.Fatalf("expected value 'test' got '%s'", list["test"])
+	}
+}
+
+func TestSplitKeyValuePairsPreservesSeparatorInValue(t *testing.T) {
+	list := splitKeyValuePairs("url=http://a=b", ",", "=")
+
+	if list["url"] != "http://a=b" {
+		t.Fatalf("expected 'http://a=b' got '%s'", list["url"])
+	}
+}

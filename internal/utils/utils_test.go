@@ -45,3 +45,36 @@ func TestPathExists(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, exists)
 }
+
+func TestPathLExists(t *testing.T) {
+	file, err := os.CreateTemp("", "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		file.Close()
+		os.Remove(file.Name())
+	}()
+
+	ok, err := PathLExists(file.Name())
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	ok, err = PathLExists("/wrong/path")
+	assert.NoError(t, err)
+	assert.False(t, ok)
+
+	link := file.Name() + "-link"
+	if err := os.Symlink("/wrong/path", link); err != nil {
+		t.Skipf("symlinks unavailable: %s", err)
+	}
+	defer os.Remove(link)
+
+	ok, err = PathLExists(link)
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	ok, err = PathExists(link)
+	assert.NoError(t, err)
+	assert.False(t, ok)
+}

@@ -1,6 +1,6 @@
 module github.com/nginx-proxy/docker-gen/integration
 
-go 1.25.5
+go 1.26
 
 require (
 	github.com/moby/moby/api v1.55.0

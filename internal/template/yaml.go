@@ -1,6 +1,6 @@
 package template
 
-import "gopkg.in/yaml.v3"
+import "go.yaml.in/yaml/v3"
 
 // fromYaml decodes YAML into a structured value, ignoring errors.
 func fromYaml(v string) interface{} {

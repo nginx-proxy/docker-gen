@@ -32,6 +32,7 @@ type generator struct {
 	wg                    sync.WaitGroup
 	retry                 bool
 	getCurrentContainerID func(...string) string
+	signalChannel         func() (<-chan os.Signal, func())
 }
 
 type GeneratorConfig struct {
@@ -83,7 +84,29 @@ func NewGenerator(gc GeneratorConfig) (*generator, error) {
 }
 
 func (g *generator) Generate() error {
+	if g.signalChannel == nil {
+		g.signalChannel = newSignalChannel
+	}
+
+	var sigChan <-chan os.Signal
+	if g.hasWatcher() {
+		var cleanup func()
+		sigChan, cleanup = g.signalChannel()
+		defer cleanup()
+	}
+
 	g.generateFromContainers()
+
+	select {
+	case sig := <-sigChan:
+		switch sig {
+		case syscall.SIGTERM, syscall.SIGINT:
+			log.Printf("Received signal: %s\n", sig)
+			return nil
+		}
+	default:
+	}
+
 	g.generateAtInterval()
 	g.generateFromEvents()
 	g.generateFromSignals()
@@ -92,17 +115,18 @@ func (g *generator) Generate() error {
 	return nil
 }
 
-func (g *generator) generateFromSignals() {
-	var hasWatcher bool
+func (g *generator) hasWatcher() bool {
 	for _, config := range g.Configs.Config {
 		if config.Watch {
-			hasWatcher = true
-			break
+			return true
 		}
 	}
+	return false
+}
 
+func (g *generator) generateFromSignals() {
 	// If none of the configs need to watch for events, don't watch for signals either
-	if !hasWatcher {
+	if !g.hasWatcher() {
 		return
 	}
 
@@ -110,7 +134,7 @@ func (g *generator) generateFromSignals() {
 	go func() {
 		defer g.wg.Done()
 
-		sigChan, cleanup := newSignalChannel()
+		sigChan, cleanup := g.signalChannel()
 		defer cleanup()
 		for {
 			sig := <-sigChan
@@ -158,7 +182,7 @@ func (g *generator) generateAtInterval() {
 		go func(cfg config.Config) {
 			defer g.wg.Done()
 
-			sigChan, cleanup := newSignalChannel()
+			sigChan, cleanup := g.signalChannel()
 			defer cleanup()
 			for {
 				select {
@@ -230,7 +254,7 @@ func (g *generator) generateFromEvents() {
 	go func() {
 		// channel will be closed by go-dockerclient
 		eventChan := make(chan *docker.APIEvents, 100)
-		sigChan, cleanup := newSignalChannel()
+		sigChan, cleanup := g.signalChannel()
 		defer cleanup()
 
 		for {

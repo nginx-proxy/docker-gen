@@ -38,8 +38,8 @@ func generalizedGroupByKey(funcName string, entries any, key string, addEntry fu
 
 func groupByMulti(entries any, key, sep string) (map[string][]any, error) {
 	return generalizedGroupByKey("groupByMulti", entries, key, func(groups map[string][]any, value any, v any) {
-		items := strings.Split(value.(string), sep)
-		for _, item := range items {
+		items := strings.SplitSeq(value.(string), sep)
+		for item := range items {
 			groups[item] = append(groups[item], v)
 		}
 	})

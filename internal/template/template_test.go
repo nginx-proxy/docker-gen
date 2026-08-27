@@ -13,8 +13,8 @@ import (
 
 type templateTestList []struct {
 	tmpl     string
-	context  interface{}
-	expected interface{}
+	context  any
+	expected any
 }
 
 func (tests templateTestList) run(t *testing.T) {

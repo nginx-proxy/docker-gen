@@ -23,7 +23,7 @@ func parseAllocateInt(desired string) (int, error) {
 	return math.MaxInt32, nil
 }
 
-func deepGetImpl(v reflect.Value, path []string) interface{} {
+func deepGetImpl(v reflect.Value, path []string) any {
 	if !v.IsValid() {
 		return nil
 	}
@@ -81,7 +81,7 @@ func deepGetImpl(v reflect.Value, path []string) interface{} {
 	}
 }
 
-func deepGet(item interface{}, path string) interface{} {
+func deepGet(item any, path string) any {
 	var parts []string
 	if path != "" {
 		parts = strings.Split(strings.TrimPrefix(path, "."), ".")

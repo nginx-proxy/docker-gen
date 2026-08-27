@@ -21,15 +21,15 @@ func sortStringsDesc(values []string) []string {
 
 type sortable interface {
 	sort.Interface
-	set(string, interface{}) error
-	get() []interface{}
+	set(string, any) error
+	get() []any
 }
 
 type sortableData struct {
-	data []interface{}
+	data []any
 }
 
-func (s sortableData) get() []interface{} {
+func (s sortableData) get() []any {
 	return s.data
 }
 
@@ -42,19 +42,19 @@ type sortableByKey struct {
 	key string
 }
 
-func (s *sortableByKey) set(funcName string, entries interface{}) (err error) {
+func (s *sortableByKey) set(funcName string, entries any) (err error) {
 	entriesVal, err := getArrayValues(funcName, entries)
 	if err != nil {
 		return
 	}
-	s.data = make([]interface{}, entriesVal.Len())
+	s.data = make([]any, entriesVal.Len())
 	for i := 0; i < entriesVal.Len(); i++ {
 		s.data[i] = entriesVal.Index(i).Interface()
 	}
 	return
 }
 
-func getFieldAsString(item interface{}, path string) string {
+func getFieldAsString(item any, path string) string {
 	// Mostly inspired by https://stackoverflow.com/a/47739620
 	e := deepGet(item, path)
 	r := reflect.ValueOf(e)
@@ -102,7 +102,7 @@ func (s sortableByKey) Less(i, j int) bool {
 }
 
 // Generalized SortBy function
-func generalizedSortBy(funcName string, entries interface{}, s sortable, reverse bool) (sorted []interface{}, err error) {
+func generalizedSortBy(funcName string, entries any, s sortable, reverse bool) (sorted []any, err error) {
 	err = s.set(funcName, entries)
 	if err != nil {
 		return nil, err
@@ -116,13 +116,13 @@ func generalizedSortBy(funcName string, entries interface{}, s sortable, reverse
 }
 
 // sortObjectsByKeysAsc returns a sorted array of objects, sorted by object's key field in ascending order
-func sortObjectsByKeysAsc(objs interface{}, key string) ([]interface{}, error) {
+func sortObjectsByKeysAsc(objs any, key string) ([]any, error) {
 	s := &sortableByKey{key: key}
 	return generalizedSortBy("sortObjsByKeys", objs, s, false)
 }
 
 // sortObjectsByKeysDesc returns a sorted array of objects, sorted by object's key field in descending order
-func sortObjectsByKeysDesc(objs interface{}, key string) ([]interface{}, error) {
+func sortObjectsByKeysDesc(objs any, key string) ([]any, error) {
 	s := &sortableByKey{key: key}
 	return generalizedSortBy("sortObjsByKey", objs, s, true)
 }

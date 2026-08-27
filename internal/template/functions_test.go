@@ -47,7 +47,7 @@ func TestContainsInteger(t *testing.T) {
 }
 
 func TestContainsNilInput(t *testing.T) {
-	var env interface{} = nil
+	var env any = nil
 
 	assert.False(t, contains(env, 0))
 	assert.False(t, contains(env, ""))

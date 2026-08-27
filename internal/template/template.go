@@ -28,7 +28,7 @@ func getArrayValues(funcName string, entries any) (*reflect.Value, error) {
 
 	kind := entriesVal.Kind()
 
-	if kind == reflect.Ptr {
+	if kind == reflect.Pointer {
 		entriesVal = entriesVal.Elem()
 		kind = entriesVal.Kind()
 	}

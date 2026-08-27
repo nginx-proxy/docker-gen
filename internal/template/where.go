@@ -86,7 +86,7 @@ func whereAll(entries any, key, sep string, cmp []string) (any, error) {
 func generalizedWhereLabel(funcName string, containers context.Context, label string, test func(string, bool) bool) (context.Context, error) {
 	selection := make([]*context.RuntimeContainer, 0)
 
-	for i := 0; i < len(containers); i++ {
+	for i := range containers {
 		container := containers[i]
 
 		value, ok := container.Labels[label]

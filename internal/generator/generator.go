@@ -106,9 +106,7 @@ func (g *generator) generateFromSignals() {
 		return
 	}
 
-	g.wg.Add(1)
-	go func() {
-		defer g.wg.Done()
+	g.wg.Go(func() {
 
 		sigChan, cleanup := newSignalChannel()
 		defer cleanup()
@@ -123,7 +121,7 @@ func (g *generator) generateFromSignals() {
 				return
 			}
 		}
-	}()
+	})
 }
 
 func (g *generator) generateFromContainers() {

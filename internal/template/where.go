@@ -83,7 +83,7 @@ func whereAll(entries any, key, sep string, cmp []string) (any, error) {
 }
 
 // generalized whereLabel function
-func generalizedWhereLabel(funcName string, containers context.Context, label string, test func(string, bool) bool) (context.Context, error) {
+func generalizedWhereLabel(containers context.Context, label string, test func(string, bool) bool) (context.Context, error) {
 	selection := make([]*context.RuntimeContainer, 0)
 
 	for i := range containers {
@@ -100,14 +100,14 @@ func generalizedWhereLabel(funcName string, containers context.Context, label st
 
 // selects containers that have a particular label
 func whereLabelExists(containers context.Context, label string) (context.Context, error) {
-	return generalizedWhereLabel("whereLabelExists", containers, label, func(_ string, ok bool) bool {
+	return generalizedWhereLabel(containers, label, func(_ string, ok bool) bool {
 		return ok
 	})
 }
 
 // selects containers that have don't have a particular label
 func whereLabelDoesNotExist(containers context.Context, label string) (context.Context, error) {
-	return generalizedWhereLabel("whereLabelDoesNotExist", containers, label, func(_ string, ok bool) bool {
+	return generalizedWhereLabel(containers, label, func(_ string, ok bool) bool {
 		return !ok
 	})
 }
@@ -119,7 +119,7 @@ func whereLabelValueMatches(containers context.Context, label, pattern string) (
 		return nil, err
 	}
 
-	return generalizedWhereLabel("whereLabelValueMatches", containers, label, func(value string, ok bool) bool {
+	return generalizedWhereLabel(containers, label, func(value string, ok bool) bool {
 		return ok && rx.MatchString(value)
 	})
 }

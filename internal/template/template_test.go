@@ -19,7 +19,6 @@ type templateTestList []struct {
 
 func (tests templateTestList) run(t *testing.T) {
 	for n, test := range tests {
-		test := test
 		t.Run(strconv.Itoa(n), func(t *testing.T) {
 			t.Parallel()
 			wantErr, _ := test.expected.(error)

@@ -5,7 +5,7 @@ go 1.26
 require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/Masterminds/sprig/v3 v3.3.0
-	github.com/fsouza/go-dockerclient v1.13.2
+	github.com/fsouza/go-dockerclient v1.13.3
 	github.com/stretchr/testify v1.12.1
 	go.yaml.in/yaml/v3 v3.0.5
 )
@@ -24,9 +24,9 @@ require (
 	github.com/klauspost/compress v1.18.7 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/moby/go-archive v0.3.0 // indirect
-	github.com/moby/moby/api v1.54.2 // indirect
-	github.com/moby/moby/client v0.4.1 // indirect
+	github.com/moby/go-archive v0.3.3 // indirect
+	github.com/moby/moby/api v1.55.0 // indirect
+	github.com/moby/moby/client v0.5.1 // indirect
 	github.com/moby/patternmatcher v0.6.1 // indirect
 	github.com/moby/sys/sequential v0.7.0 // indirect
 	github.com/moby/sys/user v0.4.1 // indirect
@@ -38,5 +38,5 @@ require (
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/spf13/cast v1.7.0 // indirect
 	golang.org/x/crypto v0.52.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
 )

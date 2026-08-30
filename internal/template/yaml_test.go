@@ -16,11 +16,11 @@ string: test
 
 var testJson = `{"bool":true,"list":["foo","bar"],"number":42,"string":"test"}`
 
-var testDict = map[string]interface{}{
+var testDict = map[string]any{
 	"bool":   true,
 	"number": 42,
 	"string": "test",
-	"list": []interface{}{
+	"list": []any{
 		"foo",
 		"bar",
 	},

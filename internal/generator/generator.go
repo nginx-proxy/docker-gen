@@ -106,9 +106,7 @@ func (g *generator) generateFromSignals() {
 		return
 	}
 
-	g.wg.Add(1)
-	go func() {
-		defer g.wg.Done()
+	g.wg.Go(func() {
 
 		sigChan, cleanup := newSignalChannel()
 		defer cleanup()
@@ -123,7 +121,7 @@ func (g *generator) generateFromSignals() {
 				return
 			}
 		}
-	}()
+	})
 }
 
 func (g *generator) generateFromContainers() {
@@ -338,7 +336,7 @@ func (g *generator) runNotifyCmd(config config.Config) {
 		log.Printf("Error running notify command: %s, %s\n", config.NotifyCmd, err)
 	}
 	if config.NotifyOutput {
-		for _, line := range strings.Split(string(out), "\n") {
+		for line := range strings.SplitSeq(string(out), "\n") {
 			if line != "" {
 				log.Printf("[%s]: %s", config.NotifyCmd, line)
 			}

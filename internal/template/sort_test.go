@@ -90,18 +90,18 @@ func TestSortObjectsByKeys(t *testing.T) {
 
 	for _, tc := range []struct {
 		desc string
-		fn   func(interface{}, string) ([]interface{}, error)
+		fn   func(any, string) ([]any, error)
 		key  string
-		want []interface{}
+		want []any
 	}{
-		{"Asc simple", sortObjectsByKeysAsc, "ID", []interface{}{o1, o2, o3, o0}},
-		{"Desc simple", sortObjectsByKeysDesc, "ID", []interface{}{o0, o3, o2, o1}},
-		{"Asc complex", sortObjectsByKeysAsc, "Env.VIRTUAL_HOST", []interface{}{o3, o0, o2, o1}},
-		{"Desc complex", sortObjectsByKeysDesc, "Env.VIRTUAL_HOST", []interface{}{o1, o2, o0, o3}},
-		{"Asc complex w/ dots in key name", sortObjectsByKeysAsc, "Labels.com.docker.compose.container_number", []interface{}{o2, o0, o3, o1}},
-		{"Desc complex w/ dots in key name", sortObjectsByKeysDesc, "Labels.com.docker.compose.container_number", []interface{}{o1, o3, o0, o2}},
-		{"Asc time", sortObjectsByKeysAsc, "Created", []interface{}{o3, o0, o2, o1}},
-		{"Desc time", sortObjectsByKeysDesc, "Created", []interface{}{o1, o2, o0, o3}},
+		{"Asc simple", sortObjectsByKeysAsc, "ID", []any{o1, o2, o3, o0}},
+		{"Desc simple", sortObjectsByKeysDesc, "ID", []any{o0, o3, o2, o1}},
+		{"Asc complex", sortObjectsByKeysAsc, "Env.VIRTUAL_HOST", []any{o3, o0, o2, o1}},
+		{"Desc complex", sortObjectsByKeysDesc, "Env.VIRTUAL_HOST", []any{o1, o2, o0, o3}},
+		{"Asc complex w/ dots in key name", sortObjectsByKeysAsc, "Labels.com.docker.compose.container_number", []any{o2, o0, o3, o1}},
+		{"Desc complex w/ dots in key name", sortObjectsByKeysDesc, "Labels.com.docker.compose.container_number", []any{o1, o3, o0, o2}},
+		{"Asc time", sortObjectsByKeysAsc, "Created", []any{o3, o0, o2, o1}},
+		{"Desc time", sortObjectsByKeysDesc, "Created", []any{o1, o2, o0, o3}},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			got, err := tc.fn(containers, tc.key)

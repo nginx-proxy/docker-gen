@@ -58,9 +58,9 @@ func TestDeepGet(t *testing.T) {
 
 	for _, tc := range []struct {
 		desc string
-		item interface{}
+		item any
 		path string
-		want interface{}
+		want any
 	}{
 		{
 			"map of string",

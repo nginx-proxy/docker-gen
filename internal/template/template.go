@@ -23,12 +23,12 @@ import (
 	"github.com/nginx-proxy/docker-gen/internal/utils"
 )
 
-func getArrayValues(funcName string, entries interface{}) (*reflect.Value, error) {
+func getArrayValues(funcName string, entries any) (*reflect.Value, error) {
 	entriesVal := reflect.ValueOf(entries)
 
 	kind := entriesVal.Kind()
 
-	if kind == reflect.Ptr {
+	if kind == reflect.Pointer {
 		entriesVal = entriesVal.Elem()
 		kind = entriesVal.Kind()
 	}

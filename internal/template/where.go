@@ -9,14 +9,14 @@ import (
 )
 
 // Generalized where function
-func generalizedWhere(funcName string, entries interface{}, key string, test func(interface{}) bool) (interface{}, error) {
+func generalizedWhere(funcName string, entries any, key string, test func(any) bool) (any, error) {
 	entriesVal, err := getArrayValues(funcName, entries)
 
 	if err != nil {
 		return nil, err
 	}
 
-	selection := make([]interface{}, 0)
+	selection := make([]any, 0)
 	for i := 0; i < entriesVal.Len(); i++ {
 		v := entriesVal.Index(i).Interface()
 
@@ -30,36 +30,36 @@ func generalizedWhere(funcName string, entries interface{}, key string, test fun
 }
 
 // selects entries based on key
-func where(entries interface{}, key string, cmp interface{}) (interface{}, error) {
-	return generalizedWhere("where", entries, key, func(value interface{}) bool {
+func where(entries any, key string, cmp any) (any, error) {
+	return generalizedWhere("where", entries, key, func(value any) bool {
 		return reflect.DeepEqual(value, cmp)
 	})
 }
 
 // select entries where a key is not equal to a value
-func whereNot(entries interface{}, key string, cmp interface{}) (interface{}, error) {
-	return generalizedWhere("whereNot", entries, key, func(value interface{}) bool {
+func whereNot(entries any, key string, cmp any) (any, error) {
+	return generalizedWhere("whereNot", entries, key, func(value any) bool {
 		return !reflect.DeepEqual(value, cmp)
 	})
 }
 
 // selects entries where a key exists
-func whereExist(entries interface{}, key string) (interface{}, error) {
-	return generalizedWhere("whereExist", entries, key, func(value interface{}) bool {
+func whereExist(entries any, key string) (any, error) {
+	return generalizedWhere("whereExist", entries, key, func(value any) bool {
 		return value != nil
 	})
 }
 
 // selects entries where a key does not exist
-func whereNotExist(entries interface{}, key string) (interface{}, error) {
-	return generalizedWhere("whereNotExist", entries, key, func(value interface{}) bool {
+func whereNotExist(entries any, key string) (any, error) {
+	return generalizedWhere("whereNotExist", entries, key, func(value any) bool {
 		return value == nil
 	})
 }
 
 // selects entries based on key.  Assumes key is delimited and breaks it apart before comparing
-func whereAny(entries interface{}, key, sep string, cmp []string) (interface{}, error) {
-	return generalizedWhere("whereAny", entries, key, func(value interface{}) bool {
+func whereAny(entries any, key, sep string, cmp []string) (any, error) {
+	return generalizedWhere("whereAny", entries, key, func(value any) bool {
 		if value == nil {
 			return false
 		} else {
@@ -70,9 +70,9 @@ func whereAny(entries interface{}, key, sep string, cmp []string) (interface{}, 
 }
 
 // selects entries based on key.  Assumes key is delimited and breaks it apart before comparing
-func whereAll(entries interface{}, key, sep string, cmp []string) (interface{}, error) {
+func whereAll(entries any, key, sep string, cmp []string) (any, error) {
 	req_count := len(cmp)
-	return generalizedWhere("whereAll", entries, key, func(value interface{}) bool {
+	return generalizedWhere("whereAll", entries, key, func(value any) bool {
 		if value == nil {
 			return false
 		} else {
@@ -83,10 +83,10 @@ func whereAll(entries interface{}, key, sep string, cmp []string) (interface{}, 
 }
 
 // generalized whereLabel function
-func generalizedWhereLabel(funcName string, containers context.Context, label string, test func(string, bool) bool) (context.Context, error) {
+func generalizedWhereLabel(containers context.Context, label string, test func(string, bool) bool) (context.Context, error) {
 	selection := make([]*context.RuntimeContainer, 0)
 
-	for i := 0; i < len(containers); i++ {
+	for i := range containers {
 		container := containers[i]
 
 		value, ok := container.Labels[label]
@@ -100,14 +100,14 @@ func generalizedWhereLabel(funcName string, containers context.Context, label st
 
 // selects containers that have a particular label
 func whereLabelExists(containers context.Context, label string) (context.Context, error) {
-	return generalizedWhereLabel("whereLabelExists", containers, label, func(_ string, ok bool) bool {
+	return generalizedWhereLabel(containers, label, func(_ string, ok bool) bool {
 		return ok
 	})
 }
 
 // selects containers that have don't have a particular label
 func whereLabelDoesNotExist(containers context.Context, label string) (context.Context, error) {
-	return generalizedWhereLabel("whereLabelDoesNotExist", containers, label, func(_ string, ok bool) bool {
+	return generalizedWhereLabel(containers, label, func(_ string, ok bool) bool {
 		return !ok
 	})
 }
@@ -119,7 +119,7 @@ func whereLabelValueMatches(containers context.Context, label, pattern string) (
 		return nil, err
 	}
 
-	return generalizedWhereLabel("whereLabelValueMatches", containers, label, func(value string, ok bool) bool {
+	return generalizedWhereLabel(containers, label, func(value string, ok bool) bool {
 		return ok && rx.MatchString(value)
 	})
 }

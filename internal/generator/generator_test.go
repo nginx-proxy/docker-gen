@@ -6,7 +6,11 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
+	"sync/atomic"
+	"syscall"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -304,4 +308,90 @@ func TestGetContainersSetsCurrentContainer(t *testing.T) {
 	current := emptyCtx.CurrentContainer()
 	assert.NotNil(t, current)
 	assert.Equal(t, currentID, current.ID)
+}
+
+func TestGenerateStopsOnSignalDuringInitialGeneration(t *testing.T) {
+	tests := []struct {
+		name string
+		sig  os.Signal
+	}{
+		{"SIGINT", syscall.SIGINT},
+		{"SIGTERM", syscall.SIGTERM},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			orig := log.Writer()
+			log.SetOutput(io.Discard)
+			t.Cleanup(func() { log.SetOutput(orig) })
+
+			var registered, registeredFirst, watchersStarted atomic.Bool
+
+			server, err := dockertest.NewServer("127.0.0.1:0", nil, nil)
+			if err != nil {
+				t.Fatalf("failed to create test server: %s", err)
+			}
+			t.Cleanup(server.Stop)
+			server.CustomHandler("/info", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte(`{"Containers":0,"Images":0,"NFd":11,"NGoroutines":21}`))
+			}))
+			server.CustomHandler("/version", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte(`{"Version":"19.03.12","Os":"Linux","GoVersion":"go1.13.14","Arch":"amd64","ApiVersion":"1.40"}`))
+			}))
+			server.CustomHandler("/networks", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte("[]"))
+			}))
+			server.CustomHandler("/containers/json", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				registeredFirst.Store(registered.Load())
+				w.Write([]byte("[]"))
+			}))
+			server.CustomHandler("/events", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				watchersStarted.Store(true)
+			}))
+
+			serverURL := fmt.Sprintf("tcp://%s", strings.TrimRight(strings.TrimPrefix(server.URL(), "http://"), "/"))
+			client, err := dockerclient.NewDockerClient(serverURL, false, "", "", "")
+			if err != nil {
+				t.Fatalf("failed to create client: %s", err)
+			}
+			client.SkipServerVersionCheck = true
+
+			apiVersion, err := client.Version()
+			if err != nil {
+				t.Fatalf("failed to retrieve version: %s", err)
+			}
+			context.SetDockerEnv(apiVersion)
+
+			dir := t.TempDir()
+			tmpl := filepath.Join(dir, "test.tmpl")
+			if err := os.WriteFile(tmpl, []byte("{{ len . }}"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+
+			sigChan := make(chan os.Signal, 1)
+			sigChan <- tt.sig
+
+			newSigChan := func() (<-chan os.Signal, func()) {
+				registered.Store(true)
+				return sigChan, func() {}
+			}
+
+			cfg := config.Config{
+				Template: tmpl,
+				Dest:     filepath.Join(dir, "test.conf"),
+				Watch:    true,
+			}
+
+			g := &generator{
+				Client:        client,
+				Endpoint:      serverURL,
+				Configs:       config.ConfigFile{Config: []config.Config{cfg}},
+				signalChannel: newSigChan,
+			}
+
+			assert.NoError(t, g.Generate())
+			assert.True(t, registeredFirst.Load())
+			assert.False(t, watchersStarted.Load())
+		})
+	}
 }

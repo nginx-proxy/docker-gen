@@ -562,10 +562,7 @@ docker-gen -notify "/bin/bash /tmp/etcd.sh" -interval 10 templates/etcd.tmpl /tm
 ### Development
 
 This project uses [Go Modules](https://golang.org/ref/mod) for managing 3rd party dependencies.
-This means that at least `go 1.11` is required.
-
-For `go 1.11` and `go 1.12` it is additionally required to manually enable support by setting `GO111MODULE=on`.
-For later versions, this is not required.
+The current `go.mod` files require Go 1.26 or newer.
 
 ```console
 git clone <your fork>

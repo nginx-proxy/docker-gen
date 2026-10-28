@@ -3,6 +3,7 @@ package config
 import (
 	"testing"
 
+	"github.com/BurntSushi/toml"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -58,4 +59,101 @@ func TestWaitUnmarshalText(t *testing.T) {
 	err := wait.UnmarshalText(intervalBytes)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedWait, wait)
+}
+
+func TestSetContainerFilterDefaults(t *testing.T) {
+	allStatuses := []string{"created", "restarting", "running", "removing", "paused", "exited", "dead"}
+
+	tests := []struct {
+		name     string
+		config   Config
+		expected map[string][]string
+	}{
+		{
+			name:     "no options",
+			config:   Config{},
+			expected: map[string][]string{"status": {"running"}},
+		},
+		{
+			name:     "include stopped",
+			config:   Config{IncludeStopped: true},
+			expected: map[string][]string{"status": allStatuses},
+		},
+		{
+			name:     "status filter",
+			config:   Config{IncludeStopped: true, ContainerFilter: map[string][]string{"status": {"exited"}}},
+			expected: map[string][]string{"status": {"exited"}},
+		},
+		{
+			name:     "only exposed",
+			config:   Config{OnlyExposed: true},
+			expected: map[string][]string{"status": {"running"}, "expose": {"1-65535"}},
+		},
+		{
+			name:     "expose filter",
+			config:   Config{OnlyExposed: true, ContainerFilter: map[string][]string{"expose": {"80"}}},
+			expected: map[string][]string{"status": {"running"}, "expose": {"80"}},
+		},
+		{
+			name:     "only published",
+			config:   Config{OnlyExposed: true, OnlyPublished: true},
+			expected: map[string][]string{"status": {"running"}, "publish": {"1-65535"}},
+		},
+		{
+			name:     "publish filter",
+			config:   Config{OnlyPublished: true, ContainerFilter: map[string][]string{"publish": {"443"}}},
+			expected: map[string][]string{"status": {"running"}, "publish": {"443"}},
+		},
+		{
+			name:     "other filter",
+			config:   Config{ContainerFilter: map[string][]string{"label": {"foo"}}},
+			expected: map[string][]string{"status": {"running"}, "label": {"foo"}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			test.config.SetContainerFilterDefaults()
+			assert.Equal(t, test.expected, test.config.ContainerFilter)
+		})
+	}
+}
+
+func TestConfigFileContainerFilter(t *testing.T) {
+	var configFile ConfigFile
+	_, err := toml.Decode(`
+[[config]]
+template = "exposed.tmpl"
+onlyexposed = true
+
+[[config]]
+template = "published.tmpl"
+onlypublished = true
+includestopped = true
+
+[[config]]
+template = "filtered.tmpl"
+onlyexposed = true
+
+[config.ContainerFilter]
+status = ["running", "paused"]
+label = ["foo"]
+`, &configFile)
+	assert.NoError(t, err)
+
+	for i := range configFile.Config {
+		configFile.Config[i].SetContainerFilterDefaults()
+	}
+
+	assert.Len(t, configFile.Config, 3)
+	assert.Equal(t, map[string][]string{"status": {"running"}, "expose": {"1-65535"}}, configFile.Config[0].ContainerFilter)
+	assert.Equal(t, map[string][]string{
+		"status":  {"created", "restarting", "running", "removing", "paused", "exited", "dead"},
+		"publish": {"1-65535"},
+	}, configFile.Config[1].ContainerFilter)
+	assert.Equal(t, map[string][]string{
+		"status": {"running", "paused"},
+		"label":  {"foo"},
+		"expose": {"1-65535"},
+	}, configFile.Config[2].ContainerFilter)
 }

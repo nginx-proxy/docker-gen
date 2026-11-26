@@ -3,7 +3,7 @@ module github.com/nginx-proxy/docker-gen/integration
 go 1.26.0
 
 require (
-	github.com/moby/moby/api v1.56.1
+	github.com/moby/moby/api v1.57.0
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.45.0
 )

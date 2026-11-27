@@ -32,6 +32,9 @@ type generator struct {
 	wg                    sync.WaitGroup
 	retry                 bool
 	getCurrentContainerID func(...string) string
+
+	locksMu sync.Mutex
+	locks   map[string]*sync.Mutex
 }
 
 type GeneratorConfig struct {
@@ -126,21 +129,57 @@ func (g *generator) generateFromSignals() {
 
 func (g *generator) generateFromContainers() {
 	for _, config := range g.Configs.Config {
-		containers, err := g.getContainers(config)
-		if err != nil {
+		if err := g.generateConfig(config, false); err != nil {
 			log.Printf("Error listing containers: %s\n", err)
 			return
 		}
-
-		changed := template.GenerateFile(config, containers)
-		if !changed {
-			log.Printf("Contents of %s did not change. Skipping notification '%s'", config.Dest, config.NotifyCmd)
-			continue
-		}
-		g.runNotifyCmd(config)
-		g.sendSignalToContainers(config)
-		g.sendSignalToFilteredContainers(config)
 	}
+}
+
+// destLock returns the mutex for the given destination file.
+func (g *generator) destLock(dest string) *sync.Mutex {
+	g.locksMu.Lock()
+	defer g.locksMu.Unlock()
+
+	if g.locks == nil {
+		g.locks = make(map[string]*sync.Mutex)
+	}
+	lock, ok := g.locks[dest]
+	if !ok {
+		lock = &sync.Mutex{}
+		g.locks[dest] = lock
+	}
+	return lock
+}
+
+// generateConfig lists containers and generates the config's destination file from them. If the file changed,
+// or always when alwaysNotify is true, it then runs the notify command and sends signals. It returns an error
+// only if listing containers failed.
+//
+// Generation and notification for the same destination never run concurrently: startup, signals, intervals,
+// and events trigger them independently and otherwise an outdated list of containers could overwrite a newer
+// file, or notify commands could run concurrently. A long-running notify command delays other generations
+// of the same destination.
+func (g *generator) generateConfig(cfg config.Config, alwaysNotify bool) error {
+	lock := g.destLock(cfg.Dest)
+	lock.Lock()
+	defer lock.Unlock()
+
+	// Containers are listed only after the lock is acquired, so that waiting for it cannot make the list outdated.
+	containers, err := g.getContainers(cfg)
+	if err != nil {
+		return err
+	}
+
+	changed := template.GenerateFile(cfg, containers)
+	if !changed && !alwaysNotify {
+		log.Printf("Contents of %s did not change. Skipping notification '%s'", cfg.Dest, cfg.NotifyCmd)
+		return nil
+	}
+	g.runNotifyCmd(cfg)
+	g.sendSignalToContainers(cfg)
+	g.sendSignalToFilteredContainers(cfg)
+	return nil
 }
 
 func (g *generator) generateAtInterval() {
@@ -161,16 +200,10 @@ func (g *generator) generateAtInterval() {
 			for {
 				select {
 				case <-ticker.C:
-					containers, err := g.getContainers(cfg)
-					if err != nil {
+					// always run notify command
+					if err := g.generateConfig(cfg, true); err != nil {
 						log.Printf("Error listing containers: %s\n", err)
-						continue
 					}
-					// ignore changed return value. always run notify command
-					template.GenerateFile(cfg, containers)
-					g.runNotifyCmd(cfg)
-					g.sendSignalToContainers(cfg)
-					g.sendSignalToFilteredContainers(cfg)
 				case sig := <-sigChan:
 					log.Printf("Received signal: %s\n", sig)
 					switch sig {
@@ -207,19 +240,9 @@ func (g *generator) generateFromEvents() {
 			defer g.wg.Done()
 			debouncedChan := newDebounceChannel(watcher, cfg.Wait)
 			for range debouncedChan {
-				containers, err := g.getContainers(cfg)
-				if err != nil {
+				if err := g.generateConfig(cfg, false); err != nil {
 					log.Printf("Error listing containers: %s\n", err)
-					continue
 				}
-				changed := template.GenerateFile(cfg, containers)
-				if !changed {
-					log.Printf("Contents of %s did not change. Skipping notification '%s'", cfg.Dest, cfg.NotifyCmd)
-					continue
-				}
-				g.runNotifyCmd(cfg)
-				g.sendSignalToContainers(cfg)
-				g.sendSignalToFilteredContainers(cfg)
 			}
 		}(cfg)
 	}

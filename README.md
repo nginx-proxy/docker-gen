@@ -147,10 +147,10 @@ Options:
       https://github.com/fsouza/go-dockerclient/blob/main/signal.go
   -only-exposed
       only include containers with exposed ports.
-      Bypassed when using the exposed filter with (-container-filter exposed=foo).
+      Bypassed when using the exposed filter with (-container-filter expose=foo).
   -only-published
       only include containers with published ports (implies -only-exposed).
-      Bypassed when providing a container published filter (-container-filter published=foo).
+      Bypassed when providing a container published filter (-container-filter publish=foo).
   -tlscacert string
       path to TLS CA certificate file (default "~/.docker/ca.pem")
   -tlscert string
@@ -201,6 +201,12 @@ notifycmd = "/etc/init.d/foo reload"
 onlyexposed = true
 # only include containers with exposed ports
 
+onlypublished = true
+# only include containers with published ports (implies onlyexposed)
+
+includestopped = true
+# include stopped containers
+
 template = "/path/to/a/template/file.tmpl"
 # path to a template to generate
 
@@ -219,6 +225,13 @@ containername = 1
 
 container_id = 1
 # or the container id can be used followed by the signal to send
+
+[config.ContainerFilter]
+# Starts a container filter section, filters are combined with AND
+# A filter bypasses onlyexposed (expose filter), onlypublished (publish filter) and includestopped (status filter)
+
+label = ["com.example.foo"]
+# filter name followed by a list of values, https://docs.docker.com/engine/reference/commandline/ps/#filter
 ```
 
 Putting it all together here is an example configuration file.

@@ -117,9 +117,9 @@ func initFlags() {
 
 	// Containers filtering options
 	flag.BoolVar(&onlyExposed, "only-exposed", false,
-		"only include containers with exposed ports. Bypassed when providing a container exposed filter (-container-filter exposed=foo).")
+		"only include containers with exposed ports. Bypassed when providing a container exposed filter (-container-filter expose=foo).")
 	flag.BoolVar(&onlyPublished, "only-published", false,
-		"only include containers with published ports (implies -only-exposed). Bypassed when providing a container published filter (-container-filter published=foo).")
+		"only include containers with published ports (implies -only-exposed). Bypassed when providing a container published filter (-container-filter publish=foo).")
 	flag.BoolVar(&includeStopped, "include-stopped", false,
 		"include stopped containers. Bypassed when providing a container status filter (-container-filter status=foo).")
 	flag.Var(&containerFilter, "container-filter",
@@ -204,6 +204,9 @@ func main() {
 			NotifyOutput:     notifyOutput,
 			NotifyContainers: make(map[string]int),
 			ContainerFilter:  containerFilter,
+			IncludeStopped:   includeStopped,
+			OnlyExposed:      onlyExposed,
+			OnlyPublished:    onlyPublished,
 			Interval:         interval,
 			KeepBlankLines:   keepBlankLines,
 		}
@@ -217,29 +220,14 @@ func main() {
 			cfg.NotifyContainersFilter = notifyContainerFilter
 			cfg.NotifyContainersSignal = notifyContainerSignal
 		}
-		if len(cfg.ContainerFilter["status"]) == 0 {
-			if includeStopped {
-				cfg.ContainerFilter["status"] = []string{
-					"created",
-					"restarting",
-					"running",
-					"removing",
-					"paused",
-					"exited",
-					"dead",
-				}
-			} else {
-				cfg.ContainerFilter["status"] = []string{"running"}
-			}
-		}
-		if onlyPublished && len(cfg.ContainerFilter["publish"]) == 0 {
-			cfg.ContainerFilter["publish"] = []string{"1-65535"}
-		} else if onlyExposed && len(cfg.ContainerFilter["expose"]) == 0 {
-			cfg.ContainerFilter["expose"] = []string{"1-65535"}
-		}
 		configs = config.ConfigFile{
 			Config: []config.Config{cfg},
 		}
+	}
+
+	// Configs from config files have the same defaults as the config from command line options.
+	for i := range configs.Config {
+		configs.Config[i].SetContainerFilterDefaults()
 	}
 
 	generator, err := generator.NewGenerator(generator.GeneratorConfig{

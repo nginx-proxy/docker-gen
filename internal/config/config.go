@@ -17,8 +17,39 @@ type Config struct {
 	NotifyContainersFilter map[string][]string
 	NotifyContainersSignal int
 	ContainerFilter        map[string][]string
+	IncludeStopped         bool
+	OnlyExposed            bool
+	OnlyPublished          bool
 	Interval               int
 	KeepBlankLines         bool
+}
+
+// SetContainerFilterDefaults adds to ContainerFilter the filters implied by IncludeStopped,
+// OnlyPublished and OnlyExposed, unless ContainerFilter already has a filter for the same key.
+func (c *Config) SetContainerFilterDefaults() {
+	if c.ContainerFilter == nil {
+		c.ContainerFilter = make(map[string][]string)
+	}
+	if len(c.ContainerFilter["status"]) == 0 {
+		if c.IncludeStopped {
+			c.ContainerFilter["status"] = []string{
+				"created",
+				"restarting",
+				"running",
+				"removing",
+				"paused",
+				"exited",
+				"dead",
+			}
+		} else {
+			c.ContainerFilter["status"] = []string{"running"}
+		}
+	}
+	if c.OnlyPublished && len(c.ContainerFilter["publish"]) == 0 {
+		c.ContainerFilter["publish"] = []string{"1-65535"}
+	} else if c.OnlyExposed && len(c.ContainerFilter["expose"]) == 0 {
+		c.ContainerFilter["expose"] = []string{"1-65535"}
+	}
 }
 
 type ConfigFile struct {

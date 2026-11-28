@@ -101,6 +101,44 @@ func loadConfig(file string) error {
 	return nil
 }
 
+func applyCLIFilters(cfg *config.Config) {
+	if cfg.ContainerFilter == nil {
+		cfg.ContainerFilter = make(map[string][]string)
+	}
+	for k, vals := range containerFilter {
+		if len(cfg.ContainerFilter[k]) == 0 {
+			cfg.ContainerFilter[k] = slices.Clone(vals)
+		}
+	}
+	if len(cfg.NotifyContainersFilter) == 0 && len(notifyContainerFilter) > 0 {
+		cfg.NotifyContainersFilter = make(map[string][]string, len(notifyContainerFilter))
+		for k, vals := range notifyContainerFilter {
+			cfg.NotifyContainersFilter[k] = slices.Clone(vals)
+		}
+		cfg.NotifyContainersSignal = notifyContainerSignal
+	}
+	if len(cfg.ContainerFilter["status"]) == 0 {
+		if includeStopped {
+			cfg.ContainerFilter["status"] = []string{
+				"created",
+				"restarting",
+				"running",
+				"removing",
+				"paused",
+				"exited",
+				"dead",
+			}
+		} else {
+			cfg.ContainerFilter["status"] = []string{"running"}
+		}
+	}
+	if onlyPublished && len(cfg.ContainerFilter["publish"]) == 0 {
+		cfg.ContainerFilter["publish"] = []string{"1-65535"}
+	} else if onlyExposed && len(cfg.ContainerFilter["expose"]) == 0 {
+		cfg.ContainerFilter["expose"] = []string{"1-65535"}
+	}
+}
+
 func initFlags() {
 	certPath := filepath.Join(os.Getenv("DOCKER_CERT_PATH"))
 	if certPath == "" {
@@ -190,6 +228,9 @@ func main() {
 				log.Fatalf("Error loading config %s: %s\n", configFile, err)
 			}
 		}
+		for i := range configs.Config {
+			applyCLIFilters(&configs.Config[i])
+		}
 	} else {
 		w, err := config.ParseWait(wait)
 		if err != nil {
@@ -203,7 +244,7 @@ func main() {
 			NotifyCmd:        notifyCmd,
 			NotifyOutput:     notifyOutput,
 			NotifyContainers: make(map[string]int),
-			ContainerFilter:  containerFilter,
+			ContainerFilter:  make(map[string][]string),
 			Interval:         interval,
 			KeepBlankLines:   keepBlankLines,
 		}
@@ -213,30 +254,7 @@ func main() {
 		for _, id := range notifyContainerID {
 			cfg.NotifyContainers[id] = notifyContainerSignal
 		}
-		if len(notifyContainerFilter) > 0 {
-			cfg.NotifyContainersFilter = notifyContainerFilter
-			cfg.NotifyContainersSignal = notifyContainerSignal
-		}
-		if len(cfg.ContainerFilter["status"]) == 0 {
-			if includeStopped {
-				cfg.ContainerFilter["status"] = []string{
-					"created",
-					"restarting",
-					"running",
-					"removing",
-					"paused",
-					"exited",
-					"dead",
-				}
-			} else {
-				cfg.ContainerFilter["status"] = []string{"running"}
-			}
-		}
-		if onlyPublished && len(cfg.ContainerFilter["publish"]) == 0 {
-			cfg.ContainerFilter["publish"] = []string{"1-65535"}
-		} else if onlyExposed && len(cfg.ContainerFilter["expose"]) == 0 {
-			cfg.ContainerFilter["expose"] = []string{"1-65535"}
-		}
+		applyCLIFilters(&cfg)
 		configs = config.ConfigFile{
 			Config: []config.Config{cfg},
 		}
